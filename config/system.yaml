@@ -1,0 +1,48 @@
+project:
+  default_seed: 20260516
+  default_budget_tier: "S"
+  default_resolution: "1080p"
+  default_fps: 24
+  default_aspect_ratio: "9:16"
+  default_locale: "zh-CN"
+mode: "mock"  # mock | live | hybrid (live primary + mock fallback)
+adapters:
+  llm: "mock"
+  render_primary: "mock_xiaoyunque"
+  render_fallback: "mock_seedance"
+  tts: "mock"
+  music: "mock"
+  qa: "mock"
+  moderation: "mock"
+  embedding: "mock"
+  storage: "local_fs"
+  state: "sqlite"
+live:
+  llm:
+    providers: ["dashscope", "glm", "mistral", "groq", "deepseek", "moonshot", "volcengine"]
+    json_mode: true
+    request_timeout_s: 60
+    max_retries: 2
+  video:
+    primary: "dashscope_wanx"
+    fallback: "volcengine_seedance"
+    poll_interval_s: 6
+    max_poll_s: 600
+  tts:
+    primary: "dashscope_cosyvoice"
+    sample_rate: 24000
+  embedding:
+    primary: "dashscope_text_embedding_v3"
+  moderation:
+    primary: "real_llm_judge"
+    judge_model: "groq:llama-3.1-8b-instant"
+  budget:
+    rmb_cap_per_episode: 80
+    runtime_cap_min: 60
+mock:
+  shot_duration_s: 1
+  max_shots_per_episode: 6
+  max_dialogue_lines: 2
+  max_repairs: 3
+  resolution: "720p"
+  fps: 12

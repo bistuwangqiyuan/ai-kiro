@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "manhuaju-autopilot"
+version = "0.1.0"
+description = "AI Manhuaju Autopilot - novel-to-multi-episode-video pipeline (M2 Mock E2E)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Manhuaju Autopilot Agents" }]
+dependencies = [
+    "pydantic>=2.7,<3",
+    "Pillow>=10.2",
+    "numpy>=1.26",
+    "PyYAML>=6.0",
+    "httpx>=0.27",
+    "structlog>=24.1",
+    "anyio>=4.3",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "import-linter>=2.0",
+]
+live = [
+    "dashscope>=1.20",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/manhuaju"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src" = "manhuaju"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q -ra"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+disallow_untyped_defs = false
+warn_redundant_casts = true
+warn_unused_ignores = true
+explicit_package_bases = true
+mypy_path = "src"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests", "tools", "scripts"]
+extend-exclude = [".kiro", "docs", "tests/e2e_three_episodes/output", "tests/e2e_three_episodes/reports"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["E402"]

@@ -1,0 +1,15 @@
+thresholds:
+  arcface_min: 0.92
+  laion_mean_min: 6.0
+  laion_worst_min: 5.5
+  vbench_min: 0.85
+  utmos_min: 4.0
+  syncnet_offset_max_frames: 2.0
+  determinism_min: 0.95
+  cycles_max: 3
+runtime_caps_seconds:
+  per_episode: 300  # 5 min in mock
+  per_project_pilot: 1800
+cost_caps_credits:
+  per_episode: 0
+  per_project_pilot: 0

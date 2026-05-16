@@ -1,0 +1,6 @@
+tiers:
+  S: { credits: 6000, tokens: 5000000, seconds: 14400 }
+  M: { credits: 12000, tokens: 12000000, seconds: 28800 }
+  L: { credits: 24000, tokens: 24000000, seconds: 43200 }
+  XL: { credits: 48000, tokens: 48000000, seconds: 86400 }
+mock_credits_per_call: 0

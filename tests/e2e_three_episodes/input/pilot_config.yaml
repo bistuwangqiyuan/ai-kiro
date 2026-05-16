@@ -1,0 +1,23 @@
+project:
+  project_id: "pilot_xiaoyunque_001"
+  novel_uri: "tests/e2e_three_episodes/input/sample_novel.md"
+  seed: 20260516
+config:
+  style_preset_id: "cinematic_2d_v1"
+  aspect_ratio: "9:16"
+  resolution: "720p"  # M2 mock fast lane; production = 1080p
+  fps: 12             # M2 mock fast lane; production = 24
+  target_locales: ["zh-CN"]
+  episode_count: 3
+  consistency_tier: "bible_only"
+  model_tier: "pro"
+  budget_tier: "S"
+  narration: false
+  mode: "per_shot"
+  redlines_profile_id: "default"
+  simhuman_consent: false
+mock:
+  shot_duration_s: 1
+  max_shots_per_episode: 6
+  max_dialogue_lines: 2
+  max_repairs: 3

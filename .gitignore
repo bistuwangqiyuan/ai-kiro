@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.env
+.env.*
+
+# pytest / coverage
+.pytest_cache/
+.coverage*
+htmlcov/
+
+# build
+build/
+dist/
+
+# local artefacts (e2e produces these; keep reports tracked for evidence)
+tests/e2e_three_episodes/output/
+tests/live_one_episode/output/
+tests/live_three_episodes/output/
+tools/smoke/_artefacts/
+tools/smoke/_live_smoke_run/
+tools/smoke/_live_run.log
+tools/smoke/_live_pytest.log
+.cursor/
+.claude/

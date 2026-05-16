@@ -1,0 +1,175 @@
+{
+  "pilot": {
+    "items": [
+      {
+        "name": "REQ-PILOT-001",
+        "label": "3 集端到端 / 0 个 WaitFor",
+        "pass": true
+      },
+      {
+        "name": "REQ-PILOT-002",
+        "label": "跨集 ArcFace ≥ 0.92",
+        "pass": true,
+        "value": 1.0
+      },
+      {
+        "name": "REQ-PILOT-003",
+        "label": "LAION mean ≥ 6.0 / worst ≥ 5.5",
+        "pass": true,
+        "values": [
+          6.566817060940928,
+          6.569621355362707,
+          6.282671297259266
+        ]
+      },
+      {
+        "name": "REQ-PILOT-004",
+        "label": "VBench Subject ≥ 0.85",
+        "pass": true,
+        "values": [
+          0.9116935933214807,
+          0.9136914351716254,
+          0.9206377208318477
+        ]
+      },
+      {
+        "name": "REQ-PILOT-005",
+        "label": "UTMOS mean ≥ 4.0",
+        "pass": true,
+        "values": [
+          4.335009823876659,
+          4.396431407984369,
+          4.191073964579842
+        ]
+      },
+      {
+        "name": "REQ-PILOT-006",
+        "label": "SyncNet 偏移 ≤ 2 帧",
+        "pass": true,
+        "value": 1.0
+      },
+      {
+        "name": "REQ-PILOT-007",
+        "label": "单集 ≤ 5 min + ≤ 0 ¥/集",
+        "pass": true,
+        "values": {
+          "runtime_s": 12.57220126666713,
+          "credits": 0
+        }
+      },
+      {
+        "name": "REQ-PILOT-008",
+        "label": "final_report.md 自动生成",
+        "pass": true
+      },
+      {
+        "name": "REQ-PILOT-009",
+        "label": "Chaos 注入 5xx 一次仍恢复",
+        "pass": true
+      },
+      {
+        "name": "REQ-PILOT-010",
+        "label": "Determinism ≥ 95%",
+        "pass": true,
+        "value": 1.0
+      },
+      {
+        "name": "REQ-PILOT-011",
+        "label": "0 路径触及禁词（静态 + 运行）",
+        "pass": true,
+        "values": {
+          "static_violations": 0,
+          "runtime_violations": 0
+        }
+      },
+      {
+        "name": "REQ-PILOT-012",
+        "label": "Outfit 翻色 bug 1 cycle 内自动修复",
+        "pass": true
+      }
+    ],
+    "all_pass": true,
+    "summary": {
+      "cycles_max": 0,
+      "syncnet_offset_max": 1.0
+    }
+  },
+  "manifest": {
+    "project_id": "pilot_xiaoyunque_001",
+    "blueprint_sha": "42bba513fb011ac4dd56d02ad15be99b30ff70d97280a71d413c8af3e933803f",
+    "plan_sha": "fe02917a6abd50af493ded0ea7a7d2f7f575dcd4e8e6c661f660916930bf89d4",
+    "style_sha": "c5c93fe2a1db68b9ac1f8959167b639ec09590b3a50a31386018e4d1ed02829d",
+    "episodes": [
+      {
+        "episode_id": "ep01",
+        "final_mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep01.mp4",
+        "promoted": true,
+        "cycles": 0,
+        "pass_rate": 1.0,
+        "aesthetic_mean": 6.566817060940928,
+        "arcface_mean": 0.9977737279607846,
+        "vbench_mean": 0.9116935933214807,
+        "utmos_mean": 4.335009823876659,
+        "syncnet_offset_max": 1.0
+      },
+      {
+        "episode_id": "ep02",
+        "final_mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep02.mp4",
+        "promoted": true,
+        "cycles": 0,
+        "pass_rate": 1.0,
+        "aesthetic_mean": 6.569621355362707,
+        "arcface_mean": 0.9977737279607846,
+        "vbench_mean": 0.9136914351716254,
+        "utmos_mean": 4.396431407984369,
+        "syncnet_offset_max": 1.0
+      },
+      {
+        "episode_id": "ep03",
+        "final_mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep03.mp4",
+        "promoted": true,
+        "cycles": 0,
+        "pass_rate": 1.0,
+        "aesthetic_mean": 6.282671297259266,
+        "arcface_mean": 0.9977737279607846,
+        "vbench_mean": 0.9206377208318477,
+        "utmos_mean": 4.191073964579842,
+        "syncnet_offset_max": 1.0
+      }
+    ],
+    "continuity": {
+      "matrix": {
+        "ep01|ep02": {
+          "char_10782561": {
+            "arcface": 1.0
+          },
+          "char_47985157": {
+            "arcface": 1.0
+          }
+        },
+        "ep01|ep03": {
+          "char_10782561": {
+            "arcface": 1.0
+          },
+          "char_47985157": {
+            "arcface": 1.0
+          }
+        },
+        "ep02|ep03": {
+          "char_10782561": {
+            "arcface": 1.0
+          },
+          "char_47985157": {
+            "arcface": 1.0
+          }
+        }
+      },
+      "drifted": [],
+      "compared": [
+        "ep01",
+        "ep02",
+        "ep03"
+      ]
+    }
+  }
+}

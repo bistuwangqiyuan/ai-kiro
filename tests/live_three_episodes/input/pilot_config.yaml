@@ -1,0 +1,28 @@
+project:
+  project_id: "pilot_live_three_001"
+  novel_uri: "tests/e2e_three_episodes/input/sample_novel.md"
+  seed: 20260516
+config:
+  style_preset_id: "cinematic_2d_v1"
+  aspect_ratio: "16:9"
+  # 意向 1080p；WanX t2v-turbo 仅支持固定 size（见 poll_failed InvalidParameter），
+  # RealWanXAdapter 自动映射为允许的最高 16:9「1280*720」。
+  resolution: "1080p"
+  fps: 24
+  target_locales: ["zh-CN"]
+  episode_count: 3
+  consistency_tier: "bible_only"
+  model_tier: "pro"
+  budget_tier: "S"
+  narration: false
+  mode: "per_shot"
+  redlines_profile_id: "default"
+  simhuman_consent: false
+mock:
+  # 每集 1 镜头 × 5s 真生成 → 成片时长远小于 60s，API 调用数最小化
+  shot_duration_s: 5
+  max_shots_per_episode: 1
+  max_dialogue_lines: 1
+  max_repairs: 1
+  resolution: "1080p"
+  fps: 24

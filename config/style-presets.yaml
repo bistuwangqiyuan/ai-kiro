@@ -1,0 +1,15 @@
+cinematic_2d_v1:
+  name: "Cinematic 2D v1"
+  base_palette:
+    - "#0a1f3a"
+    - "#7393b3"
+    - "#cfd9e3"
+    - "#e8c267"
+    - "#3a1f0a"
+    - "#b3733b"
+    - "#e3cfd9"
+    - "#67e8c2"
+  fps: 24
+  aspect_ratio: "9:16"
+  resolution: "1080p"
+  duration_units: [5, 10, 15]

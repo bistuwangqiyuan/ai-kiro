@@ -1,0 +1,15 @@
+[importlinter]
+root_packages =
+    manhuaju
+
+[importlinter:contract:layered]
+name = Layered architecture (adapters -> agents -> pipelines -> core)
+type = layers
+layers =
+    manhuaju.api
+    manhuaju.pipelines
+    manhuaju.agents
+    manhuaju.adapters
+    manhuaju.core
+    manhuaju.schemas
+    manhuaju.utils

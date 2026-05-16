@@ -1,0 +1,4 @@
+# M3 Live E2E — opt-in artefacts directory
+output/
+reports/*.json
+!reports/.gitkeep

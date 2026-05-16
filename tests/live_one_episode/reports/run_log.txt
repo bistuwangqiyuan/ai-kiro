@@ -1,0 +1,22 @@
+﻿[15:46:17] building AgentContext
+[15:46:17] build_bundle mode=hybrid
+[15:46:20]   bundle.mode=hybrid llm=RealLLMAdapter video=RealWanXAdapter tts=RealDashScopeTTSAdapter
+[15:46:20] running pipeline ...
+[15:46:20]   EVT manhuaju.event.project.state {'state': 'Accepted'}
+[15:46:20]   EVT manhuaju.event.project.state {'state': 'Ingesting'}
+[15:46:44]   EVT manhuaju.event.project.state {'state': 'Planning'}
+[15:46:56]   EVT manhuaju.event.project.state {'state': 'CharacterBuilding'}
+[15:47:45]   EVT manhuaju.event.project.state {'state': 'StyleLocked'}
+[15:47:45]   EVT manhuaju.event.project.state {'state': 'Producing'}
+[15:47:45]   EVT manhuaju.event.episode.state {'state': 'Drafted'}
+[15:48:00]   EVT manhuaju.event.episode.state {'state': 'Storyboarded'}
+[15:48:15]   EVT manhuaju.event.episode.state {'state': 'Rendering'}
+[15:51:01]   EVT manhuaju.event.episode.state {'state': 'AudioMixing'}
+[15:51:27]   EVT manhuaju.event.episode.state {'state': 'InQA'}
+[15:51:54]   EVT manhuaju.event.episode.state {'state': 'Promoted'}
+[15:52:19]   EVT manhuaju.event.project.state {'state': 'QualityLoop'}
+[15:52:19]   EVT manhuaju.event.project.state {'state': 'Releasing'}
+[15:52:19]   EVT manhuaju.event.project.state {'state': 'Released'}
+[15:52:19] pipeline finished status=released runtime=358.6s
+[15:52:19] cost: rmb=0.0771 calls=41
+[15:52:19] reports written 鈫?C:\Users\wangqiyuan\project\cursor\鍟嗕笟璁″垝涔ai婕墽kiro\tests\live_one_episode\reports

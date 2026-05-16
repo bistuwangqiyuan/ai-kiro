@@ -1,0 +1,4 @@
+output/
+reports/*.json
+reports/*.md
+reports/*.log

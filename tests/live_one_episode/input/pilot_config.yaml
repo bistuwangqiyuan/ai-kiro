@@ -1,0 +1,26 @@
+project:
+  project_id: "pilot_live_001"
+  novel_uri: "tests/e2e_three_episodes/input/sample_novel.md"
+  seed: 20260516
+config:
+  style_preset_id: "cinematic_2d_v1"
+  aspect_ratio: "16:9"
+  resolution: "720p"
+  fps: 12
+  target_locales: ["zh-CN"]
+  episode_count: 1
+  consistency_tier: "bible_only"
+  model_tier: "pro"
+  budget_tier: "S"
+  narration: false
+  mode: "per_shot"
+  redlines_profile_id: "default"
+  simhuman_consent: false
+mock:
+  # Minimum production closed-loop: 1 shot × 1 dialogue × 5s.
+  # Designed to exercise every real API exactly once while keeping spend
+  # well under ¥1 / 5 min per episode.
+  shot_duration_s: 5
+  max_shots_per_episode: 1
+  max_dialogue_lines: 1
+  max_repairs: 1
