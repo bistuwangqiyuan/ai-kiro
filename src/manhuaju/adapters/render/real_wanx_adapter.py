@@ -96,6 +96,7 @@ class RealWanXAdapter:
         key_action: str,
         style_sha: str,
         model_tier: str = "pro",  # noqa: ARG002
+        reference_images: list[str] | None = None,
     ) -> str:
         with self._lock:
             if idem_key in self._idem:
@@ -129,6 +130,7 @@ class RealWanXAdapter:
             location_id=location_id,
             mood=mood,
             key_action=key_action,
+            reference_images=reference_images or [],
         )
         size = _resolution_to_size(resolution)
 
@@ -406,8 +408,9 @@ class RealWanXAdapter:
         location_id: str,
         mood: str,
         key_action: str,
+        reference_images: list[str] | None = None,
     ) -> str:
-        return compose_fluent_video_prompt(
+        base = compose_fluent_video_prompt(
             prompt=prompt,
             characters=characters,
             location_id=location_id,
@@ -415,6 +418,9 @@ class RealWanXAdapter:
             key_action=key_action,
             max_len=1200,
         )
+        if reference_images:
+            base = f"{base} | i2v_refs:{len(reference_images)}"
+        return base
 
     def _download(self, url: str, dest: Path) -> bool:
         try:

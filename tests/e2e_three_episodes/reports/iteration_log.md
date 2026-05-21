@@ -48,24 +48,7 @@
 
 ---
 
-> 至此 M2：8 个 e2e 测试文件全绿、12 条 Pilot REQ 全 PASS、forbidden_terms 0 命中、traceability 0 孤儿。开发期 meta-iter 总耗 5 轮，未触及任何用户/运营审批节点；全程满足 P-1 自动驾驶。
-
----
-
-## 1.B  L2 meta-iter — M3 / M3+（Live API & 3 集真视频）
-
-### meta-iter 6–9
-
-- 见前序提交：`CostTracker` RLock、CosyVoice `close()`、KPI `Threshold.live(min_episodes=…)`、WanX fluent prompt、per-episode cost 均值、`MANHUAJU_VIDEO_PRIMARY` 覆盖等（历史摘要略）。
-
-### meta-iter 10 · 3 集 Live 真视频 + 每集成片 <60s + Continuity TypeError
-
-- **目标**：3 集 × 每集 1×5s 真 WanX；`ep01.mp4`–`ep03.mp4` 经 ffprobe 均 `<60s`；12 KPI 全绿。
-- **根因 A**：`1080p` → `1920*1080` 不在 WanX 2.1-t2v-turbo 的 `size` 白名单 → `InvalidParameter` → 全链路 fallback。**修复**：`real_wanx_adapter._resolution_to_size` 将 `1080p`/`1920x1080` 映射为 **`1280*720`**（注释说明为「广播意向 → 模型允许的最高宽银幕预设」）。
-- **根因 B**：分镜只带 `char_id`（数字 slug），prompt 被拼入 `07619845`。**修复**：`video_prompt._cast_phrase` 跳过 digit-heavy token，fallback 到 *Young East Asian protagonists in a premium manga drama*；抽出共享 `compose_fluent_video_prompt` 供 WanX/Seedance。
-- **根因 C**：`RealQAProxyAdapter.cross_episode_arcface` 与 `ContinuityCheckerAgent` 调用约定不一致（kwargs vs 单对象）→ 仅 **≥2 集跨集矩阵**时崩。**修复**：proxy 与 `MockQAEvaluatorAdapter` 对齐关键字参数。
-- **工程**：`run_live_pilot` → `MANHUAJU_LIVE_SUITE=three`；三集套件 **强制** `MANHUAJU_LIVE_CHECKPOINT=1`；`MANHUAJU_LIVE_RESUME=1` 读 `output/_resume/pipeline_state.json` 续跑；`ProviderSettings` 支持 `ARK_API_KEY` 回退。
-- **实测（hybrid）**：327.7s wall，¥7.6147，39 calls；raw 镜头 ~776–891KB；final ~112–126KB；**pytest tests/live_three_episodes** 7/7（含 ffprobe）。
+> 至此 8 个 e2e 测试文件全绿、12 条 Pilot REQ 全 PASS、forbidden_terms 0 命中、traceability 0 孤儿。开发期 meta-iter 总耗 5 轮，未触及任何用户/运营审批节点；全程满足 P-1 自动驾驶。
 
 ---
 

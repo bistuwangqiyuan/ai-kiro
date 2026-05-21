@@ -56,8 +56,15 @@ class ReferenceAssetAgent(BaseAgent):
             project_id=req.context.project_id,
             payload={"chars": len(all_refs)},
         )
+        manifest_key = f"{req.context.project_id}/04_refs/asset_manifest.json"
+        manifest = {
+            "characters": all_refs,
+            "scenes": req.inputs.get("scene_refs", {}),
+            "props": req.inputs.get("prop_refs", {}),
+        }
+        self.ctx.storage.write_json(manifest_key, manifest)
         return AgentRunResponse(
             status="succeeded",
-            outputs={"references": all_refs},
+            outputs={"references": all_refs, "asset_manifest": manifest},
             metrics={"chars": float(len(all_refs))},
         )

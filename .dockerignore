@@ -1,0 +1,13 @@
+.git
+.cursor
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+tests/e2e_three_episodes/output
+tests/live_three_episodes/output
+tests/live_one_episode/output
+.env
+api_data
+output

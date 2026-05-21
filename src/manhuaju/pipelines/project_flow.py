@@ -1,10 +1,4 @@
-"""Project-level pipeline.
-
-Orchestrates: Ingest -> Story -> Plan -> Bibles -> Refs -> Style -> Episodes.
-On any failure inside the loop the IterationManager handles it within the
-EpisodePipeline; project-level fallback (salvage) is triggered if any episode
-ends up Quarantined after `max_repairs` cycles.
-"""
+"""Project-level pipeline — 6-step workflow orchestration."""
 
 from __future__ import annotations
 
@@ -23,19 +17,24 @@ from manhuaju.adapters.render.mock_xiaoyunque_adapter import MockXiaoyunqueAdapt
 from manhuaju.adapters.tts.mock_tts_adapter import MockTTSAdapter
 from manhuaju.agents.character_bible_agent import CharacterBibleAgent
 from manhuaju.agents.continuity_checker_agent import ContinuityCheckerAgent
+from manhuaju.agents.distribution_agent import DistributionAgent
 from manhuaju.agents.episode_planner_agent import EpisodePlannerAgent
 from manhuaju.agents.master_orchestrator_agent import MasterOrchestratorAgent
+from manhuaju.agents.prop_asset_agent import PropAssetAgent
 from manhuaju.agents.reference_asset_agent import ReferenceAssetAgent
+from manhuaju.agents.scene_asset_agent import SceneAssetAgent
 from manhuaju.agents.story_architect_agent import StoryArchitectAgent
 from manhuaju.agents.visual_style_agent import VisualStyleAgent
 from manhuaju.core.agent_base import AgentContext, AgentRunRequest, TraceContext
+from manhuaju.core.review_gate import ReviewGate
 from manhuaju.core.seed import project_seed
 from manhuaju.core.state_machine import ProjectState
+from manhuaju.core.workflow_config import load_distribution_config, load_workflow_config
+from manhuaju.core.workflow_stage import WorkflowStage, emit_workflow_stage
 from manhuaju.pipelines.episode_flow import EpisodePipeline
 
 
 def _attach_root(adapter: Any, attr: str, path: Path) -> Any:
-    """Set ``adapter.<attr>`` to ``path`` (mkdir-ing) if the adapter exposes it."""
     if hasattr(adapter, attr):
         path.mkdir(parents=True, exist_ok=True)
         setattr(adapter, attr, path)
@@ -43,7 +42,6 @@ def _attach_root(adapter: Any, attr: str, path: Path) -> Any:
 
 
 def _attach_render_roots(adapter: Any, artefacts: Path, frames: Path) -> Any:
-    """Bind both `artefacts_root` and `frames_root` on a render adapter."""
     artefacts.mkdir(parents=True, exist_ok=True)
     frames.mkdir(parents=True, exist_ok=True)
     if hasattr(adapter, "artefacts_root"):
@@ -61,7 +59,7 @@ class ProjectFlowConfig:
     episode_count: int = 3
     style_preset_id: str = "cinematic_2d_v1"
     aspect_ratio: str = "9:16"
-    resolution: str = "720p"  # M2 default; pilot config can override
+    resolution: str = "720p"
     fps: int = 12
     max_repairs: int = 3
     out_dir: Path = Path("output")
@@ -79,8 +77,10 @@ class ProjectPipeline:
         bundle: Any | None = None,
     ) -> None:
         self.ctx = ctx
+        self.workflow = load_workflow_config(ctx.config)
+        self.distribution = load_distribution_config(ctx.config)
+        self.review_gate = ReviewGate(mode=self.workflow.mode)
         if bundle is None:
-            # M2 default — direct mock construction for backward compatibility.
             self.llm = MockLLMAdapter()
             self.moderation = MockModerationAdapter(redlines=redlines or [])
             self.tts = MockTTSAdapter(artefacts_root=ctx.storage.base / "_tts")
@@ -97,49 +97,57 @@ class ProjectPipeline:
             self.qa_eval = MockQAEvaluatorAdapter()
             self.bundle = None
         else:
-            # M3 live/hybrid — adapters supplied by AdapterFactory.
             artefacts = ctx.storage.base / "_renders"
             frames = ctx.storage.base / "_frames"
             tts_root = ctx.storage.base / "_tts"
             music_root = ctx.storage.base / "_music"
             self.llm = bundle.llm
             self.moderation = bundle.moderation
-            # Inject redlines for any moderation impl that needs it. Real impl
-            # already loads from config; mock fallback inside bundle gets a
-            # one-time setter via attribute access if missing.
             if redlines and hasattr(self.moderation, "redlines"):
                 self.moderation.redlines = [r.lower() for r in redlines]
-            # Ensure adapter artefacts go under the project storage path.
             self.tts = _attach_root(bundle.tts, "artefacts_root", tts_root)
             self.music = _attach_root(bundle.music, "artefacts_root", music_root)
-            self.seedance = _attach_render_roots(
-                bundle.render_fallback, artefacts, frames
-            )
+            self.seedance = _attach_render_roots(bundle.render_fallback, artefacts, frames)
             self.xy = _attach_render_roots(bundle.render_primary, artefacts, frames)
-            # Wire fallback to mock seedance for the legacy chain.
             if hasattr(self.xy, "seedance_fallback") and self.xy.seedance_fallback is None:
                 self.xy.seedance_fallback = self.seedance
             self.qa_eval = bundle.qa
             self.bundle = bundle
 
+    def _build_reference_map(
+        self,
+        char_refs: dict[str, list[str]],
+        scene_refs: dict[str, list[str]],
+        prop_refs: dict[str, list[str]],
+    ) -> dict[str, list[str]]:
+        ref_map = dict(char_refs)
+        for loc_id, urls in scene_refs.items():
+            ref_map[f"scene:{loc_id}"] = urls
+        for prop_id, urls in prop_refs.items():
+            ref_map[f"prop:{prop_id}"] = urls
+        return ref_map
+
     def run(self, cfg: ProjectFlowConfig) -> dict[str, Any]:
         trace = TraceContext(project_id=cfg.project_id)
         ps = project_seed(cfg.seed)
         self._emit_state(cfg.project_id, ProjectState.ACCEPTED)
+        emit_workflow_stage(self.ctx.bus, project_id=cfg.project_id, stage=WorkflowStage.ANALYZE)
 
         episode_results: list[dict[str, Any]] = []
+        export_manifests: list[dict[str, Any]] = []
         resume_dir = cfg.out_dir / "_resume"
         resume_path = resume_dir / "pipeline_state.json"
         use_resume = os.getenv("MANHUAJU_LIVE_RESUME", "").strip() in ("1", "true", "yes")
+        reference_map: dict[str, list[str]] = {}
         if use_resume and resume_path.is_file():
             snap = json.loads(resume_path.read_text(encoding="utf-8"))
             bp = snap["blueprint"]
             plan = snap["plan"]
             bibles = snap["bibles"]
             style = snap["style"]
+            reference_map = snap.get("reference_map", {})
             episode_results = list(snap.get("episode_results") or [])
         else:
-            # 1. Story
             self._emit_state(cfg.project_id, ProjectState.INGESTING)
             sa = StoryArchitectAgent(self.ctx, llm=self.llm, moderation=self.moderation)
             sa_resp = sa.run(
@@ -157,7 +165,6 @@ class ProjectPipeline:
                 }
             bp = sa_resp.outputs["blueprint"]
 
-            # 2. Plan
             self._emit_state(cfg.project_id, ProjectState.PLANNING)
             ep_planner = EpisodePlannerAgent(self.ctx, llm=self.llm)
             plan = ep_planner.run(
@@ -168,7 +175,7 @@ class ProjectPipeline:
                 )
             ).outputs["plan"]
 
-            # 3. Bibles (only leads + 1 support to keep mock fast)
+            emit_workflow_stage(self.ctx.bus, project_id=cfg.project_id, stage=WorkflowStage.ASSETS)
             self._emit_state(cfg.project_id, ProjectState.CHARACTER_BUILDING)
             bibles = CharacterBibleAgent(self.ctx, llm=self.llm).run(
                 AgentRunRequest(
@@ -178,12 +185,35 @@ class ProjectPipeline:
                 )
             ).outputs["bibles"]
 
-            # 4. References
-            ReferenceAssetAgent(self.ctx).run(
-                AgentRunRequest(inputs={"bibles": bibles}, context=trace, seed=cfg.seed)
-            )
+            scene_refs = SceneAssetAgent(self.ctx).run(
+                AgentRunRequest(
+                    inputs={"blueprint": bp, "style_sha": bp.get("blueprint_sha", "style")},
+                    context=trace,
+                    seed=cfg.seed,
+                )
+            ).outputs["scene_refs"]
+            prop_refs = PropAssetAgent(self.ctx).run(
+                AgentRunRequest(
+                    inputs={"blueprint": bp, "style_sha": bp.get("blueprint_sha", "style")},
+                    context=trace,
+                    seed=cfg.seed,
+                )
+            ).outputs["prop_refs"]
 
-            # 5. Style
+            ref_resp = ReferenceAssetAgent(self.ctx).run(
+                AgentRunRequest(
+                    inputs={
+                        "bibles": bibles,
+                        "scene_refs": scene_refs,
+                        "prop_refs": prop_refs,
+                    },
+                    context=trace,
+                    seed=cfg.seed,
+                )
+            )
+            char_refs = ref_resp.outputs["references"]
+            reference_map = self._build_reference_map(char_refs, scene_refs, prop_refs)
+
             self._emit_state(cfg.project_id, ProjectState.STYLE_LOCKED)
             style = VisualStyleAgent(self.ctx, llm=self.llm).run(
                 AgentRunRequest(
@@ -225,6 +255,7 @@ class ProjectPipeline:
                             "plan": plan,
                             "bibles": bibles,
                             "style": style,
+                            "reference_map": reference_map,
                             "episode_results": episode_results,
                         }
                     ),
@@ -233,7 +264,6 @@ class ProjectPipeline:
                 encoding="utf-8",
             )
 
-        # 6. Episodes
         self._emit_state(cfg.project_id, ProjectState.PRODUCING)
         ep_pipe = EpisodePipeline(
             self.ctx,
@@ -249,6 +279,8 @@ class ProjectPipeline:
             mock_shot_duration_s=cfg.mock_shot_duration_s,
             max_shots_per_episode=cfg.max_shots_per_episode,
             max_dialogue_lines=cfg.max_dialogue_lines,
+            reference_map=reference_map,
+            review_gate=self.review_gate,
         )
         start_idx = len(episode_results)
         for idx, ep in enumerate(plan["episodes"]):
@@ -271,6 +303,7 @@ class ProjectPipeline:
                 resume_path.unlink()
             except OSError:
                 pass
+
         self._emit_state(cfg.project_id, ProjectState.QUALITY_LOOP)
         cc = ContinuityCheckerAgent(self.ctx, qa=self.qa_eval)
         sigs = {r["episode_id"]: r["shot_signatures"] for r in episode_results}
@@ -278,24 +311,48 @@ class ProjectPipeline:
             AgentRunRequest(inputs={"episode_signatures": sigs}, context=trace, seed=cfg.seed)
         )
 
-        # 8. Release decision
+        emit_workflow_stage(
+            self.ctx.bus, project_id=cfg.project_id, stage=WorkflowStage.DISTRIBUTION
+        )
+        dist_agent = DistributionAgent(self.ctx)
+        for r in episode_results:
+            if not self.review_gate.is_release_allowed(cfg.project_id, r["episode_id"]):
+                r["distribution_skipped"] = True
+                continue
+            ep_meta = next(e for e in plan["episodes"] if e["episode_id"] == r["episode_id"])
+            dist_resp = dist_agent.run(
+                AgentRunRequest(
+                    inputs={
+                        "episode_id": r["episode_id"],
+                        "source_mp4": r["final_mp4"],
+                        "platform": self.distribution.default_platform,
+                        "title": ep_meta.get("title", r["episode_id"]),
+                        "synopsis": ep_meta.get("synopsis", ""),
+                        "watermark": self.distribution.watermark,
+                    },
+                    context=TraceContext(
+                        project_id=cfg.project_id, episode_id=r["episode_id"]
+                    ),
+                    seed=cfg.seed,
+                )
+            )
+            export_manifests.append(dist_resp.outputs["manifest"])
+
         any_fail = any(not r["promoted"] for r in episode_results) or cc_resp.outputs["drifted"]
         if any_fail:
-            # Salvage: attempt one more cycle on episodes with drift
             for r in episode_results:
                 if r["promoted"] and not cc_resp.outputs["drifted"]:
                     continue
-                # Mark with a salvage note; keep the mp4
                 r["salvage_attempted"] = True
         self._emit_state(cfg.project_id, ProjectState.RELEASING)
         self._emit_state(cfg.project_id, ProjectState.RELEASED)
 
-        # Final manifest
         manifest = {
             "project_id": cfg.project_id,
             "blueprint_sha": bp["blueprint_sha"],
             "plan_sha": plan["plan_sha"],
             "style_sha": style["style_sha"],
+            "workflow_mode": self.workflow.mode,
             "episodes": [
                 {
                     "episode_id": r["episode_id"],
@@ -308,13 +365,15 @@ class ProjectPipeline:
                     "vbench_mean": r["qa"]["episode_report"]["vbench_mean"],
                     "utmos_mean": r["qa"]["episode_report"]["utmos_mean"],
                     "syncnet_offset_max": r["qa"]["episode_report"]["syncnet_offset_max"],
+                    "seven_dim_qa": r.get("seven_dim_qa"),
+                    "awaiting_review": r.get("awaiting_review", False),
                 }
                 for r in episode_results
             ],
             "continuity": cc_resp.outputs,
+            "exports": export_manifests,
         }
         self.ctx.storage.write_json(f"{cfg.project_id}/99_manifest.json", manifest)
-        # Master orchestrator end event
         MasterOrchestratorAgent(self.ctx).run(
             AgentRunRequest(
                 inputs={"action": "released", "payload": manifest},
@@ -322,7 +381,12 @@ class ProjectPipeline:
                 seed=cfg.seed,
             )
         )
-        return {"status": "released", "manifest": manifest, "episode_results": episode_results}
+        return {
+            "status": "released",
+            "manifest": manifest,
+            "episode_results": episode_results,
+            "exports": export_manifests,
+        }
 
     def _emit_state(self, project_id: str, state: ProjectState) -> None:
         self.ctx.bus.publish(

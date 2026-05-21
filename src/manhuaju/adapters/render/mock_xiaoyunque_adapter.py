@@ -85,6 +85,7 @@ class MockXiaoyunqueAdapter:
         key_action: str,
         style_sha: str,
         model_tier: str = "pro",
+        reference_images: list[str] | None = None,
     ) -> str:
         if idem_key in self._idem:
             return self._idem[idem_key]
@@ -113,6 +114,7 @@ class MockXiaoyunqueAdapter:
                 key_action=key_action,
                 style_sha=style_sha,
                 model_tier=model_tier,
+                reference_images=list(reference_images or []),
             ),
         )
         self._idem[idem_key] = task_id

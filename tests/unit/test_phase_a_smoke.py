@@ -72,7 +72,7 @@ def test_budget_tier_S() -> None:
 
 
 def test_failure_table_complete() -> None:
-    assert len(TABLE) == 20
+    assert len(TABLE) == 30
     for fm in FailureMode:
         assert fm in TABLE
     assert RETRY_BUDGETS["shot"] == 3

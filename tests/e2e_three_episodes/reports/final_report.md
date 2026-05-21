@@ -1,6 +1,6 @@
 # Pilot 验收报告 — 漫剧 Autopilot M2
 
-**生成时间** : 2026-05-16T16:06:50.832491+00:00
+**生成时间** : 2026-05-21T16:08:29.026948+00:00
 **项目 ID**  : pilot_xiaoyunque_001
 **Blueprint SHA** : `42bba513fb011ac4…`
 **Plan SHA**      : `fe02917a6abd50af…`
@@ -18,7 +18,7 @@
 | REQ-PILOT-004 | VBench Subject ≥ 0.85 | ✅ PASS | [0.9116935933214807, 0.9136914351716254, 0.9206377208318477] |
 | REQ-PILOT-005 | UTMOS mean ≥ 4.0 | ✅ PASS | [4.335009823876659, 4.396431407984369, 4.191073964579842] |
 | REQ-PILOT-006 | SyncNet 偏移 ≤ 2 帧 | ✅ PASS | 1.0 |
-| REQ-PILOT-007 | 单集 ≤ 5 min + ≤ 0 ¥/集 | ✅ PASS | {"runtime_s": 12.57220126666713, "credits": 0} |
+| REQ-PILOT-007 | 单集 ≤ 5 min + ≤ 0 ¥/集 | ✅ PASS | {"runtime_s": 137.0745503666664, "credits": 0} |
 | REQ-PILOT-008 | final_report.md 自动生成 | ✅ PASS |  |
 | REQ-PILOT-009 | Chaos 注入 5xx 一次仍恢复 | ✅ PASS |  |
 | REQ-PILOT-010 | Determinism ≥ 95% | ✅ PASS | 1.0 |

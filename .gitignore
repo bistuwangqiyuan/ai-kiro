@@ -6,6 +6,7 @@ __pycache__/
 venv/
 .env
 .env.*
+!.env.example
 
 # pytest / coverage
 .pytest_cache/
@@ -26,3 +27,8 @@ tools/smoke/_live_run.log
 tools/smoke/_live_pytest.log
 .cursor/
 .claude/
+
+# local debug / runtime
+debug.log
+api_data/
+test_body.json

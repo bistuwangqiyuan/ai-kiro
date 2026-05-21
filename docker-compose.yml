@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      MANHUAJU_API_DATA: /data
+      MANHUAJU_LIVE_MODE: mock
+    volumes:
+      - ./api_data:/data
+    restart: unless-stopped

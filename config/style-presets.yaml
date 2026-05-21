@@ -1,5 +1,6 @@
 cinematic_2d_v1:
   name: "Cinematic 2D v1"
+  genre: "general"
   base_palette:
     - "#0a1f3a"
     - "#7393b3"
@@ -13,3 +14,64 @@ cinematic_2d_v1:
   aspect_ratio: "9:16"
   resolution: "1080p"
   duration_units: [5, 10, 15]
+  subtitle_font: "Noto Sans CJK SC"
+
+ancient_chinese_v1:
+  name: "古风仙侠"
+  genre: "ancient"
+  base_palette: ["#1a0f0a", "#8b4513", "#d4af37", "#2f4f4f", "#f5f5dc"]
+  fps: 24
+  aspect_ratio: "9:16"
+  resolution: "1080p"
+  duration_units: [5, 10, 15]
+  subtitle_font: "SimSun"
+
+modern_urban_v1:
+  name: "现代都市"
+  genre: "urban"
+  base_palette: ["#111827", "#3b82f6", "#f97316", "#e5e7eb", "#10b981"]
+  fps: 24
+  aspect_ratio: "9:16"
+  resolution: "1080p"
+  duration_units: [5, 10, 15]
+  subtitle_font: "Microsoft YaHei"
+
+sweet_romance_v1:
+  name: "甜宠恋爱"
+  genre: "romance"
+  base_palette: ["#fce7f3", "#f472b6", "#fda4af", "#fff1f2", "#fb7185"]
+  fps: 24
+  aspect_ratio: "9:16"
+  resolution: "1080p"
+  duration_units: [5, 10, 15]
+  subtitle_font: "PingFang SC"
+
+suspense_thriller_v1:
+  name: "悬疑惊悚"
+  genre: "suspense"
+  base_palette: ["#0b0f19", "#1f2937", "#6b7280", "#ef4444", "#111827"]
+  fps: 24
+  aspect_ratio: "9:16"
+  resolution: "1080p"
+  duration_units: [5, 10, 15]
+  subtitle_font: "SimHei"
+
+xuanhuan_fantasy_v1:
+  name: "玄幻热血"
+  genre: "xuanhuan"
+  base_palette: ["#1e1b4b", "#6366f1", "#f59e0b", "#22d3ee", "#312e81"]
+  fps: 24
+  aspect_ratio: "9:16"
+  resolution: "1080p"
+  duration_units: [5, 10, 15]
+  subtitle_font: "Noto Sans CJK SC"
+
+cyberpunk_neon_v1:
+  name: "赛博霓虹"
+  genre: "cyberpunk"
+  base_palette: ["#0f172a", "#06b6d4", "#d946ef", "#f43f5e", "#22c55e"]
+  fps: 24
+  aspect_ratio: "9:16"
+  resolution: "1080p"
+  duration_units: [5, 10, 15]
+  subtitle_font: "Arial"

@@ -35,6 +35,16 @@ TABLE: dict[FailureMode, Strategy] = {
     FailureMode.F018_VOICE_CONSENT: Strategy("hard_fail", "project"),
     FailureMode.F019_MIME_MISMATCH: Strategy("hard_fail", "project"),
     FailureMode.F020_REDLINE_INPUT: Strategy("hard_fail", "project"),
+    FailureMode.F021_SEVEN_DIM_FAIL: Strategy("local_redraw", "shot"),
+    FailureMode.F022_INTENT_MISMATCH: Strategy("prompt_tweak", "shot"),
+    FailureMode.F023_STYLE_DRIFT: Strategy("consistency_refresh", "char_refs"),
+    FailureMode.F024_LOCAL_REDRAW: Strategy("local_redraw", "shot"),
+    FailureMode.F025_PROMPT_TWEAK: Strategy("prompt_tweak", "shot"),
+    FailureMode.F026_FULL_RESUBMIT: Strategy("full_resubmit", "shot"),
+    FailureMode.F027_SCENE_REF_MISSING: Strategy("regen_reference_assets", "scene"),
+    FailureMode.F028_PROP_REF_MISSING: Strategy("regen_reference_assets", "scene"),
+    FailureMode.F029_DISTRIBUTION_FAIL: Strategy("backoff_retry", "episode"),
+    FailureMode.F030_REVIEW_REJECTED: Strategy("full_resubmit", "episode"),
 }
 
 

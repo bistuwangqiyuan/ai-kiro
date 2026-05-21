@@ -26,6 +26,7 @@ import httpx
 from manhuaju.adapters.llm.mock_llm_adapter import MockLLMAdapter
 from manhuaju.core.cost_tracker import CostEntry, CostTracker, now_s
 from manhuaju.core.provider_settings import ProviderEndpoint, ProviderSettings
+from manhuaju.utils.logging import log_event
 
 
 class _AllProvidersFailed(RuntimeError):
@@ -246,6 +247,13 @@ class RealLLMAdapter:
                 # 4xx / 5xx — record + try next attempt or next provider
                 err = f"HTTP {r.status_code}"
                 last_err = RuntimeError(err)
+                log_event(
+                    "manhuaju.event.provider.degraded",
+                    provider=ep.name,
+                    operation=op,
+                    status_code=r.status_code,
+                    category=_degrade_category(r.status_code),
+                )
                 self._cost.record(
                     CostEntry(
                         timestamp_s=time.time(),
@@ -404,3 +412,15 @@ def _merge_blueprint(scaffold: dict[str, Any], enriched: dict[str, Any]) -> dict
     if isinstance(enriched.get("themes"), list) and enriched["themes"]:
         scaffold["themes"] = [str(t) for t in enriched["themes"][:5]]
     return scaffold
+
+
+def _degrade_category(status_code: int) -> str:
+    if status_code == 402:
+        return "quota_exhausted"
+    if status_code == 429:
+        return "rate_limited"
+    if status_code == 400:
+        return "bad_request"
+    if status_code >= 500:
+        return "server_error"
+    return "client_error"

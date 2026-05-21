@@ -53,7 +53,7 @@
         "label": "单集 ≤ 5 min + ≤ 0 ¥/集",
         "pass": true,
         "values": {
-          "runtime_s": 12.57220126666713,
+          "runtime_s": 137.0745503666664,
           "credits": 0
         }
       },
@@ -99,6 +99,7 @@
     "blueprint_sha": "42bba513fb011ac4dd56d02ad15be99b30ff70d97280a71d413c8af3e933803f",
     "plan_sha": "fe02917a6abd50af493ded0ea7a7d2f7f575dcd4e8e6c661f660916930bf89d4",
     "style_sha": "c5c93fe2a1db68b9ac1f8959167b639ec09590b3a50a31386018e4d1ed02829d",
+    "workflow_mode": "autopilot",
     "episodes": [
       {
         "episode_id": "ep01",
@@ -110,7 +111,95 @@
         "arcface_mean": 0.9977737279607846,
         "vbench_mean": 0.9116935933214807,
         "utmos_mean": 4.335009823876659,
-        "syncnet_offset_max": 1.0
+        "syncnet_offset_max": 1.0,
+        "seven_dim_qa": {
+          "dimensions": {
+            "structure": 9.1,
+            "style_consistency": 8.91,
+            "detail_completeness": 8.74,
+            "clarity": 9.05,
+            "color_harmony": 8.61,
+            "no_breakdown": 8.93,
+            "intent_match": 8.89
+          },
+          "per_shot": {
+            "ep01_sh001": {
+              "structure": 9.4,
+              "style_consistency": 8.95,
+              "detail_completeness": 8.79,
+              "clarity": 8.87,
+              "color_harmony": 8.17,
+              "no_breakdown": 8.71,
+              "intent_match": 9.59
+            },
+            "ep01_sh002": {
+              "structure": 8.74,
+              "style_consistency": 8.82,
+              "detail_completeness": 8.36,
+              "clarity": 9.56,
+              "color_harmony": 8.19,
+              "no_breakdown": 8.75,
+              "intent_match": 9.58
+            },
+            "ep01_sh011": {
+              "structure": 9.28,
+              "style_consistency": 9.47,
+              "detail_completeness": 9.08,
+              "clarity": 8.59,
+              "color_harmony": 8.47,
+              "no_breakdown": 9.01,
+              "intent_match": 8.3
+            },
+            "ep01_sh012": {
+              "structure": 8.42,
+              "style_consistency": 9.14,
+              "detail_completeness": 8.28,
+              "clarity": 9.4,
+              "color_harmony": 8.49,
+              "no_breakdown": 8.93,
+              "intent_match": 8.76
+            },
+            "ep01_sh013": {
+              "structure": 8.98,
+              "style_consistency": 8.38,
+              "detail_completeness": 9.56,
+              "clarity": 8.59,
+              "color_harmony": 9.08,
+              "no_breakdown": 8.5,
+              "intent_match": 8.79
+            },
+            "ep01_sh021": {
+              "structure": 9.45,
+              "style_consistency": 8.72,
+              "detail_completeness": 9.27,
+              "clarity": 8.98,
+              "color_harmony": 8.81,
+              "no_breakdown": 9.56,
+              "intent_match": 8.7
+            },
+            "ep01_sh022": {
+              "structure": 9.67,
+              "style_consistency": 8.94,
+              "detail_completeness": 8.14,
+              "clarity": 9.36,
+              "color_harmony": 8.19,
+              "no_breakdown": 9.34,
+              "intent_match": 9.16
+            },
+            "ep01_sh023": {
+              "structure": 8.86,
+              "style_consistency": 8.85,
+              "detail_completeness": 8.44,
+              "clarity": 9.08,
+              "color_harmony": 9.44,
+              "no_breakdown": 8.66,
+              "intent_match": 8.23
+            }
+          },
+          "pass_all": true,
+          "min_dimension": 8.61
+        },
+        "awaiting_review": false
       },
       {
         "episode_id": "ep02",
@@ -122,7 +211,95 @@
         "arcface_mean": 0.9977737279607846,
         "vbench_mean": 0.9136914351716254,
         "utmos_mean": 4.396431407984369,
-        "syncnet_offset_max": 1.0
+        "syncnet_offset_max": 1.0,
+        "seven_dim_qa": {
+          "dimensions": {
+            "structure": 8.95,
+            "style_consistency": 8.83,
+            "detail_completeness": 8.81,
+            "clarity": 8.72,
+            "color_harmony": 8.73,
+            "no_breakdown": 8.9,
+            "intent_match": 9.07
+          },
+          "per_shot": {
+            "ep02_sh001": {
+              "structure": 9.26,
+              "style_consistency": 8.8,
+              "detail_completeness": 8.46,
+              "clarity": 8.97,
+              "color_harmony": 8.49,
+              "no_breakdown": 8.7,
+              "intent_match": 8.51
+            },
+            "ep02_sh002": {
+              "structure": 9.0,
+              "style_consistency": 9.39,
+              "detail_completeness": 9.34,
+              "clarity": 8.88,
+              "color_harmony": 8.23,
+              "no_breakdown": 8.79,
+              "intent_match": 9.2
+            },
+            "ep02_sh011": {
+              "structure": 8.75,
+              "style_consistency": 9.13,
+              "detail_completeness": 8.12,
+              "clarity": 8.61,
+              "color_harmony": 8.12,
+              "no_breakdown": 8.9,
+              "intent_match": 9.36
+            },
+            "ep02_sh012": {
+              "structure": 8.48,
+              "style_consistency": 9.1,
+              "detail_completeness": 9.42,
+              "clarity": 9.12,
+              "color_harmony": 9.33,
+              "no_breakdown": 8.57,
+              "intent_match": 9.15
+            },
+            "ep02_sh013": {
+              "structure": 8.84,
+              "style_consistency": 8.97,
+              "detail_completeness": 8.24,
+              "clarity": 8.47,
+              "color_harmony": 8.38,
+              "no_breakdown": 9.74,
+              "intent_match": 9.13
+            },
+            "ep02_sh021": {
+              "structure": 9.57,
+              "style_consistency": 8.55,
+              "detail_completeness": 9.43,
+              "clarity": 8.29,
+              "color_harmony": 8.42,
+              "no_breakdown": 9.37,
+              "intent_match": 8.65
+            },
+            "ep02_sh022": {
+              "structure": 8.7,
+              "style_consistency": 8.55,
+              "detail_completeness": 8.12,
+              "clarity": 9.2,
+              "color_harmony": 9.34,
+              "no_breakdown": 8.77,
+              "intent_match": 9.08
+            },
+            "ep02_sh023": {
+              "structure": 9.0,
+              "style_consistency": 8.17,
+              "detail_completeness": 9.34,
+              "clarity": 8.2,
+              "color_harmony": 9.5,
+              "no_breakdown": 8.34,
+              "intent_match": 9.48
+            }
+          },
+          "pass_all": true,
+          "min_dimension": 8.72
+        },
+        "awaiting_review": false
       },
       {
         "episode_id": "ep03",
@@ -134,7 +311,41 @@
         "arcface_mean": 0.9977737279607846,
         "vbench_mean": 0.9206377208318477,
         "utmos_mean": 4.191073964579842,
-        "syncnet_offset_max": 1.0
+        "syncnet_offset_max": 1.0,
+        "seven_dim_qa": {
+          "dimensions": {
+            "structure": 8.51,
+            "style_consistency": 8.72,
+            "detail_completeness": 8.59,
+            "clarity": 8.71,
+            "color_harmony": 8.87,
+            "no_breakdown": 8.55,
+            "intent_match": 9.16
+          },
+          "per_shot": {
+            "ep03_sh001": {
+              "structure": 8.3,
+              "style_consistency": 9.12,
+              "detail_completeness": 8.49,
+              "clarity": 8.8,
+              "color_harmony": 8.93,
+              "no_breakdown": 8.56,
+              "intent_match": 9.44
+            },
+            "ep03_sh002": {
+              "structure": 8.72,
+              "style_consistency": 8.32,
+              "detail_completeness": 8.7,
+              "clarity": 8.61,
+              "color_harmony": 8.81,
+              "no_breakdown": 8.55,
+              "intent_match": 8.88
+            }
+          },
+          "pass_all": true,
+          "min_dimension": 8.51
+        },
+        "awaiting_review": false
       }
     ],
     "continuity": {
@@ -170,6 +381,29 @@
         "ep02",
         "ep03"
       ]
-    }
+    },
+    "exports": [
+      {
+        "episode_id": "ep01",
+        "platform": "douyin",
+        "mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_douyin.mp4",
+        "cover": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_cover.png",
+        "copy_pack": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_copy_pack.json"
+      },
+      {
+        "episode_id": "ep02",
+        "platform": "douyin",
+        "mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_douyin.mp4",
+        "cover": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_cover.png",
+        "copy_pack": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_copy_pack.json"
+      },
+      {
+        "episode_id": "ep03",
+        "platform": "douyin",
+        "mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_douyin.mp4",
+        "cover": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_cover.png",
+        "copy_pack": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_copy_pack.json"
+      }
+    ]
   }
 }

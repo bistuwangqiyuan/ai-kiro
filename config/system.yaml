@@ -46,3 +46,10 @@ mock:
   max_repairs: 3
   resolution: "720p"
   fps: 12
+workflow:
+  mode: autopilot          # autopilot | supervised
+  candidates_per_shot: 3
+  stages: [analyze, assets, prompts, draw, rough_cut, fine_cut]
+distribution:
+  default_platform: douyin  # douyin | kuaishou | weixin
+  watermark: false

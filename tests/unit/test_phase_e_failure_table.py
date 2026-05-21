@@ -56,6 +56,16 @@ def ctx(tmp_path: Path) -> AgentContext:
         (FailureMode.F018_VOICE_CONSENT, "hard_fail", "project"),
         (FailureMode.F019_MIME_MISMATCH, "hard_fail", "project"),
         (FailureMode.F020_REDLINE_INPUT, "hard_fail", "project"),
+        (FailureMode.F021_SEVEN_DIM_FAIL, "local_redraw", "shot"),
+        (FailureMode.F022_INTENT_MISMATCH, "prompt_tweak", "shot"),
+        (FailureMode.F023_STYLE_DRIFT, "consistency_refresh", "char_refs"),
+        (FailureMode.F024_LOCAL_REDRAW, "local_redraw", "shot"),
+        (FailureMode.F025_PROMPT_TWEAK, "prompt_tweak", "shot"),
+        (FailureMode.F026_FULL_RESUBMIT, "full_resubmit", "shot"),
+        (FailureMode.F027_SCENE_REF_MISSING, "regen_reference_assets", "scene"),
+        (FailureMode.F028_PROP_REF_MISSING, "regen_reference_assets", "scene"),
+        (FailureMode.F029_DISTRIBUTION_FAIL, "backoff_retry", "episode"),
+        (FailureMode.F030_REVIEW_REJECTED, "full_resubmit", "episode"),
     ],
 )
 def test_failure_mode_decision_table_mapping(
@@ -66,8 +76,8 @@ def test_failure_mode_decision_table_mapping(
     assert s.target == expected_target
 
 
-def test_failure_mode_table_complete_20() -> None:
-    assert len(TABLE) == 20
+def test_failure_mode_table_complete_30() -> None:
+    assert len(TABLE) == 30
     assert {fm for fm in FailureMode} == set(TABLE.keys())
 
 

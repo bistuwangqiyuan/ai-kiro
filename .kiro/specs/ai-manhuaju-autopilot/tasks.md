@@ -1469,3 +1469,38 @@ gantt
 
 > 本 Annex 仅作为 traceability 完备性补全；编号、责任 Agent、产物路径
 > 均与 §3 已枚举 Task 对齐，没有引入新 Task。
+
+---
+
+## 15. v2 六步工作流 / QA7 / 分发 / API 映射（requirements-workflow-v2.md）
+
+| REQ-ID | 主要承载 Task | 绑定备注 |
+| --- | --- | --- |
+| REQ-WF-001 | T-0801 | `WorkflowStage` + `emit_workflow_stage` |
+| REQ-WF-002 | T-0802 | StoryArchitect + EpisodePlanner + DialogueOptimizerAgent |
+| REQ-WF-003 | T-0803 | ReferenceAsset + SceneAsset + PropAsset + asset_manifest.json |
+| REQ-WF-004 | T-0804 | StoryboardDirector + video_prompt clauses |
+| REQ-WF-005 | T-0805 | RenderOrchestrator multi-candidate + i2v reference_images |
+| REQ-WF-006 | T-0806 | rough_cut.py + fine_cut.py |
+| REQ-QA7-001 | T-0810 | services/seven_dim_qa.py structure |
+| REQ-QA7-002 | T-0810 | style_consistency score |
+| REQ-QA7-003 | T-0810 | detail_completeness score |
+| REQ-QA7-004 | T-0810 | clarity score |
+| REQ-QA7-005 | T-0810 | color_harmony score |
+| REQ-QA7-006 | T-0810 | no_breakdown score |
+| REQ-QA7-007 | T-0810 | intent_match score |
+| REQ-DIST-001 | T-0820 | services/distribution transcode presets |
+| REQ-DIST-002 | T-0820 | cover PNG extraction |
+| REQ-DIST-003 | T-0820 | optional watermark overlay |
+| REQ-DIST-004 | T-0820 | copy_pack.json |
+| REQ-MODE-supervised | T-0830 | ReviewGate + API review endpoint |
+| REQ-MODE-autopilot | T-0830 | default workflow.mode |
+| REQ-API-001 | T-0840 | FastAPI /v1/projects |
+| REQ-API-002 | T-0840 | BackgroundTasks + SQLiteRepo job queue |
+| REQ-API-003 | T-0840 | POST review endpoint |
+| REQ-API-004 | T-0840 | /health + Dockerfile + railway.toml |
+| REQ-AGENT-v2-001 | T-0802 | DialogueOptimizerAgent |
+| REQ-AGENT-v2-002 | T-0803 | SceneAssetAgent |
+| REQ-AGENT-v2-003 | T-0803 | PropAssetAgent |
+| REQ-AGENT-v2-004 | T-0820 | DistributionAgent |
+

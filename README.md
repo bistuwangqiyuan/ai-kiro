@@ -1,12 +1,46 @@
 # 漫剧 Autopilot · M2 Mock + M3 Live 双里程碑实现
 
-> 端到端、零人工、按 Spec 落地的 AI 漫剧生成管线。本仓库已完成 **M2**（3 集 Mock E2E）+ **M3**（1 集 / **3 集** Live，真实 LLM / WanX 视频 / CosyVoice TTS），全部 12 条 Pilot 验收门在对应场景下可全绿。
+> 端到端、零人工（默认 Autopilot）、按 Spec 落地的 AI 漫剧生成管线。本仓库已完成 **M2**（3 集 Mock E2E）+ **M3**（Live）+ **v2 六步商业工作流**（粗剪/精剪分离、7 维 QA、分发导出、FastAPI + Docker/Railway）。
 
 ---
 
 ## 0. 一句话定位
 
-输入一篇小说 → 自动产出 3 集人物一致的漫剧视频 + 一份 12 KPI 全绿的验收报告，**全过程没有任何人工节点**。
+输入一篇小说 → 自动产出 3 集人物一致的漫剧视频 + 平台导出包 + 12 KPI 验收报告，**默认 Autopilot 零人工**；可选 `workflow.mode=supervised` 在 Step 6 启用 ReviewGate。
+
+### 1.5 六步商业工作流（v2）
+
+| 步骤 | 阶段 | 主要 Agent / 模块 |
+| --- | --- | --- |
+| 1 | 剧本分析 | StoryArchitect + EpisodePlanner + DialogueOptimizer |
+| 2 | 人物/场景/道具资产 | CharacterBible + Reference/Scene/Prop Asset |
+| 3 | 分镜提示词 | ScriptWriter + StoryboardDirector |
+| 4 | 抽卡生视频 | RenderOrchestrator（N 候选 + i2v refs） |
+| 5 | 粗剪 | `pipelines/rough_cut.py` |
+| 6 | 精剪审核 | `pipelines/fine_cut.py` + 7 维 QA + IterationManager |
+| + | 分发 | DistributionAgent → 抖音/快手 MP4 + cover + copy |
+
+配置见 [`config/system.yaml`](config/system.yaml) 的 `workflow` / `distribution` 块；画风预设见 [`config/style-presets.yaml`](config/style-presets.yaml)（6 套）。
+
+### 1.6 FastAPI 云 API（M4 骨架）
+
+```bash
+pip install -e .
+uvicorn manhuaju.api.app:app --host 0.0.0.0 --port 8080
+curl http://localhost:8080/health
+curl -X POST http://localhost:8080/v1/projects -H "Content-Type: application/json" \
+  -d '{"novel_text":"样例小说正文……","episode_count":3}'
+```
+
+Docker / Railway：
+
+```bash
+docker compose up --build
+# Railway: 连接仓库后读取 railway.toml，设置 MANHUAJU_API_DATA=/data
+```
+
+详见 [`.env.example`](.env.example)、[`Dockerfile`](Dockerfile)、[`docs/requirements_traceability_matrix.md`](docs/requirements_traceability_matrix.md)。
+
 
 ---
 
@@ -168,7 +202,7 @@ flowchart LR
 
 1. **P-1 自动驾驶 / Autopilot Only**：管线中无任何"人工 review/approve"节点；`tools/lint/forbidden_terms.py` 与 `test_no_human_path.py` 双证。
 2. **角色一致性优先**：`(char_id, outfit_id)` 锁住 face/outfit palette，跨集 ArcFace ≥ 0.92。
-3. **决策表驱动的修复**：F-001..F-020 落在 [`src/manhuaju/core/failure_modes.py`](src/manhuaju/core/failure_modes.py)，50+ 单测覆盖（[`tests/unit/test_phase_e_failure_table.py`](tests/unit/test_phase_e_failure_table.py)）。
+3. **决策表驱动的修复**：F-001..F-030 落在 [`src/manhuaju/core/failure_modes.py`](src/manhuaju/core/failure_modes.py)，50+ 单测覆盖（[`tests/unit/test_phase_e_failure_table.py`](tests/unit/test_phase_e_failure_table.py)）。
 4. **Schema First**：17 个 pydantic v2 模型，全部 `extra=forbid` + `frozen=True`（[`src/manhuaju/schemas/__init__.py`](src/manhuaju/schemas/__init__.py)）。
 5. **Provenance Chain**：每个工件 hash 入链（[`src/manhuaju/core/provenance.py`](src/manhuaju/core/provenance.py)），任何写入都可重放校验。
 
@@ -216,9 +250,10 @@ src/manhuaju/
   schemas/__init__.py                # 17 个 pydantic v2 模型
   core/                              # agent_base / event_bus / budget_service / state_machine / checkpoint / storage / seed / failure_modes / provenance
   adapters/                          # llm / render / tts / music / qa / moderation / embedding / db / circuit
-  agents/                            # 14 个 Agent (StoryArchitect / EpisodePlanner / CharacterBible / ReferenceAsset / VisualStyle / ScriptWriter / StoryboardDirector / VoiceDirector / MusicDirector / RenderOrchestrator / QAReviewer / ContinuityChecker / IterationManager / MasterOrchestrator)
-  pipelines/                         # project_flow / episode_flow / repair_flow / postprod
-  services/                          # kpi calculator
+  agents/                            # 18 个 Agent (+ DialogueOptimizer / SceneAsset / PropAsset / Distribution)
+  pipelines/                         # project_flow / episode_flow / rough_cut / fine_cut / postprod
+  services/                          # kpi + seven_dim_qa + distribution
+  api/                               # FastAPI /v1/projects
   reporting/                         # final_report 生成器
   utils/                             # canonical_json / paths / logging
 scripts/                             # run_pilot / build_traceability_matrix

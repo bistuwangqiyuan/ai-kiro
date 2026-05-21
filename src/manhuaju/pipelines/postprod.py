@@ -184,21 +184,20 @@ def episode_postprod(
     episode_id: str,
     caption: str = "",
 ) -> Path:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    raw = out_dir / f"{episode_id}_raw.mp4"
-    concat_shots(shot_mp4s, raw)
-    captioned = raw
-    if caption:
-        cap_path = out_dir / f"{episode_id}_caption.mp4"
-        burn_subtitle(raw, caption, cap_path)
-        captioned = cap_path
-    if bgm_wav and Path(bgm_wav).exists():
-        normed = out_dir / f"{episode_id}_bgm_norm.wav"
-        normalise_loudness(bgm_wav, normed)
-        final = out_dir / f"{episode_id}.mp4"
-        mux_video_audio(captioned, normed, final)
-        return final
-    final = out_dir / f"{episode_id}.mp4"
-    if final != captioned:
-        captioned.replace(final)
-    return final
+    """Backward-compatible wrapper: rough cut then fine cut."""
+    from manhuaju.pipelines.fine_cut import fine_cut_episode
+    from manhuaju.pipelines.rough_cut import rough_cut_episode
+
+    rough = rough_cut_episode(
+        shot_mp4s=shot_mp4s,
+        bgm_wav=bgm_wav,
+        out_dir=out_dir,
+        episode_id=episode_id,
+    )
+    return fine_cut_episode(
+        rough_mp4=rough,
+        bgm_wav=bgm_wav,
+        out_dir=out_dir,
+        episode_id=episode_id,
+        fallback_caption=caption,
+    )

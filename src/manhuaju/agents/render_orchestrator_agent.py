@@ -1,8 +1,9 @@
-"""RenderOrchestratorAgent — submits + polls Xiaoyunque/Seedance (REQ-RO-001..010)."""
+"""RenderOrchestratorAgent — multi-candidate draw + i2v refs (REQ-RO-001..010, REQ-WF-005)."""
 
 from __future__ import annotations
 
 import hashlib
+from typing import Any
 
 from manhuaju.adapters.render.mock_seedance_adapter import MockSeedanceAdapter
 from manhuaju.adapters.render.mock_xiaoyunque_adapter import (
@@ -11,6 +12,7 @@ from manhuaju.adapters.render.mock_xiaoyunque_adapter import (
 )
 from manhuaju.core.agent_base import AgentContext, AgentRunRequest, AgentRunResponse, BaseAgent
 from manhuaju.core.seed import shot_seed
+from manhuaju.services.seven_dim_qa import score_shot
 
 
 class RenderOrchestratorAgent(BaseAgent):
@@ -27,6 +29,108 @@ class RenderOrchestratorAgent(BaseAgent):
         self.xy = xy
         self.seedance = seedance
 
+    def _refs_for_shot(
+        self,
+        shot: dict[str, Any],
+        reference_map: dict[str, list[str]],
+    ) -> list[str]:
+        refs: list[str] = []
+        for ch in shot.get("characters", []):
+            cid = ch.get("char_id")
+            if cid and cid in reference_map:
+                refs.extend(reference_map[cid][:2])
+        loc = (shot.get("palette_ref") or ["loc_default"])[0]
+        scene_key = f"scene:{loc}"
+        if scene_key in reference_map:
+            refs.extend(reference_map[scene_key][:1])
+        return refs
+
+    def _render_one(
+        self,
+        *,
+        shot: dict[str, Any],
+        style_sha: str,
+        episode_seed: int,
+        resolution: str,
+        fps: int,
+        retry_counts: dict[str, int],
+        candidate_idx: int,
+        reference_images: list[str],
+        req: AgentRunRequest,
+    ) -> dict[str, Any]:
+        shot_id = shot["shot_id"]
+        seed = shot_seed(episode_seed, shot_id, retry_counts.get(shot_id, 0) + candidate_idx)
+        prompt = " | ".join(shot["prompt_brief"]["clauses"])
+        if reference_images:
+            prompt = f"{prompt} | ref_images:{len(reference_images)}"
+        prompt_sha = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+        idem = f"{shot_id}:{retry_counts.get(shot_id, 0)}:{candidate_idx}:{prompt_sha[:12]}"
+        output_uri: str | None = None
+        degraded = False
+        metadata = None
+        submit_kwargs = dict(
+            idem_key=idem,
+            shot_id=shot_id,
+            scene_id=shot["scene_id"],
+            prompt=prompt,
+            prompt_sha=prompt_sha,
+            seed=seed,
+            duration_s=int(shot["target_seconds"]),
+            fps=fps,
+            resolution=resolution,
+            characters=shot["characters"],
+            location_id=shot.get("palette_ref", ["loc_default"])[0],
+            mood=shot["mood"],
+            key_action=shot["key_action"],
+            style_sha=style_sha,
+            reference_images=reference_images,
+        )
+        for attempt in range(3):
+            try:
+                task_id = self.xy.submit(**submit_kwargs)
+                snap = self.xy.poll(task_id)
+                if snap["status"] == "succeeded":
+                    output_uri = snap["output_uri"]
+                    metadata = snap["metadata"]
+                    break
+            except XiaoyunqueAPIError as e:
+                self.ctx.bus.publish(
+                    "manhuaju.event.render.api_error",
+                    project_id=req.context.project_id,
+                    episode_id=req.context.episode_id,
+                    shot_id=shot_id,
+                    payload={"status": e.status, "attempt": attempt},
+                )
+                continue
+        if output_uri is None:
+            snap = self.seedance.synthesise(
+                shot_id=shot_id,
+                prompt=prompt,
+                seed=seed,
+                duration_s=int(shot["target_seconds"]),
+                fps=fps,
+                resolution=resolution,
+                characters=shot["characters"],
+                location_id=shot.get("palette_ref", ["loc_default"])[0],
+                mood=shot["mood"],
+                key_action=shot["key_action"],
+                style_sha=style_sha,
+            )
+            output_uri = snap["output_uri"]
+            metadata = snap["metadata"]
+            degraded = True
+        candidate = {
+            "shot_id": shot_id,
+            "candidate_idx": candidate_idx,
+            "output_uri": output_uri,
+            "metadata": metadata,
+            "degraded": degraded,
+            "seed": seed,
+            "reference_images": reference_images,
+        }
+        candidate["qa7"] = score_shot(shot=shot, render=candidate, style_sha=style_sha)
+        return candidate
+
     def run(self, req: AgentRunRequest) -> AgentRunResponse:
         storyboard = req.inputs["storyboard"]
         style_sha: str = req.inputs["style_sha"]
@@ -34,86 +138,56 @@ class RenderOrchestratorAgent(BaseAgent):
         resolution: str = req.inputs.get("resolution", "720p")
         fps: int = int(req.inputs.get("fps", 12))
         retry_counts: dict[str, int] = req.inputs.get("retry_counts", {})
+        candidates_per_shot: int = int(req.inputs.get("candidates_per_shot", 1))
+        reference_map: dict[str, list[str]] = req.inputs.get("reference_map", {})
 
         results = []
         for shot in storyboard["shots"]:
-            shot_id = shot["shot_id"]
-            seed = shot_seed(episode_seed, shot_id, retry_counts.get(shot_id, 0))
-            prompt = " | ".join(shot["prompt_brief"]["clauses"])
-            prompt_sha = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
-            idem = f"{shot_id}:{retry_counts.get(shot_id, 0)}:{prompt_sha[:12]}"
-            output_uri: str | None = None
-            degraded = False
-            metadata = None
-            for attempt in range(3):
-                try:
-                    task_id = self.xy.submit(
-                        idem_key=idem,
-                        shot_id=shot_id,
-                        scene_id=shot["scene_id"],
-                        prompt=prompt,
-                        prompt_sha=prompt_sha,
-                        seed=seed,
-                        duration_s=int(shot["target_seconds"]),
-                        fps=fps,
-                        resolution=resolution,
-                        characters=shot["characters"],
-                        location_id=shot.get("palette_ref", ["loc_default"])[0],
-                        mood=shot["mood"],
-                        key_action=shot["key_action"],
+            refs = self._refs_for_shot(shot, reference_map)
+            candidates: list[dict[str, Any]] = []
+            for cidx in range(max(1, candidates_per_shot)):
+                candidates.append(
+                    self._render_one(
+                        shot=shot,
                         style_sha=style_sha,
+                        episode_seed=episode_seed,
+                        resolution=resolution,
+                        fps=fps,
+                        retry_counts=retry_counts,
+                        candidate_idx=cidx,
+                        reference_images=refs,
+                        req=req,
                     )
-                    snap = self.xy.poll(task_id)
-                    if snap["status"] == "succeeded":
-                        output_uri = snap["output_uri"]
-                        metadata = snap["metadata"]
-                        break
-                except XiaoyunqueAPIError as e:
-                    self.ctx.bus.publish(
-                        "manhuaju.event.render.api_error",
-                        project_id=req.context.project_id,
-                        episode_id=req.context.episode_id,
-                        shot_id=shot_id,
-                        payload={"status": e.status, "attempt": attempt},
-                    )
-                    continue
-            if output_uri is None:
-                # Fall back to Seedance (REQ-EXT-002 / design §8)
-                snap = self.seedance.synthesise(
-                    shot_id=shot_id,
-                    prompt=prompt,
-                    seed=seed,
-                    duration_s=int(shot["target_seconds"]),
-                    fps=fps,
-                    resolution=resolution,
-                    characters=shot["characters"],
-                    location_id=shot.get("palette_ref", ["loc_default"])[0],
-                    mood=shot["mood"],
-                    key_action=shot["key_action"],
-                    style_sha=style_sha,
                 )
-                output_uri = snap["output_uri"]
-                metadata = snap["metadata"]
-                degraded = True
+            best = max(
+                candidates,
+                key=lambda c: sum(c.get("qa7", {}).values()) if c.get("qa7") else 0.0,
+            )
             results.append(
                 {
-                    "shot_id": shot_id,
-                    "output_uri": output_uri,
-                    "metadata": metadata,
-                    "degraded": degraded,
-                    "seed": seed,
+                    "shot_id": shot["shot_id"],
+                    "output_uri": best["output_uri"],
+                    "metadata": best["metadata"],
+                    "degraded": best["degraded"],
+                    "seed": best["seed"],
+                    "candidate_count": len(candidates),
+                    "reference_images": refs,
+                    "qa7": best.get("qa7"),
                 }
             )
-            if output_uri:
+            if best["output_uri"]:
                 self.ctx.provenance.record(
-                    artefact_uri=output_uri,
+                    artefact_uri=best["output_uri"],
                     sha256="0" * 64,
                     size=0,
                     producer_agent=self.name,
-                    seed=seed,
+                    seed=best["seed"],
                 )
         return AgentRunResponse(
             status="succeeded",
             outputs={"shots": results},
-            metrics={"shots": float(len(results)), "degraded": float(sum(1 for r in results if r["degraded"]))},
+            metrics={
+                "shots": float(len(results)),
+                "degraded": float(sum(1 for r in results if r["degraded"])),
+            },
         )
