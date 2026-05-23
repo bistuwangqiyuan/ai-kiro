@@ -1,0 +1,52 @@
+# =============================================================
+# VeFaaS API 函数定义 — 供火山控制台 / OpenAPI 参考
+#
+# 这份配置不是 VeFaaS 直接吃的格式，而是手工创建/调 API 时的字段速查。
+# =============================================================
+
+name: manhuaju-api
+description: AI 漫剧 v4 — FastAPI HTTP 入口（编剧 + 渲染调度 + 控制台）
+
+# 运行时：自定义容器镜像
+runtime: native-custom-container
+
+source:
+  type: image
+  # ⚠️ 由 CI 或本地脚本替换为真实地址
+  image: cr-cn-beijing.volces.com/<你的命名空间>/manhuaju-autopilot:latest
+
+# 容器要监听 $_FC_SERVER_PORT 端口（已通过 Dockerfile CMD 适配）
+port: 8080
+command: []          # 走镜像默认 CMD
+args: []
+
+# 资源（试点期；高峰可调到 4c8g）
+cpu: 2
+memory_mb: 4096
+
+# 函数行为
+trigger:
+  - type: http
+    auth: NoAuth
+    qualifier: LATEST
+
+# 单次调用最长 30 min（视频生成同步等待）
+timeout_s: 1800
+# 单实例最大并发请求数（FastAPI 同步端点 → 1；用 async/threadpool 可调高）
+concurrency: 10
+# 闲置 1 小时后实例回收（再来请求重新冷启动 ~10s）
+idle_keepalive_s: 3600
+# 弹性范围
+min_instances: 0
+max_instances: 10
+
+env:
+  MANHUAJU_LIVE_MODE: live
+  MANHUAJU_API_DATA: /data
+  UVICORN_WORKERS: "2"
+  # 所有 .env 内容通过 VeFaaS Secret/配置中心 注入；不要明文写在这里
+  # 在控制台「函数 → 配置 → 环境变量」处填这些：
+  #   VOLCENGINE_VISUAL_AK / VOLCENGINE_VISUAL_SK
+  #   VOLCENGINE_ARK_API_KEY
+  #   VOLCENGINE_TOS_AK / VOLCENGINE_TOS_SK / VOLCENGINE_TOS_BUCKET
+  #   DASHSCOPE_API_KEY (可选), DEEPSEEK_API_KEY (可选), ...

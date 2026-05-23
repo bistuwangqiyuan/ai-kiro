@@ -53,7 +53,9 @@ ENV PYTHONPATH=/app/src \
     PORT=8080 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    OTEL_SERVICE_NAME=manhuaju-api
+    OTEL_SERVICE_NAME=manhuaju-api \
+    # VeFaaS 容器函数运行时兼容：函数平台会注入 _FC_SERVER_PORT 强制覆盖
+    _FC_SERVER_PORT=8080
 
 WORKDIR /app
 
@@ -89,4 +91,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD curl --fail --silent --max-time 5 http://127.0.0.1:8080/health || exit 1
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["uvicorn", "manhuaju.api.app:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
+# 端口由 $PORT / $_FC_SERVER_PORT 决定（VeFaaS 会覆写）。本地/ECS/K8s 不传时默认 8080。
+CMD ["sh", "-c", "uvicorn manhuaju.api.app:app --host 0.0.0.0 --port ${_FC_SERVER_PORT:-${PORT:-8080}} --workers ${UVICORN_WORKERS:-2}"]
