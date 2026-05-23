@@ -130,11 +130,19 @@ def _probe_volcengine_visual(ak: str, sk: str, region: str) -> tuple[bool, int, 
         except Exception as inner:  # noqa: BLE001
             ms = int((time.time() - t0) * 1000)
             msg = str(inner)
-            if "task" in msg.lower() or "not exist" in msg.lower() or "found" in msg.lower():
+            low = msg.lower()
+            # 业务错误 = AK/SK 签名 OK，只是应用层面问题（任务不存在 / 应用未开通）
+            if "task" in low or "not exist" in low or "found" in low:
                 return True, ms, "ok (expected task-not-found)"
+            # req_key 未开通：AK/SK 是好的，仅需控制台开通 ReqKey 应用
+            if "req_key" in low and ("not" in low or "invalid input parameters" in low):
+                return True, ms, "AK/SK ok — 但 ReqKey 应用未开通，去控制台开通即可"
+            # 签名失败 / 鉴权失败
+            if "signature" in low or "unauthor" in low or "access denied" in low or "401" in msg or "403" in msg:
+                return False, ms, f"AK/SK 鉴权失败: {msg[:100]}"
             return False, ms, f"unexpected: {msg[:120]}"
     except ImportError:
-        return False, 0, "volcengine-python-sdk not installed (pip install volcengine-python-sdk)"
+        return False, 0, "缺少老版 SDK，请执行: pip install volcengine"
     except Exception as e:  # noqa: BLE001
         return False, 0, f"{type(e).__name__}: {e}"
 
