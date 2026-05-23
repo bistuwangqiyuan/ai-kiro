@@ -23,18 +23,12 @@ foreach ($gh_name in $mapping.Keys) {
     $env_src = $mapping[$gh_name]
     $v = $envMap[$env_src]
     if (-not $v) { Write-Host "X .env missing $env_src"; continue }
-    $v | gh secret set $gh_name --repo $repo --body - 2>&1 | Out-Null
-    # gh secret set --body - reads from stdin via pipe
+    # 直接传 --body 字符串，避免 PowerShell 管道给 stdin 自动加 \r\n 污染 secret
+    gh secret set $gh_name --repo $repo --body $v 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "OK secret $gh_name (len=$($v.Length))" -ForegroundColor Green
     } else {
-        # fallback: use --body inline (less secure since shows in process list, but works)
-        gh secret set $gh_name --repo $repo --body $v 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "OK secret $gh_name (fallback)" -ForegroundColor Green
-        } else {
-            Write-Host "X secret $gh_name FAILED" -ForegroundColor Red
-        }
+        Write-Host "X secret $gh_name FAILED" -ForegroundColor Red
     }
 }
 

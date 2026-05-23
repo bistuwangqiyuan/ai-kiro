@@ -122,12 +122,9 @@ if (-not $SkipGhSecrets -and -not $OnlyProvision) {
     }
     foreach ($k in $secrets.Keys) {
         $v = $secrets[$k]
-        $tmp = [IO.Path]::GetTempFileName()
-        try {
-            [IO.File]::WriteAllText($tmp, $v, [Text.UTF8Encoding]::new($false))
-            gh secret set $k --repo $repo < $tmp 2>&1 | Out-Null
-            if ($LASTEXITCODE -eq 0) { OK "secret $k" } else { ERR "secret $k FAILED"; exit 1 }
-        } finally { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+        # 直接 --body 传字符串；不要用 stdin 管道（PS 会加 \r\n 污染 secret 末尾，导致 HMAC 签名错）
+        gh secret set $k --repo $repo --body $v 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { OK "secret $k (len=$($v.Length))" } else { ERR "secret $k FAILED"; exit 1 }
     }
     gh variable set VCR_REGISTRY --repo $repo --body $credInfo.registry 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) { OK "variable VCR_REGISTRY=$($credInfo.registry)" } else { WARN "VCR_REGISTRY failed" }
