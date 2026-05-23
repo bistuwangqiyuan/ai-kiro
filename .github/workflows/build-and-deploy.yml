@@ -99,7 +99,7 @@ jobs:
         run: |
           pip install --quiet volcengine-python-sdk
           python <<'PY'
-          import os
+          import os, sys
           import volcenginesdkcore as core
           import volcenginesdkcr as cr
           cfg = core.Configuration()
@@ -109,12 +109,14 @@ jobs:
           core.Configuration.set_default(cfg)
           api = cr.CRApi()
           r = api.get_authorization_token(cr.GetAuthorizationTokenRequest(registry=os.environ['VCR_REGISTRY']))
-          import os as _os
-          gh_out = _os.environ.get('GITHUB_OUTPUT')
+
+          # `::add-mask::` 必须打到 stdout，不能写进 $GITHUB_OUTPUT 文件
+          print(f"::add-mask::{r.token}", flush=True)
+
+          gh_out = os.environ.get('GITHUB_OUTPUT')
           if gh_out:
               with open(gh_out, 'a') as f:
                   f.write(f"username={r.username}\n")
-                  f.write(f"::add-mask::{r.token}\n")
                   f.write(f"token={r.token}\n")
                   f.write(f"expire={r.expire_time}\n")
           print(f"OK got VCR token for {r.username} (expires {r.expire_time})")
