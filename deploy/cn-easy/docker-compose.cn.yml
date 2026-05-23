@@ -1,0 +1,99 @@
+# =============================================================
+# AI 漫剧 Autopilot v4 — 国内极简单机部署
+#
+# 适用：1 台火山 ECS / 阿里 ECS / 腾讯 CVM（4c8g 起步），不需要 K8s。
+#
+# 用法（在 ECS 上）：
+#   cd /opt/manhuaju && \
+#   cp deploy/cn-easy/.env.cn-easy.example .env && \
+#   nano .env   # 填好 3 把火山 Key + TOS 信息
+#   docker compose -f deploy/cn-easy/docker-compose.cn.yml up -d
+#
+# 服务架构：
+#   - api    : FastAPI（监听 8080，由 caddy 反代）
+#   - worker : 后台任务（拉队列、跑生产线）
+#   - caddy  : 反向代理 + 自动 Let's Encrypt HTTPS（国内 ZeroSSL 兜底）
+# =============================================================
+
+version: "3.9"
+
+services:
+  api:
+    image: ${MANHUAJU_IMAGE:-manhuaju-autopilot:0.4.0}
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: manhuaju-api
+    restart: unless-stopped
+    environment:
+      MANHUAJU_API_DATA: /data
+      MANHUAJU_ENV: prod
+      PORT: "8080"
+    env_file:
+      - ../../.env
+    volumes:
+      - manhuaju_data:/data
+      - manhuaju_models:/app/_models
+      - ../../assets/bgm:/app/assets/bgm:ro       # 本地 BGM 曲库
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    networks: [manhuaju]
+    expose:
+      - "8080"
+
+  worker:
+    image: ${MANHUAJU_IMAGE:-manhuaju-autopilot:0.4.0}
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    container_name: manhuaju-worker
+    restart: unless-stopped
+    command: ["python", "-m", "scripts.run_worker"]
+    environment:
+      MANHUAJU_API_DATA: /data
+      MANHUAJU_ENV: prod
+      MANHUAJU_WORKER: "1"
+      MANHUAJU_WORKER_POLL_S: "5"
+    env_file:
+      - ../../.env
+    volumes:
+      - manhuaju_data:/data
+      - manhuaju_models:/app/_models
+      - ../../assets/bgm:/app/assets/bgm:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [manhuaju]
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: manhuaju-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # 把这两行写在 .env 里：MANHUAJU_DOMAIN=api.example.com （无域名时直接留空，则用 :80）
+      MANHUAJU_DOMAIN: ${MANHUAJU_DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [manhuaju]
+
+networks:
+  manhuaju:
+    driver: bridge
+
+volumes:
+  manhuaju_data:
+  manhuaju_models:
+  caddy_data:
+  caddy_config:

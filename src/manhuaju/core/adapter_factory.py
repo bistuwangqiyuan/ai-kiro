@@ -344,30 +344,51 @@ def build_bundle(
         mock_fallback=mock_tts if fallback else None,
     )
 
-    # ---- Shell 5: Music + SFX ----
+    # ---- Shell 5: Music + SFX (国内默认 local_library + ffmpeg；国际版可切 ElevenLabs) ----
     music_adapter: Any = mock_music
     sfx_adapter: Any = mock_sfx
-    if settings.has_elevenlabs:
+    music_cfg = live_cfg.get("music", {}) or {}
+    sfx_cfg = live_cfg.get("sfx", {}) or {}
+    music_primary = str(music_cfg.get("primary", "local_library"))
+    sfx_primary = str(sfx_cfg.get("primary", "local_synthesis"))
+
+    if music_primary == "local_library":
+        with contextlib.suppress(ImportError):
+            LocalMusicLibraryAdapter = _import(
+                "manhuaju.adapters.music.local_library_adapter",
+                "LocalMusicLibraryAdapter",
+            )
+            music_adapter = LocalMusicLibraryAdapter(
+                library_root=str(music_cfg.get("library_root", "assets/bgm")),
+                cost_tracker=cost,
+            )
+    elif music_primary == "elevenlabs" and settings.has_elevenlabs:
         with contextlib.suppress(ImportError):
             RealElevenLabsMusicAdapter = _import(
                 "manhuaju.adapters.music.real_elevenlabs_music_adapter",
                 "RealElevenLabsMusicAdapter",
             )
+            music_adapter = RealElevenLabsMusicAdapter(
+                settings=settings,
+                cost=cost,
+                config=music_cfg,
+                artefacts_root=music_root,
+                mock_fallback=mock_music if fallback else None,
+            )
+
+    if sfx_primary == "local_synthesis":
+        # MockSFXAdapter 本身就是 ffmpeg 风格的简单合成，国内默认直接复用
+        sfx_adapter = mock_sfx
+    elif sfx_primary == "elevenlabs" and settings.has_elevenlabs:
+        with contextlib.suppress(ImportError):
             RealElevenLabsSFXAdapter = _import(
                 "manhuaju.adapters.sfx.real_elevenlabs_sfx_adapter",
                 "RealElevenLabsSFXAdapter",
             )
-            music_adapter = RealElevenLabsMusicAdapter(
-                settings=settings,
-                cost=cost,
-                config=live_cfg.get("music", {}),
-                artefacts_root=music_root,
-                mock_fallback=mock_music if fallback else None,
-            )
             sfx_adapter = RealElevenLabsSFXAdapter(
                 settings=settings,
                 cost=cost,
-                config=live_cfg.get("sfx", {}),
+                config=sfx_cfg,
                 artefacts_root=sfx_root,
                 mock_fallback=mock_sfx if fallback else None,
             )

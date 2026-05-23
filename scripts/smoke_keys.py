@@ -222,46 +222,57 @@ def run_probes() -> list[ProbeResult]:
     s = get_provider_settings(refresh=True)
     results: list[ProbeResult] = []
 
-    # ---- Required for v4 fast-path ----
-    ok, ms, det = _probe_anthropic(s.anthropic_key)
-    results.append(ProbeResult("Anthropic Claude Opus 4 (Shell 1)", bool(s.anthropic_key), ok, ms, det, required=True))
-
+    # ★★★ 国内必备（v4 国内栈三件套）—— required=True ★★★
     ok, ms, det = _probe_volcengine_visual(s.volcengine_visual_ak, s.volcengine_visual_sk, s.volcengine_visual_region)
-    results.append(ProbeResult("Volcengine Visual SDK (Shell 2+3 ★)", s.has_xiaoyunque, ok, ms, det, required=True))
+    results.append(ProbeResult("[国内必备1] Volcengine Visual (小云雀+即梦+Seedream)", s.has_xiaoyunque, ok, ms, det, required=True))
 
     ok, ms, det = _probe_volcengine_ark(s.volcengine_ark_key)
-    results.append(ProbeResult("Volcengine Ark (Doubao Seed 1.6 + Seedance, Shell 4)", s.has_doubao_vlm, ok, ms, det, required=True))
+    results.append(ProbeResult("[国内必备2] Volcengine Ark (Doubao Seed 1.6 编剧+VLM)", s.has_doubao_vlm, ok, ms, det, required=True))
 
     ok, ms, det = _probe_tos(s.tos.ak, s.tos.sk, s.tos.endpoint, s.tos.bucket, s.tos.region)
-    results.append(ProbeResult("Volcengine TOS (对象存储)", s.has_tos, ok, ms, det, required=True))
+    results.append(ProbeResult("[国内必备3] Volcengine TOS (对象存储)", s.has_tos, ok, ms, det, required=True))
+
+    # ---- 国内可选（任一即可，丰富 LLM 兜底链）----
+    ok, ms, det = _probe_dashscope(s.dashscope_key)
+    results.append(ProbeResult("[国内可选] DashScope 阿里通义 (LLM/TTS/Embedding)", bool(s.dashscope_key), ok, ms, det, required=False))
+
+    seen_names = {"anthropic", "volcengine", "dashscope"}
+    cn_llm_names = {"deepseek", "glm", "moonshot"}
+    for ep in s.llm_endpoints:
+        if ep.name not in cn_llm_names:
+            continue
+        seen_names.add(ep.name)
+        label_map = {"deepseek": "DeepSeek V3.2", "glm": "智谱 GLM-4.5", "moonshot": "月之暗面 Kimi"}
+        ok, ms, det = _probe_openai_compat(ep.name, ep.base_url, ep.api_key, ep.default_model)
+        results.append(ProbeResult(f"[国内可选] {label_map[ep.name]}", True, ok, ms, det, required=False))
+
+    # ---- 国际可选（需境外信用卡；缺失不影响国内栈）----
+    ok, ms, det = _probe_anthropic(s.anthropic_key)
+    results.append(ProbeResult("[国际可选] Anthropic Claude Opus 4 (编剧顶配)", bool(s.anthropic_key), ok, ms, det, required=False))
 
     ok, ms, det = _probe_elevenlabs(s.elevenlabs_key)
-    results.append(ProbeResult("ElevenLabs (Shell 5 Music+SFX)", s.has_elevenlabs, ok, ms, det, required=False))
+    results.append(ProbeResult("[国际可选] ElevenLabs (Music+SFX 顶配)", s.has_elevenlabs, ok, ms, det, required=False))
 
     ok, ms, det = _probe_fal(s.fal_key)
-    results.append(ProbeResult("fal.ai Wan 2.7 FLF (Shell 4)", s.has_fal, ok, ms, det, required=False))
+    results.append(ProbeResult("[国际可选] fal.ai Wan 2.7 FLF (脸锁顶配)", s.has_fal, ok, ms, det, required=False))
 
-    # ---- Fallback chain ----
-    ok, ms, det = _probe_dashscope(s.dashscope_key)
-    results.append(ProbeResult("DashScope (WanX/CosyVoice 兜底)", bool(s.dashscope_key), ok, ms, det, required=False))
-
-    # LLM chain (skip ones already probed)
-    seen_names = {"anthropic", "volcengine", "dashscope"}
+    # 其他备用 LLM
     for ep in s.llm_endpoints:
         if ep.name in seen_names:
             continue
+        seen_names.add(ep.name)
         ok, ms, det = _probe_openai_compat(ep.name, ep.base_url, ep.api_key, ep.default_model)
-        results.append(ProbeResult(f"LLM chain · {ep.name}", True, ok, ms, det, required=False))
+        results.append(ProbeResult(f"[国际可选] LLM 备用 · {ep.name}", True, ok, ms, det, required=False))
 
     return results
 
 
 def render_table(results: list[ProbeResult]) -> str:
-    rows = ["{:<55} {:<6} {:<6} {:>9} {}".format("Provider", "ENABL", "OK", "lat(ms)", "detail")]
-    rows.append("-" * 115)
+    rows = ["{:<60} {:<6} {:<6} {:>9} {}".format("Provider", "ENABL", "OK", "lat(ms)", "detail")]
+    rows.append("-" * 120)
     for r in results:
         rows.append(
-            "{:<55} {:<6} {:<6} {:>9} {}".format(
+            "{:<60} {:<6} {:<6} {:>9} {}".format(
                 r.name + (" ★" if r.required else ""),
                 "Y" if r.enabled else "N",
                 "Y" if r.ok else ("-" if not r.enabled else "N"),
@@ -285,7 +296,8 @@ def main() -> int:
     else:
         print(render_table(results))
         print()
-        print("★ = required for v4 fast-path (小云雀 Agent 2.0 + Claude Opus 4 + TOS + Ark VLM)")
+        print("★ = 国内必备（v4 国内快路径：火山 Visual + Ark Doubao + TOS）")
+        print("    国际可选项缺失不影响国内栈上线，仅在追求顶配画质时再开通。")
 
     if args.strict:
         bad = [r for r in results if r.required and not r.ok]

@@ -192,10 +192,73 @@ class ProviderSettings:
 
 
 def _build_llm_endpoints() -> tuple[ProviderEndpoint, ...]:
-    """LLM endpoints in priority order. Anthropic first for Shell 1 编剧大脑."""
+    """LLM endpoints in priority order — 国产优先（火山方舟 → 阿里 → DeepSeek → GLM → 月之暗面）。
+
+    若用户配置了 ``ANTHROPIC_API_KEY``（境外信用卡用户），Anthropic 会插到队首。
+    """
     eps: list[ProviderEndpoint] = []
 
-    # ★ Shell 1 — Claude Opus 4 (Anthropic native; not OpenAI-compatible)
+    # ★ 国内首选：火山方舟 Doubao Seed 1.6（中文创作能力极强、价格低、走北京机房）
+    if k := os.getenv("VOLCENGINE_API_KEY") or os.getenv("ARK_API_KEY") or os.getenv("VOLCENGINE_ARK_API_KEY"):
+        eps.append(
+            ProviderEndpoint(
+                name="volcengine",
+                api_key=k,
+                base_url="https://ark.cn-beijing.volces.com/api/v3",
+                default_model="doubao-seed-1-6-250615",
+                rpm=60,
+            )
+        )
+
+    # 阿里通义千问 Qwen-Max / Qwen-Plus
+    if k := os.getenv("DASHSCOPE_API_KEY"):
+        eps.append(
+            ProviderEndpoint(
+                name="dashscope",
+                api_key=k,
+                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                default_model="qwen-plus",
+                rpm=60,
+            )
+        )
+
+    # DeepSeek V3.2 / R1
+    if k := os.getenv("DEEPSEEK_API_KEY"):
+        eps.append(
+            ProviderEndpoint(
+                name="deepseek",
+                api_key=k,
+                base_url="https://api.deepseek.com/v1",
+                default_model="deepseek-chat",
+                rpm=60,
+            )
+        )
+
+    # 智谱 GLM-4.5
+    if k := os.getenv("GLM_API_KEY"):
+        eps.append(
+            ProviderEndpoint(
+                name="glm",
+                api_key=k,
+                base_url="https://open.bigmodel.cn/api/paas/v4",
+                default_model="glm-4-flash",
+                rpm=60,
+            )
+        )
+
+    # 月之暗面 Kimi K2
+    if k := os.getenv("MOONSHOT_API_KEY"):
+        eps.append(
+            ProviderEndpoint(
+                name="moonshot",
+                api_key=k,
+                base_url="https://api.moonshot.cn/v1",
+                default_model="moonshot-v1-32k",
+                rpm=20,
+            )
+        )
+
+    # ★ 国际版（境外信用卡用户）：Claude Opus 4 — 编剧大脑顶配
     if k := os.getenv("ANTHROPIC_API_KEY"):
         eps.append(
             ProviderEndpoint(
@@ -209,51 +272,6 @@ def _build_llm_endpoints() -> tuple[ProviderEndpoint, ...]:
             )
         )
 
-    if k := os.getenv("DASHSCOPE_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="dashscope",
-                api_key=k,
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-                default_model="qwen-plus",
-                rpm=60,
-            )
-        )
-
-    # Doubao Seed 1.6 via Ark (also used for VLM via separate adapter)
-    if k := os.getenv("VOLCENGINE_API_KEY") or os.getenv("ARK_API_KEY") or os.getenv("VOLCENGINE_ARK_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="volcengine",
-                api_key=k,
-                base_url="https://ark.cn-beijing.volces.com/api/v3",
-                default_model="doubao-seed-1-6-250615",
-                rpm=60,
-            )
-        )
-
-    if k := os.getenv("DEEPSEEK_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="deepseek",
-                api_key=k,
-                base_url="https://api.deepseek.com/v1",
-                default_model="deepseek-chat",
-                rpm=60,
-            )
-        )
-
-    if k := os.getenv("GLM_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="glm",
-                api_key=k,
-                base_url="https://open.bigmodel.cn/api/paas/v4",
-                default_model="glm-4-flash",
-                rpm=60,
-            )
-        )
-
     if k := os.getenv("GROQ_API_KEY"):
         eps.append(
             ProviderEndpoint(
@@ -262,17 +280,6 @@ def _build_llm_endpoints() -> tuple[ProviderEndpoint, ...]:
                 base_url="https://api.groq.com/openai/v1",
                 default_model="llama-3.3-70b-versatile",
                 rpm=30,
-            )
-        )
-
-    if k := os.getenv("MOONSHOT_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="moonshot",
-                api_key=k,
-                base_url="https://api.moonshot.cn/v1",
-                default_model="moonshot-v1-32k",
-                rpm=20,
             )
         )
 

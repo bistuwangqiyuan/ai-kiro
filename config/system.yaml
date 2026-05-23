@@ -41,18 +41,21 @@ adapters:
 # Live 适配器配置（mode=live|hybrid 时启用）
 # ------------------------------------------------------------
 live:
-  # ---- Shell 1 编剧大脑 ----
+  # ---- Shell 1 编剧大脑（国产优先链） ----
   script:
-    primary: "anthropic_opus"        # Claude Opus 4
-    fallback: "real_llm_chain"       # 走现有 DashScope/Volcengine 链
-    novel_model: "claude-opus-4-20250514"
-    episode_model: "claude-opus-4-20250514"
-    formatter_model: "doubao-seed-1-6-250615"   # 小云雀友好模板格式化（中文优化）
+    # 国内默认：火山方舟 Doubao Seed 1.6 — 中文创作能力极强，价格不到 Claude 的 1/10
+    # 想用 Claude 把 primary 改为 "anthropic_opus" 并填好 ANTHROPIC_API_KEY 即可
+    primary: "ark_doubao_seed_1_6"
+    fallback: "real_llm_chain"       # 走 DashScope/DeepSeek/GLM/月之暗面 链
+    novel_model: "doubao-seed-1-6-250615"
+    episode_model: "doubao-seed-1-6-250615"
+    formatter_model: "doubao-seed-1-6-250615"   # 小云雀友好模板格式化
     max_tokens_novel: 200000
     max_tokens_episode: 32000
 
   llm:
-    providers: ["anthropic", "dashscope", "volcengine", "deepseek", "glm", "groq", "moonshot", "mistral"]
+    # 国内可直连优先；anthropic 仅在 ANTHROPIC_API_KEY 存在时启用
+    providers: ["volcengine", "dashscope", "deepseek", "glm", "moonshot", "anthropic", "groq", "mistral"]
     json_mode: true
     request_timeout_s: 90
     max_retries: 3
@@ -90,9 +93,11 @@ live:
     seven_dim_threshold: 8.0          # 7 维 mean
 
   face_repair:
-    primary: "fal_wan27_flf"          # fal.ai Wan 2.7 首末帧锁脸
-    fallback: "volcengine_seedance"
-    arcface_threshold: 0.78           # 低于则触发 FLF
+    # 国内默认：直接用火山 Seedance 单镜重生（同栈、低延迟、无需境外信用卡）
+    # 想用 fal.ai Wan 2.7 FLF 把 primary 改为 "fal_wan27_flf" 并填 FAL_KEY 即可
+    primary: "volcengine_seedance"
+    fallback: "fal_wan27_flf"         # 国际版兜底；FAL_KEY 缺失时自动跳过
+    arcface_threshold: 0.78           # 低于则触发重生
     cross_episode_threshold: 0.92     # 跨集 ArcFace KPI
 
   consistency:
@@ -108,14 +113,18 @@ live:
     sample_rate: 24000
 
   music:
-    primary: "elevenlabs"             # 版权干净
-    fallback: "mock_harmonic"
+    # 国内默认：本地 CC0 曲库（按情绪/题材选拾，版权干净，零成本零延迟）
+    # 想用 ElevenLabs 把 primary 改为 "elevenlabs" 并填 ELEVENLABS_API_KEY
+    primary: "local_library"
+    fallback: "elevenlabs"
+    library_root: "assets/bgm"
     duration_s: 75
     instrumental: true
 
   sfx:
-    primary: "elevenlabs"
-    fallback: "mock_burst"
+    # 国内默认：ffmpeg 本地合成简单音效（脚步/翻页/风声等模板）
+    primary: "local_synthesis"
+    fallback: "elevenlabs"
     max_cues_per_episode: 12
 
   cover:
@@ -140,7 +149,8 @@ live:
 
   moderation:
     primary: "real_llm_judge"
-    judge_model: "groq:llama-3.3-70b-versatile"
+    # 国内默认：火山方舟 Doubao（合规审核能力强、中文敏感词识别准）
+    judge_model: "doubao-seed-1-6-250615"
 
   # ---- 对象存储 ----
   storage:
@@ -197,7 +207,7 @@ distribution:
 content_safety:
   enabled: true
   sensitive_words_path: "config/sensitive-words.yaml"
-  llm_judge_model: "groq:llama-3.3-70b-versatile"
+  llm_judge_model: "doubao-seed-1-6-250615"   # 国内默认；改写/裁定都走 Doubao
   fail_on_high: true                  # 高敏感词直接中断
   fail_on_medium_after_retry: true    # 中敏感词改写 1 次后仍命中则中断
 
