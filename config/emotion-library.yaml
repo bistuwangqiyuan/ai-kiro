@@ -1,0 +1,104 @@
+# 情绪库 — docx 三节「人物角色」表情库需求
+# 喜怒哀惊羞冷思惧爱 全自动情绪切换
+version: 1
+
+emotions:
+  joy:
+    zh: "喜"
+    aliases: ["开心", "兴奋", "雀跃", "欣喜"]
+    face_prompt_zh: "嘴角上扬，眼睛弯成月牙，眉梢上挑，脸颊微红"
+    face_prompt_en: "mouth slightly open with smile, eyes crinkled, raised eyebrows, blushed cheeks"
+    body_prompt_zh: "肩膀放松，姿态轻盈"
+    camera_hint: "近景或特写，柔光"
+    color_overlay: "warm"
+    music_cue: "uplifting strings"
+
+  anger:
+    zh: "怒"
+    aliases: ["愤怒", "气恼", "暴怒", "震怒"]
+    face_prompt_zh: "眉毛拧紧，瞳孔收缩，嘴角下压，咬牙"
+    face_prompt_en: "furrowed brows, narrowed eyes, clenched jaw, slight teeth show"
+    body_prompt_zh: "紧握拳头，肩膀紧绷"
+    camera_hint: "中近景偏侧，硬光"
+    color_overlay: "high-contrast red shadows"
+    music_cue: "low brass swell"
+
+  sadness:
+    zh: "哀"
+    aliases: ["悲伤", "落泪", "心碎", "哀愁"]
+    face_prompt_zh: "眉毛微皱下垂，眼眶湿润，嘴角下沉"
+    face_prompt_en: "drooping eyebrows, glistening tear-filled eyes, downturned lips"
+    body_prompt_zh: "肩膀下垂，背影微弯"
+    camera_hint: "特写或大特写，柔焦"
+    color_overlay: "cool desaturated blue"
+    music_cue: "soft piano + cello"
+
+  surprise:
+    zh: "惊"
+    aliases: ["震惊", "惊讶", "瞠目"]
+    face_prompt_zh: "眼睛瞪大，瞳孔扩张，嘴巴微张"
+    face_prompt_en: "wide eyes, dilated pupils, parted lips, raised eyebrows"
+    body_prompt_zh: "身体微后仰，单手抬起"
+    camera_hint: "快速 zoom-in 特写 + 顿帧"
+    color_overlay: "stark contrast flash"
+    music_cue: "string stinger"
+
+  shy:
+    zh: "羞"
+    aliases: ["害羞", "脸红", "羞涩", "羞怯"]
+    face_prompt_zh: "脸颊潮红，眼神躲闪，嘴角微抿"
+    face_prompt_en: "blushing cheeks, averted gaze, pursed lips, lowered head"
+    body_prompt_zh: "手指搅衣角，肩膀微缩"
+    camera_hint: "近景柔光，桃花滤镜"
+    color_overlay: "warm pink"
+    music_cue: "music box twinkle"
+
+  cold:
+    zh: "冷"
+    aliases: ["冷淡", "漠然", "疏离"]
+    face_prompt_zh: "眼神冰冷，眉宇平直，嘴角紧绷"
+    face_prompt_en: "icy gaze, neutral brows, tightened lips, expressionless"
+    body_prompt_zh: "背挺直，双手负后"
+    camera_hint: "侧脸中景 + 冷光"
+    color_overlay: "cool teal"
+    music_cue: "minimal pad"
+
+  thoughtful:
+    zh: "思"
+    aliases: ["沉思", "凝神", "若有所思"]
+    face_prompt_zh: "目光放空，眉头微皱"
+    face_prompt_en: "distant gaze, slightly knit brows, lips closed"
+    body_prompt_zh: "手撑下巴或托腮"
+    camera_hint: "中景 + 浅景深"
+    color_overlay: "neutral"
+    music_cue: "ambient piano"
+
+  fear:
+    zh: "惧"
+    aliases: ["恐惧", "惊恐", "胆怯"]
+    face_prompt_zh: "瞳孔放大，眉毛上挑外撇，嘴角下颤"
+    face_prompt_en: "dilated pupils, raised outer brows, trembling lips, pale face"
+    body_prompt_zh: "身体微缩，双手交握于胸前"
+    camera_hint: "低角度特写 + 抖动"
+    color_overlay: "desaturated cool"
+    music_cue: "tense drone"
+
+  love:
+    zh: "爱"
+    aliases: ["柔情", "眷恋", "情深"]
+    face_prompt_zh: "眼神温柔，嘴角带笑，眉宇舒展"
+    face_prompt_en: "tender gaze, soft smile, relaxed brows, warm glow"
+    body_prompt_zh: "微微前倾，双手轻握"
+    camera_hint: "近景柔光 + 玫瑰色滤"
+    color_overlay: "warm rose"
+    music_cue: "romantic strings"
+
+  determination:
+    zh: "决意"
+    aliases: ["坚定", "豪情", "气贯长虹"]
+    face_prompt_zh: "目光如炬，下颌紧抿，眉峰挺立"
+    face_prompt_en: "fierce gaze, tightened jaw, raised chin, set brows"
+    body_prompt_zh: "挺胸抬头，握拳"
+    camera_hint: "低角度仰视，逆光"
+    color_overlay: "high-contrast gold"
+    music_cue: "epic horns"

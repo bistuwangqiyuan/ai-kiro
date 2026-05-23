@@ -1,44 +1,170 @@
+# ============================================================
+# AI 漫剧 Autopilot v4 — system.yaml
+# 小云雀 Agent 2.0 快路径 + 5 层外壳 + 12 大需求落地
+# ============================================================
+
 project:
   default_seed: 20260516
-  default_budget_tier: "S"
+  default_budget_tier: "M"          # v4 升级：M (75s 单集)
   default_resolution: "1080p"
   default_fps: 24
   default_aspect_ratio: "9:16"
   default_locale: "zh-CN"
-mode: "mock"  # mock | live | hybrid (live primary + mock fallback)
+  default_genre: "ancient"          # 默认题材 → genre-presets.yaml
+  default_episode_count: 30
+  default_episode_duration_s: 75    # tech.md: 0-3s 钩子 + 3-50s 冲突 + 50-65s 反转 + 65-75s 悬念
+  default_target_audience: "general"
+
+# 全局模式：mock | live | hybrid (live primary + graceful mock fallback)
+mode: "hybrid"
+
+# ------------------------------------------------------------
+# Mock 适配器选型（mode=mock 时全用）
+# ------------------------------------------------------------
 adapters:
   llm: "mock"
   render_primary: "mock_xiaoyunque"
   render_fallback: "mock_seedance"
+  image: "mock_image"
   tts: "mock"
   music: "mock"
+  sfx: "mock"
   qa: "mock"
+  vlm: "mock"
   moderation: "mock"
   embedding: "mock"
   storage: "local_fs"
   state: "sqlite"
+  cover: "mock"
+
+# ------------------------------------------------------------
+# Live 适配器配置（mode=live|hybrid 时启用）
+# ------------------------------------------------------------
 live:
+  # ---- Shell 1 编剧大脑 ----
+  script:
+    primary: "anthropic_opus"        # Claude Opus 4
+    fallback: "real_llm_chain"       # 走现有 DashScope/Volcengine 链
+    novel_model: "claude-opus-4-20250514"
+    episode_model: "claude-opus-4-20250514"
+    formatter_model: "doubao-seed-1-6-250615"   # 小云雀友好模板格式化（中文优化）
+    max_tokens_novel: 200000
+    max_tokens_episode: 32000
+
   llm:
-    providers: ["dashscope", "glm", "mistral", "groq", "deepseek", "moonshot", "volcengine"]
+    providers: ["anthropic", "dashscope", "volcengine", "deepseek", "glm", "groq", "moonshot", "mistral"]
     json_mode: true
-    request_timeout_s: 60
-    max_retries: 2
+    request_timeout_s: 90
+    max_retries: 3
+
+  # ---- Shell 2 角色资产库 ----
+  image:
+    primary: "volcengine_seedream"    # Seedream 5.0 — 14 张多角度
+    fallback: "volcengine_jimeng"     # 即梦 4.6 — 姿态/服装变体
+    seedream_req_key: "seedream_5_0_t2i"
+    jimeng_req_key: "jimeng_high_aes_general_v46"
+    images_per_character: 14          # 8 (Seedream) + 6 (Jimeng)
+    images_per_scene: 6               # 近/中/远 × 昼/夜
+    poll_interval_s: 3
+    max_poll_s: 180
+
+  # ---- Shell 3 小云雀 Agent 2.0 ★ 核心生产引擎 ----
   video:
-    primary: "dashscope_wanx"
+    primary: "volcengine_xiaoyunque"  # 小云雀 有参考接口
+    fallback: "volcengine_seedance"   # 字节方舟 Seedance 2.0 (备选 / 单镜重生)
+    xiaoyunque_req_key: "skylark_video_agent_v2_with_ref"
+    duanju_req_key: "skylark_duanju_manhuaju_seedance_2_fast_720p"
+    mode: "per_episode"               # per_episode | per_shot
+    reference_weight: 0.85            # tech.md 防线 3：强约束
+    poll_interval_s: 10
+    max_poll_s: 2400                  # 40 min 单集上限（小云雀官方 30 min）
+    max_concurrent: 8                 # tech.md 月产能假设
+    retry_per_episode: 3
+
+  # ---- Shell 4 质检与重生 ----
+  vlm_qa:
+    primary: "ark_doubao_seed_1_6"    # Doubao Seed 1.6 视觉
+    fallback: "real_llm_judge"
+    judge_model: "doubao-seed-1-6-250615"
+    frames_per_shot: 5                # 首/1/4/2/4/3/4/末
+    seven_dim_threshold: 8.0          # 7 维 mean
+
+  face_repair:
+    primary: "fal_wan27_flf"          # fal.ai Wan 2.7 首末帧锁脸
     fallback: "volcengine_seedance"
-    poll_interval_s: 6
-    max_poll_s: 600
+    arcface_threshold: 0.78           # 低于则触发 FLF
+    cross_episode_threshold: 0.92     # 跨集 ArcFace KPI
+
+  consistency:
+    backend: "insightface"            # buffalo_l CPU 推理
+    model_root: "/opt/insightface/models"
+    embedding_dim: 512
+    batch_size: 8
+
+  # ---- 后期 ----
   tts:
     primary: "dashscope_cosyvoice"
+    fallback: "doubao_icl_v3"
     sample_rate: 24000
+
+  music:
+    primary: "elevenlabs"             # 版权干净
+    fallback: "mock_harmonic"
+    duration_s: 75
+    instrumental: true
+
+  sfx:
+    primary: "elevenlabs"
+    fallback: "mock_burst"
+    max_cues_per_episode: 12
+
+  cover:
+    primary: "volcengine_jimeng"      # 即梦 4.6 大图 + Pillow 文字层
+    fallback: "mock"
+    aspect_ratios: ["9:16", "3:4", "1:1"]
+    title_font: "思源宋体"
+    body_font: "思源黑体"
+
+  subtitle:
+    engine: "ass"                     # 自渲染 ASS，绕开小云雀乱码
+    font: "思源黑体"
+    title_font: "思源宋体"
+    font_size: 56
+    outline: 3
+    shadow: 1
+    margin_v: 80
+
+  # ---- 嵌入 / 审核 ----
   embedding:
     primary: "dashscope_text_embedding_v3"
+
   moderation:
     primary: "real_llm_judge"
-    judge_model: "groq:llama-3.1-8b-instant"
+    judge_model: "groq:llama-3.3-70b-versatile"
+
+  # ---- 对象存储 ----
+  storage:
+    primary: "volcengine_tos"
+    fallback: "local_fs"
+    bucket: "manhuaju-assets"
+    region: "cn-beijing"
+    presign_ttl_s: 86400              # 24h 给小云雀拉图
+
+  # ---- 数据库 ----
+  database:
+    primary: "postgres"               # 生产
+    fallback: "sqlite"                # 单机/开发
+    dsn_env: "POSTGRES_DSN"
+
+  # ---- 预算 ----
   budget:
-    rmb_cap_per_episode: 80
-    runtime_cap_min: 60
+    rmb_cap_per_episode: 80           # 单集硬上限
+    rmb_cap_v4_target: 60             # v4 软目标（tech.md ≈ ¥50-60）
+    runtime_cap_min: 60               # 单集时长上限
+
+# ------------------------------------------------------------
+# Mock 简化参数（用于 mock + e2e 测试）
+# ------------------------------------------------------------
 mock:
   shot_duration_s: 1
   max_shots_per_episode: 6
@@ -46,10 +172,37 @@ mock:
   max_repairs: 3
   resolution: "720p"
   fps: 12
+
+# ------------------------------------------------------------
+# Workflow & Distribution
+# ------------------------------------------------------------
 workflow:
-  mode: autopilot          # autopilot | supervised
+  mode: autopilot                     # autopilot | supervised
   candidates_per_shot: 3
-  stages: [analyze, assets, prompts, draw, rough_cut, fine_cut]
+  stages: [analyze, assets, prompts, draw, qa, repair, rough_cut, fine_cut, distribution]
+  enable_continuation: false          # 高阶：自动续写后续集
+  enable_style_transfer: false        # 高阶：风格一键迁移
+
 distribution:
-  default_platform: douyin  # douyin | kuaishou | weixin
+  default_platform: "douyin"          # douyin | kuaishou | weixin
+  platforms: ["douyin", "kuaishou", "weixin"]
   watermark: false
+  generate_cover: true
+  generate_copy: true                 # 自动生成标题/简介/tags/引流文案
+  multi_format: ["short_video", "long_manhua", "graphic_pdf"]
+
+# ------------------------------------------------------------
+# 安全 / 合规
+# ------------------------------------------------------------
+content_safety:
+  enabled: true
+  sensitive_words_path: "config/sensitive-words.yaml"
+  llm_judge_model: "groq:llama-3.3-70b-versatile"
+  fail_on_high: true                  # 高敏感词直接中断
+  fail_on_medium_after_retry: true    # 中敏感词改写 1 次后仍命中则中断
+
+copyright_check:
+  enabled: true
+  simhash_bits: 64
+  similarity_threshold: 0.85
+  corpus_dir: "config/copyright_corpus/"

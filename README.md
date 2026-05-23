@@ -1,6 +1,128 @@
-# 漫剧 Autopilot · M2 Mock + M3 Live 双里程碑实现
+# AI 漫剧 Autopilot · v4 (小云雀 Agent 2.0 快路径)
 
-> 端到端、零人工（默认 Autopilot）、按 Spec 落地的 AI 漫剧生成管线。本仓库已完成 **M2**（3 集 Mock E2E）+ **M3**（Live）+ **v2 六步商业工作流**（粗剪/精剪分离、7 维 QA、分发导出、FastAPI + Docker/Railway）。
+> 输入一本小说 → 自动产出多集人物一致漫剧视频 + 抖音/快手/视频号导出包 + 封面 + 文案。
+> **v4 升级** = 小云雀 Agent 2.0「有参考」核心引擎 + 5 层外壳（Claude Opus 编剧 + Seedream/Jimeng 资产 + Doubao VLM 质检 + fal.ai 脸锁 + ElevenLabs 后期）+ 12 大需求落地 + 火山引擎云原生。
+
+| 项目 | 数值 |
+| --- | --- |
+| 核心生产引擎 | 火山小云雀 Agent 2.0 (`skylark_video_agent_v2_with_ref`) |
+| 编剧大脑 | Anthropic Claude Opus 4 (256K context) |
+| 角色资产 | Seedream 5.0 × 8 + Jimeng 4.6 × 6 = 14 张/角色 |
+| 多模态质检 | Doubao Seed 1.6 VLM (7 维：结构/风格/细节/清晰/色彩/无崩坏/意图) |
+| 单镜锁脸重生 | fal.ai Wan 2.7 FLF |
+| 后期音乐 / 音效 | ElevenLabs Music + Sound Generation (版权干净) |
+| 字幕 | 自渲染 ASS（思源宋体 / 思源黑体，绕开 AI 字层乱码） |
+| 跨集一致性 | InsightFace ArcFace ≥ 0.92 (KPI) |
+| 单集成本目标 | ¥60 软目标 / ¥80 硬上限 |
+| 单集时长上限 | 30 min (live) / 40 min (hard) |
+| 月产能目标 | ≥ 1500 集 |
+| 部署 | Volcengine VKE (Helm) + TOS + CDN + RDS PostgreSQL + KMS |
+
+## 0. 一键 v4
+
+```bash
+# 1) 装依赖（live + 一致性 + 可观测）
+pip install -e ".[live,consistency,observe]"
+
+# 2) 配 Key
+cp .env.example .env
+# 至少填：ANTHROPIC_API_KEY / VOLCENGINE_VISUAL_AK/SK / VOLCENGINE_ARK_API_KEY /
+#         VOLCENGINE_TOS_AK/SK/BUCKET / DASHSCOPE_API_KEY / ELEVENLABS_API_KEY / FAL_KEY
+
+# 3) 烟测所有 Key（红色 ★ 必须全绿）
+python -m scripts.smoke_keys --strict
+
+# 4) 启 API（含 Web 控制台）
+uvicorn manhuaju.api.app:app --host 0.0.0.0 --port 8080
+open http://localhost:8080/                 # 控制台
+
+# 5) 一键生 3 集
+curl -X POST http://localhost:8080/v1/projects \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "novel_text": "她重生回到了那一年的春天……",
+    "episode_count": 3,
+    "genre": "ancient",
+    "episode_duration_s": 75,
+    "platforms": ["douyin", "kuaishou", "weixin"]
+  }'
+
+# 6) 部署到火山 VKE
+helm upgrade --install manhuaju ./deploy/helm/manhuaju \
+  --namespace manhuaju --create-namespace \
+  --set ingress.host=api.manhuaju.example.com \
+  --set image.tag=0.4.0
+```
+
+完整云部署指南：[`deploy/README.md`](deploy/README.md)。
+
+## v4 架构（5 层外壳 + 4 道一致性防线）
+
+```
+┌──── Shell 1 编剧大脑（Anthropic Claude Opus 4） ────────────────────────────┐
+│  novel → extract_events → write_episodes → format_for_xiaoyunque           │
+│  ★ 防线 1：每集开头必出完整人物设定块 + 场景设定块                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌──── Shell 2 角色与场景资产库（Seedream 5.0 + Jimeng 4.6） ──────────────────┐
+│  每个主角 14 张参考图：8 张多角度（正/45/侧/背 + 4 表情）+ 6 张姿态/服装变体 │
+│  每个场景 6 张：近/中/远 × 昼/夜。全部入 TOS 拿 24h 预签名 URL              │
+│  ★ 防线 2：同一组 reference_images 全集复用（CharacterAssetStore）         │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌──── Shell 3 ★ 小云雀 Agent 2.0「有参考」（核心生产肌肉） ────────────────────┐
+│  per-episode 整集 submit（75s 一次到位）                                    │
+│  reference_weight=0.85 强约束 ★ 防线 3                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌──── Shell 4 质检与重生（Doubao Seed 1.6 VLM + fal.ai Wan 2.7 FLF） ─────────┐
+│  逐镜抽 5 帧 → 7 维 VLM 评分 → 命中 issue.type → 5 路修复路由               │
+│   face_drift  → wanflf   (FLF 锁脸重生)                                     │
+│   axis_violation / limb_distortion → seedance (单镜重生)                    │
+│   text_garbled  → overlay (ASS 字幕烧入，去 AI 字层)                       │
+│   style_offshift / intent_mismatch → xiaoyunque (强化 style_ref + prompt)   │
+│  跨集 InsightFace ArcFace 矩阵 ★ 防线 4                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌──── Shell 5 后期（ElevenLabs + ASS + 三平台导出） ──────────────────────────┐
+│  Music API (75s 单集 BGM) + Sound Gen (音效) + 自渲染 ASS 字幕 + 封面        │
+│  → 抖音 / 快手 / 视频号 ffmpeg 转码 + 平台文案 + 多格式（短/长/PDF）         │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## v4 API 端点（控制台同步）
+
+```text
+GET  /health                            # 提供 provider 能力图（masked Key）+ fast_path_ready
+POST /v1/projects                       # 一键开剧
+GET  /v1/projects                       # 项目列表
+POST /v1/novels                         # 小说生成 / 续写 / 风格迁移
+POST /v1/batch/jobs                     # 批量任务
+POST /v1/batch/schedules                # 定时任务 (cron)
+GET  /v1/genres /v1/platforms /v1/emotions /v1/actions    # 控制台读取预设
+GET  /v1/kpi                            # 实时 KPI 阈值
+GET  /v1/versions/{project_id}          # 版本回滚
+GET  /                                  # Web 控制台 (web/index.html)
+```
+
+## v4 KPI（八条）
+
+| ID | 项 | 阈值 |
+| --- | --- | --- |
+| REQ-V4-001 | 跨集 ArcFace | ≥ 0.92 |
+| REQ-V4-002 | VLM 7 维 mean | ≥ 8.0 |
+| REQ-V4-003 | 单集端到端 | ≤ 30 min |
+| REQ-V4-004 | 单集 RMB | ≤ ¥60 软 / ¥80 硬 |
+| REQ-V4-005 | 月产能 | ≥ 1500 集 |
+| REQ-V4-006 | AI 字层乱码率 | = 0 |
+| REQ-V4-007 | 高敏感词命中 | = 0 |
+| REQ-V4-008 | 3 平台导出 + 封面 + 文案 | 必齐 |
+
+完整阈值表见 [`config/kpi.yaml`](config/kpi.yaml)。
+
+---
+
+## 历史里程碑
+
+> 以下保留 M2 / M3 / v2 历史架构信息，方便对比。
+
+
 
 ---
 

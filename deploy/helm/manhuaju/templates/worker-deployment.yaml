@@ -1,0 +1,84 @@
+{{- if .Values.worker.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "manhuaju.fullname" . }}-worker
+  labels:
+    {{- include "manhuaju.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "manhuaju.labels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "manhuaju.labels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: worker
+          image: {{ include "manhuaju.imageRef" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "scripts.run_worker"]
+          envFrom:
+            {{- include "manhuaju.envFrom" . | nindent 12 }}
+          env:
+            - name: MANHUAJU_ENV
+              value: {{ .Values.env | quote }}
+            - name: MANHUAJU_API_DATA
+              value: "/data"
+            - name: MANHUAJU_WORKER
+              value: "1"
+            - name: MANHUAJU_WORKER_POLL_S
+              value: {{ .Values.worker.pollIntervalSeconds | quote }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: models
+              mountPath: /app/_models
+      volumes:
+        - name: data
+          {{- if .Values.persistence.data.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "manhuaju.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: models
+          {{- if .Values.persistence.models.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "manhuaju.fullname" . }}-models
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- if .Values.worker.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "manhuaju.fullname" . }}-worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "manhuaju.fullname" . }}-worker
+  minReplicas: {{ .Values.worker.hpa.minReplicas }}
+  maxReplicas: {{ .Values.worker.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.worker.hpa.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- end }}

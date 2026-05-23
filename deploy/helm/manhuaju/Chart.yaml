@@ -1,0 +1,13 @@
+apiVersion: v2
+name: manhuaju
+description: AI 漫剧 Autopilot v4 — 小云雀 Agent 2.0 快路径
+type: application
+version: 0.4.0
+appVersion: "0.4.0"
+keywords:
+  - ai-video
+  - novel-to-manhua
+  - volcengine
+  - xiaoyunque
+maintainers:
+  - name: Manhuaju Autopilot Agents

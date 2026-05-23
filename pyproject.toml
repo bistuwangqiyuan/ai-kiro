@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "manhuaju-autopilot"
-version = "0.1.0"
-description = "AI Manhuaju Autopilot - novel-to-multi-episode-video pipeline (M2 Mock E2E)"
+version = "0.4.0"
+description = "AI Manhuaju Autopilot v4 — novel-to-multi-episode video with character consistency (Xiaoyunque Agent 2.0 fast-path + 5-shell architecture)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -21,6 +21,8 @@ dependencies = [
     "python-dotenv>=1.0",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
+    "pysubs2>=1.7",
+    "apscheduler>=3.10",
 ]
 
 [project.optional-dependencies]
@@ -33,7 +35,42 @@ dev = [
 ]
 live = [
     "dashscope>=1.20",
+    "anthropic>=0.40",
+    "volcengine-python-sdk>=1.0.166",
+    "tos>=2.7",
+    "elevenlabs>=1.0",
+    "fal-client>=0.5",
 ]
+consistency = [
+    "insightface>=0.7.3",
+    "onnxruntime>=1.17",
+    "opencv-python-headless>=4.9",
+]
+i18n = [
+    "opencc-python-reimplemented>=0.1.7",
+    "cn2an>=0.5.22",
+    "tiktoken>=0.7",
+]
+observe = [
+    "opentelemetry-api>=1.25",
+    "opentelemetry-sdk>=1.25",
+    "opentelemetry-exporter-otlp>=1.25",
+    "prometheus-client>=0.20",
+]
+db = [
+    "psycopg[binary]>=3.1",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+]
+all = [
+    "manhuaju-autopilot[live,consistency,i18n,observe,db]",
+]
+
+[project.scripts]
+manhuaju = "manhuaju.cli:main"
+manhuaju-pilot = "scripts.run_pilot:cli"
+manhuaju-live = "scripts.run_live_pilot:cli"
+manhuaju-keys = "scripts.smoke_keys:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/manhuaju"]

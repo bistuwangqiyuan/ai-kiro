@@ -1,0 +1,61 @@
+# 敏感词分级表 — docx 二节「剧情风控」
+# 三级：high（直接阻断）/ medium（改写 1 次后仍命中则阻断）/ low（标记）
+# 完整业务版应从国家网信办最新清单同步；此处提供工程级骨架与典型示例。
+version: 1
+
+levels:
+  high:
+    description: "高敏感 — 直接阻断生成"
+    categories:
+      politics:
+        - "颠覆"
+        - "暴动"
+        - "分裂国家"
+      violence_extreme:
+        - "斩首"
+        - "屠杀"
+        - "处决"
+      sex_explicit:
+        - "性器"
+        - "色情"
+        - "裸体特写"
+      drugs:
+        - "毒品交易"
+        - "贩毒"
+      illegal:
+        - "非法集会"
+        - "暴恐"
+
+  medium:
+    description: "中敏感 — 自动改写 1 次后仍命中则阻断"
+    categories:
+      violence:
+        - "鲜血"
+        - "尸体"
+        - "凶器"
+      discrimination:
+        - "歧视"
+        - "种族"
+      gambling:
+        - "赌博"
+        - "赌场"
+      suicide_self_harm:
+        - "自杀"
+        - "自残"
+
+  low:
+    description: "低敏感 — 仅打标记，可继续"
+    categories:
+      mild_violence:
+        - "打架"
+        - "推搡"
+      romance:
+        - "暧昧"
+        - "亲密"
+
+# 自动改写策略（medium 触发）
+rewrite_strategies:
+  violence: "将描写转为暗示，去除血腥细节，改用『身受重伤』『倒地不起』等委婉表达"
+  discrimination: "替换为平等中性表述"
+  gambling: "改为『博弈』『谋略对决』等非赌博语境"
+  suicide_self_harm: "改为『遇险』『困境』，避免具体方法描写"

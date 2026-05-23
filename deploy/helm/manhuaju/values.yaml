@@ -1,0 +1,124 @@
+# ============================================================
+# values.yaml — VKE 部署默认值
+# ============================================================
+
+image:
+  registry: cr-cn-beijing.volces.com
+  repository: manhuaju/manhuaju-autopilot
+  tag: "0.4.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: vcr-pull
+
+nameOverride: ""
+fullnameOverride: ""
+
+env: prod
+
+api:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  service:
+    type: ClusterIP
+    port: 8080
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 75
+  podAnnotations: {}
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 20
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+worker:
+  enabled: true
+  replicaCount: 4
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+  pollIntervalSeconds: 5
+  hpa:
+    enabled: true
+    minReplicas: 4
+    maxReplicas: 30
+    targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: true
+  className: nginx
+  host: api.manhuaju.example.com
+  tls:
+    enabled: true
+    secretName: manhuaju-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+
+# v4 Secrets - all keys mounted as env vars
+# 生产 / staging 强烈建议改用 ExternalSecrets + 火山 KMS
+secrets:
+  # 火山 KMS / Sealed-Secret 都通过这个 Secret 注入
+  name: manhuaju-secrets
+
+# 配置 ConfigMap：把 config/system.yaml 等挂载到 /app/config
+config:
+  mountPath: /app/config
+  files:
+    system.yaml: ""           # leave empty → use baked-in
+    kpi.yaml: ""
+
+persistence:
+  data:
+    enabled: true
+    storageClass: vke-cloud-disk
+    accessMode: ReadWriteMany
+    size: 200Gi
+  models:
+    enabled: true
+    storageClass: vke-cloud-disk
+    accessMode: ReadWriteMany
+    size: 20Gi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Observability
+observability:
+  otel:
+    enabled: false
+    endpoint: "http://vmp-collector.observability.svc:4317"
+  prometheus:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8080"
+      prometheus.io/path: "/metrics"
+
+# Database (Postgres / Volcengine RDS)
+database:
+  external: true
+  dsnSecretKey: POSTGRES_DSN

@@ -1,0 +1,8 @@
+# Worker image — picks up BatchScheduler jobs from PostgreSQL/SQLite
+# Reuse the main image, override CMD.
+
+FROM cr-cn-beijing.volces.com/manhuaju/manhuaju-autopilot:latest
+
+ENV MANHUAJU_WORKER=1
+
+CMD ["python", "-m", "scripts.run_worker"]

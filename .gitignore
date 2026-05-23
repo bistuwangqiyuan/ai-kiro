@@ -32,3 +32,5 @@ tools/smoke/_live_pytest.log
 debug.log
 api_data/
 test_body.json
+.test_iteration_v4/
+.kube/

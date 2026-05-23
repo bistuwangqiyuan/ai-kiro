@@ -36,6 +36,7 @@ class CostEntry:
 
 # Indicative pricing in RMB. Use config/cost.yaml `live_pricing` for production.
 DEFAULT_PRICING_RMB: dict[str, dict[str, float]] = {
+    # ---- LLM ----
     "groq.llm": {"prompt_per_1k": 0.0, "completion_per_1k": 0.0},
     "deepseek.llm": {"prompt_per_1k": 0.0014, "completion_per_1k": 0.0028},
     "moonshot.llm": {"prompt_per_1k": 0.012, "completion_per_1k": 0.012},
@@ -43,10 +44,27 @@ DEFAULT_PRICING_RMB: dict[str, dict[str, float]] = {
     "volcengine.llm": {"prompt_per_1k": 0.0008, "completion_per_1k": 0.002},
     "mistral.llm": {"prompt_per_1k": 0.014, "completion_per_1k": 0.042},
     "dashscope.llm": {"prompt_per_1k": 0.004, "completion_per_1k": 0.012},
-    "volcengine.video": {"per_second": 0.7},  # Seedance ~ ¥0.7/s
-    "dashscope.video": {"per_second": 0.5},  # WanX 2.1 t2v turbo
-    "dashscope.tts": {"per_kchar": 0.10},  # CosyVoice ~ ¥0.10/1k chars
+    # Anthropic Claude Opus 4 — US$15 in / US$75 out per 1M tokens ≈ ¥0.108 / ¥0.54 per 1k
+    "anthropic.llm": {"prompt_per_1k": 0.108, "completion_per_1k": 0.54},
+    "openai.llm": {"prompt_per_1k": 0.018, "completion_per_1k": 0.06},
+    # ---- Video ----
+    "volcengine.video": {"per_second": 0.7},          # Ark Seedance
+    "volcengine_xiaoyunque.video": {"per_second": 0.5},  # tech.md: ¥39/集 ≈ ¥0.5/s @75s
+    "dashscope.video": {"per_second": 0.5},           # WanX 2.1 t2v turbo
+    "fal.video": {"per_second": 1.2},                 # Wan 2.7 FLF, ~$0.16/s
+    # ---- Image ----
+    "volcengine_seedream.image": {"per_image": 0.5},  # Seedream 5.0 ≈ ¥0.5/张
+    "volcengine_jimeng.image": {"per_image": 0.3},    # Jimeng 4.6 ≈ ¥0.3/张
+    # ---- TTS / Audio ----
+    "dashscope.tts": {"per_kchar": 0.10},
+    "doubao.tts": {"per_kchar": 0.08},
+    "elevenlabs.music": {"per_second": 0.05},         # ElevenLabs Music API
+    "elevenlabs.sfx": {"per_clip": 0.10},
+    # ---- Embedding / VLM ----
     "dashscope.embedding": {"per_1k": 0.0007},
+    "ark.vlm": {"prompt_per_1k": 0.002, "completion_per_1k": 0.008},
+    # ---- Storage ----
+    "tos.storage": {"per_gb_month": 0.13, "per_request": 0.0001},
 }
 
 
@@ -75,6 +93,18 @@ class CostTracker:
     def estimate_embedding(self, provider: str, n_tokens: int) -> float:
         p = self._pricing.get(f"{provider}.embedding", {})
         return (n_tokens / 1000.0) * p.get("per_1k", 0.0)
+
+    def estimate_image(self, provider: str, n_images: int = 1) -> float:
+        p = self._pricing.get(f"{provider}.image", {})
+        return float(n_images) * p.get("per_image", 0.0)
+
+    def estimate_music(self, provider: str, seconds: float) -> float:
+        p = self._pricing.get(f"{provider}.music", {})
+        return float(seconds) * p.get("per_second", 0.0)
+
+    def estimate_sfx(self, provider: str, n_clips: int = 1) -> float:
+        p = self._pricing.get(f"{provider}.sfx", {})
+        return float(n_clips) * p.get("per_clip", 0.0)
 
     def record(self, entry: CostEntry) -> None:
         with self._lock:

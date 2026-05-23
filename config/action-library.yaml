@@ -1,0 +1,189 @@
+# 动作库 — docx 三节「人物角色」动作库需求
+# 站立、行走、对视、牵手、行礼、打斗等常用动作
+version: 1
+
+actions:
+  # ---- 日常 ----
+  stand:
+    zh: "站立"
+    prompt_zh: "自然站姿，双手垂于身侧"
+    prompt_en: "natural standing pose, arms relaxed at sides"
+    pacing: "static"
+
+  walk:
+    zh: "行走"
+    prompt_zh: "稳步前行，左脚迈出"
+    prompt_en: "walking forward with measured pace, left foot stepping"
+    pacing: "medium"
+
+  run:
+    zh: "奔跑"
+    prompt_zh: "全力疾跑，发丝飞扬，衣袂翻飞"
+    prompt_en: "full-speed running, hair flowing, clothes billowing"
+    pacing: "fast"
+
+  sit:
+    zh: "坐"
+    prompt_zh: "端坐于案前，背挺直"
+    prompt_en: "sitting upright at a table, straight back"
+    pacing: "static"
+
+  kneel:
+    zh: "跪坐"
+    prompt_zh: "古风跪坐于蒲团，双手放膝"
+    prompt_en: "traditional kneel on cushion, hands resting on knees"
+    pacing: "static"
+
+  bow:
+    zh: "行礼"
+    prompt_zh: "古风作揖，双手抱拳，微微弯腰"
+    prompt_en: "traditional fist-and-palm salute, slight bow"
+    pacing: "slow"
+
+  # ---- 交互 ----
+  eye_contact:
+    zh: "对视"
+    prompt_zh: "两人四目相对，距离拉近"
+    prompt_en: "two characters locking eyes, close framing"
+    pacing: "static"
+
+  hand_hold:
+    zh: "牵手"
+    prompt_zh: "十指相扣，温柔牵起"
+    prompt_en: "interlocking fingers, gentle hand-holding"
+    pacing: "slow"
+
+  hug:
+    zh: "拥抱"
+    prompt_zh: "紧紧相拥，环住对方肩膀"
+    prompt_en: "tight embrace, arms wrapped around shoulders"
+    pacing: "slow"
+
+  kiss:
+    zh: "亲吻"
+    prompt_zh: "额吻或轻吻指尖（守规）"
+    prompt_en: "forehead kiss or fingertip touch (PG-13)"
+    pacing: "slow"
+
+  push:
+    zh: "推开"
+    prompt_zh: "伸手推开对方，神情冷然"
+    prompt_en: "pushing the other away with outstretched arm, cold expression"
+    pacing: "medium"
+
+  shield:
+    zh: "护身"
+    prompt_zh: "张开双臂挡在对方身前"
+    prompt_en: "shielding the other with outstretched arms"
+    pacing: "medium"
+
+  # ---- 打斗 ----
+  fight_punch:
+    zh: "出拳"
+    prompt_zh: "全力挥拳，肌肉紧绷，气流环绕"
+    prompt_en: "powerful straight punch, taut muscles, air swirl"
+    pacing: "fast"
+
+  fight_kick:
+    zh: "踢腿"
+    prompt_zh: "高踢腿，腰胯发力，衣摆翻飞"
+    prompt_en: "high kick, hip torque, fluttering robe"
+    pacing: "fast"
+
+  sword_draw:
+    zh: "拔剑"
+    prompt_zh: "右手按鞘，左手拔剑出鞘半寸"
+    prompt_en: "right hand on scabbard, left hand unsheathing blade halfway"
+    pacing: "medium"
+
+  sword_swing:
+    zh: "挥剑"
+    prompt_zh: "横挥长剑，剑光寒冽，溅起火星"
+    prompt_en: "horizontal sword swing, cold gleam, sparks flying"
+    pacing: "fast"
+
+  archery:
+    zh: "射箭"
+    prompt_zh: "拉满弓弦，眼神专注，箭羽颤动"
+    prompt_en: "fully drawn bow, focused gaze, vibrating fletching"
+    pacing: "medium"
+
+  cast_spell:
+    zh: "施法"
+    prompt_zh: "结印起手，掌心凝聚能量光团"
+    prompt_en: "forming hand seal, energy orb gathering in palm"
+    pacing: "medium"
+
+  fly:
+    zh: "御剑飞行"
+    prompt_zh: "脚踏飞剑，破云而行，衣袂飘扬"
+    prompt_en: "standing on flying sword, breaking through clouds, robes flowing"
+    pacing: "fast"
+
+  # ---- 情绪外化 ----
+  tear_fall:
+    zh: "落泪"
+    prompt_zh: "睫毛上挂着泪珠，缓缓滑落脸颊"
+    prompt_en: "tear droplet on lashes slowly sliding down cheek"
+    pacing: "slow"
+
+  smile_warm:
+    zh: "温柔笑"
+    prompt_zh: "嘴角上扬，眼神柔和"
+    prompt_en: "gentle smile, warm gaze"
+    pacing: "static"
+
+  smile_cold:
+    zh: "冷笑"
+    prompt_zh: "嘴角微挑，眼神锐利"
+    prompt_en: "smirk with sharp gaze"
+    pacing: "static"
+
+  laugh:
+    zh: "大笑"
+    prompt_zh: "仰头大笑，肩膀颤动"
+    prompt_en: "throwing head back laughing, shaking shoulders"
+    pacing: "medium"
+
+  sigh:
+    zh: "叹息"
+    prompt_zh: "微微低头，长长叹气"
+    prompt_en: "head tilted down, slow long exhale"
+    pacing: "slow"
+
+  # ---- 小动作 ----
+  hair_touch:
+    zh: "抚发"
+    prompt_zh: "手指轻拨耳后碎发"
+    prompt_en: "fingers gently tucking hair behind ear"
+    pacing: "slow"
+
+  drink_tea:
+    zh: "饮茶"
+    prompt_zh: "举杯抿茶，姿态优雅"
+    prompt_en: "raising tea cup, elegant sip"
+    pacing: "slow"
+
+  write:
+    zh: "执笔书写"
+    prompt_zh: "执毛笔运腕，墨色淋漓"
+    prompt_en: "holding writing brush, ink flowing"
+    pacing: "slow"
+
+  play_guqin:
+    zh: "抚琴"
+    prompt_zh: "纤指拨弦，神情专注"
+    prompt_en: "slender fingers plucking strings, focused expression"
+    pacing: "slow"
+
+  read_scroll:
+    zh: "翻阅卷轴"
+    prompt_zh: "缓缓展开竹简，凝神细读"
+    prompt_en: "slowly unfurling bamboo scroll, careful reading"
+    pacing: "slow"
+
+  toast:
+    zh: "举杯"
+    prompt_zh: "高举酒爵，意气风发"
+    prompt_en: "raising wine goblet high, spirited"
+    pacing: "medium"

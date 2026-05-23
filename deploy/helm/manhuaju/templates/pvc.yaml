@@ -1,0 +1,31 @@
+{{- if .Values.persistence.data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "manhuaju.fullname" . }}-data
+  labels:
+    {{- include "manhuaju.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.data.accessMode }}
+  storageClassName: {{ .Values.persistence.data.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.data.size }}
+{{- end }}
+{{- if .Values.persistence.models.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "manhuaju.fullname" . }}-models
+  labels:
+    {{- include "manhuaju.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.models.accessMode }}
+  storageClassName: {{ .Values.persistence.models.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.models.size }}
+{{- end }}

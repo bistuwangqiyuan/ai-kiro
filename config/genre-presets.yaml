@@ -1,0 +1,148 @@
+# 题材预设 — docx 一节「基础定位」
+# 每个题材锁定画风、节奏、情绪曲线、音乐风格、字幕样式
+version: 1
+
+genres:
+  ancient:
+    label: "古风"
+    palette: ["#3b2412", "#7a5230", "#c79755", "#e8d4a4", "#6b3f2a"]
+    art_style: "中国工笔 + cel-shading，水墨晕染，冷暖对比"
+    line_quality: "细劲挺拔，留白考究"
+    style_prompt_zh: "古风工笔水墨，细线勾勒，淡彩留白，光影柔和"
+    style_prompt_en: "ancient Chinese gongbi ink wash, fine cel-shading, soft lighting, traditional palette"
+    subtitle_font: "思源宋体"
+    bgm_style: "guzheng, pipa, dizi, ambient strings, oriental cinematic"
+    sfx_style: "fabric rustle, sword draw, bamboo wind chime"
+    pacing: "舒缓"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+    voice_timbre_hints:
+      male_lead: "清冷少年音，温润"
+      female_lead: "婉转少女音，水袖般柔"
+      villain: "低沉成熟，藏锋"
+
+  modern:
+    label: "现代"
+    palette: ["#1a1a2e", "#16213e", "#0f3460", "#e94560", "#f5f5f5"]
+    art_style: "国漫现代写实风，扁平上色 + 高光"
+    line_quality: "干净利落，弱线条"
+    style_prompt_zh: "国漫现代都市，扁平大色块，高光与霓虹，写实人像"
+    style_prompt_en: "modern Chinese anime, flat-color shading, neon highlights, semi-realistic faces"
+    subtitle_font: "思源黑体"
+    bgm_style: "synth pop, ambient piano, urban cinematic"
+    sfx_style: "city traffic, footsteps, phone vibration"
+    pacing: "中速"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+
+  sweet_pet:
+    label: "甜宠"
+    palette: ["#ffe4ec", "#ffc4d6", "#ff8fb1", "#f6e8c8", "#a8d8ea"]
+    art_style: "日系少女漫，柔光赛璐璐"
+    line_quality: "圆润可爱，浅描淡写"
+    style_prompt_zh: "日系少女漫，柔焦阳光，粉嫩色调，少女感"
+    style_prompt_en: "Japanese shoujo anime style, soft sunlight, pastel palette, dreamy bokeh"
+    subtitle_font: "思源黑体"
+    bgm_style: "lo-fi piano, ukulele, music box, warm strings"
+    sfx_style: "heartbeat, leaf rustle, footsteps on grass"
+    pacing: "舒缓"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+
+  suspense:
+    label: "悬疑"
+    palette: ["#0a0a0a", "#1f1f1f", "#3a3a3a", "#a83232", "#d8d8d8"]
+    art_style: "电影感写实，强对比，明暗交错"
+    line_quality: "硬朗，深阴影"
+    style_prompt_zh: "悬疑电影感，强逆光剪影，暗调对比，冷峻氛围"
+    style_prompt_en: "noir cinematic, high-contrast silhouettes, dark teal-orange grading"
+    subtitle_font: "思源黑体"
+    bgm_style: "low drone, suspense pad, cinematic percussion"
+    sfx_style: "clock ticking, whisper, door creak, thunder"
+    pacing: "紧"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+
+  xuanhuan:
+    label: "玄幻"
+    palette: ["#1a0a2e", "#4a1d80", "#8b2eff", "#ffb700", "#e6e6fa"]
+    art_style: "玄幻幻彩，能量光效，宏大场面"
+    line_quality: "粗细变化大，发光描边"
+    style_prompt_zh: "玄幻仙侠，能量光效，云海仙境，宝光璀璨，金色描边"
+    style_prompt_en: "xianxia fantasy, glowing energy effects, vast cloudscapes, golden rim lighting"
+    subtitle_font: "思源宋体"
+    bgm_style: "epic orchestral, choral pad, gong"
+    sfx_style: "energy whoosh, magical chime, thunderclap"
+    pacing: "中速"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+
+  campus:
+    label: "校园"
+    palette: ["#f9f4e8", "#b6e2d3", "#fad48b", "#7fb3d5", "#f78ca0"]
+    art_style: "清新校园日漫，明亮柔和"
+    line_quality: "圆润，轻线条"
+    style_prompt_zh: "清新校园日系，柔光阳光，蓝天白云，制服少年少女"
+    style_prompt_en: "fresh campus anime, sunlit warm tones, blue sky, school uniforms"
+    subtitle_font: "思源黑体"
+    bgm_style: "acoustic guitar, light piano, gentle synth"
+    sfx_style: "school bell, cicadas, paper flipping"
+    pacing: "舒缓"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+
+  urban:
+    label: "都市"
+    palette: ["#2c3e50", "#34495e", "#e67e22", "#ecf0f1", "#c0392b"]
+    art_style: "都市写实，CG 质感，强光影"
+    line_quality: "硬朗精致"
+    style_prompt_zh: "都市精英写实风，金融感冷色调，霓虹反光"
+    style_prompt_en: "urban photorealistic CG, cool corporate tones, neon reflections"
+    subtitle_font: "思源黑体"
+    bgm_style: "cinematic synthwave, urban jazz, electronic ambient"
+    sfx_style: "elevator ding, keyboard typing, car door"
+    pacing: "中速"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+
+  xianxia:
+    label: "仙侠"
+    palette: ["#7fb3d5", "#a8d8ea", "#e0f7fa", "#f5deb3", "#dda0dd"]
+    art_style: "仙侠水彩，飘逸灵动"
+    line_quality: "飘逸，淡描"
+    style_prompt_zh: "仙侠水彩飘逸，云雾缥缈，飞剑御风，仙气十足"
+    style_prompt_en: "xianxia watercolor, ethereal mists, flying swords, immortal aura"
+    subtitle_font: "思源宋体"
+    bgm_style: "guqin, ethereal pad, choir, traditional flute"
+    sfx_style: "sword swoosh, energy hum, water flow"
+    pacing: "舒缓"
+    hook_seconds: 3
+    aspect_ratio: "9:16"
+    fps: 24
+
+# 横屏漫剧 (B站 / 抖音横版)
+landscape:
+  default_aspect_ratio: "16:9"
+  default_resolution: "1920x1080"
+
+# 时长档位
+duration_tiers:
+  short: 60      # 60s 短剧
+  standard: 75   # 75s 标准（tech.md 推荐）
+  long: 90       # 90s 长漫剧
+  movie: 180     # 3 min 电影感
+
+# 集数档位
+episode_count_tiers:
+  pilot: 3
+  short_series: 10
+  standard_series: 30   # 默认
+  long_series: 60       # 推文常用
+  mega: 120

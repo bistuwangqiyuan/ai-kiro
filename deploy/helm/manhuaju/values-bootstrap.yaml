@@ -1,0 +1,87 @@
+# ============================================================
+# values-bootstrap.yaml — 「无域名 / 试点期 / 最小成本」Helm overrides
+#
+# 用法（推荐）：
+#   helm upgrade --install manhuaju ./deploy/helm/manhuaju \
+#     --namespace manhuaju --create-namespace \
+#     -f ./deploy/helm/manhuaju/values.yaml \
+#     -f ./deploy/helm/manhuaju/values-bootstrap.yaml \
+#     --set image.registry=<你的 VCR 域名>          # e.g. cr-cn-beijing.volces.com
+#     --set image.repository=<你的命名空间>/manhuaju-autopilot \
+#     --set image.tag=<git short sha>
+#
+# 特征：
+#   - 不需要域名：通过火山 CLB（LoadBalancer Service）直接给一个公网 IP
+#   - 资源缩到 1c2g，便于试点期单节点 VKE 也跑得动
+#   - HPA 上限缩小（试点期月成本可控）
+#   - 关闭 Ingress / TLS（无域名时用 LoadBalancer 公网 IP 直连）
+#   - 关闭外部 PG，使用本地 SQLite（数据落到 PVC，仍可持久化）
+# ============================================================
+
+image:
+  pullPolicy: Always
+  # registry / repository / tag 由 install 命令 --set 覆盖
+
+# ★ 关键：用 LoadBalancer 让 VKE 自动开一个公网 EIP
+api:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+  service:
+    type: LoadBalancer
+    port: 80
+    # 火山 VKE 会自动创建 CLB 并分配公网 EIP
+    annotations:
+      service.beta.kubernetes.io/volcengine-load-balancer-type: "public"
+      service.beta.kubernetes.io/volcengine-load-balancer-spec: "small_1"
+  hpa:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 75
+
+worker:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+  hpa:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+
+# 无域名 → 关闭 Ingress
+ingress:
+  enabled: false
+
+# 试点期：单节点 1 副本，先用 ReadWriteOnce
+persistence:
+  data:
+    enabled: true
+    storageClass: ebs-ssd
+    accessMode: ReadWriteOnce
+    size: 50Gi
+  models:
+    enabled: true
+    storageClass: ebs-ssd
+    accessMode: ReadWriteOnce
+    size: 5Gi
+
+# 试点期：不接 RDS，用容器内 SQLite（journal 落 PVC）
+database:
+  external: false
+
+observability:
+  otel:
+    enabled: false

@@ -1,0 +1,117 @@
+# 三大平台发布规格 — docx 八节「运营商用」
+# 抖音 / 快手 / 视频号
+version: 1
+
+platforms:
+  douyin:
+    label: "抖音"
+    aspect_ratios: ["9:16", "1:1"]
+    primary_resolution: "1080x1920"
+    fps: 30
+    video_codec: "libx264"
+    profile: "high"
+    pixel_format: "yuv420p"
+    video_bitrate: "5000k"
+    max_bitrate: "8000k"
+    bufsize: "10000k"
+    audio_codec: "aac"
+    audio_bitrate: "192k"
+    audio_sample_rate: 48000
+    audio_channels: 2
+    max_duration_s: 900     # 1-15 min 长短视频
+    min_duration_s: 5
+    cover_size: "1080x1440" # 3:4 封面
+    cover_size_secondary: "1080x1080"
+    title_max_chars: 55
+    intro_max_chars: 1000
+    tags_max: 6
+    watermark_pos: "bottom-right"
+    safe_area_top: 220       # UI 遮挡区域 (px @1080p)
+    safe_area_bottom: 410
+
+  kuaishou:
+    label: "快手"
+    aspect_ratios: ["9:16", "16:9"]
+    primary_resolution: "720x1280"
+    fps: 30
+    video_codec: "libx264"
+    profile: "high"
+    pixel_format: "yuv420p"
+    video_bitrate: "3000k"
+    max_bitrate: "5000k"
+    bufsize: "6000k"
+    audio_codec: "aac"
+    audio_bitrate: "128k"
+    audio_sample_rate: 48000
+    audio_channels: 2
+    max_duration_s: 600
+    min_duration_s: 5
+    cover_size: "720x960"
+    title_max_chars: 50
+    intro_max_chars: 500
+    tags_max: 8
+    watermark_pos: "top-left"
+    safe_area_top: 200
+    safe_area_bottom: 320
+
+  weixin:
+    label: "视频号"
+    aspect_ratios: ["9:16", "1:1", "16:9"]
+    primary_resolution: "1080x1920"
+    fps: 25
+    video_codec: "libx264"
+    profile: "main"
+    pixel_format: "yuv420p"
+    video_bitrate: "4500k"
+    max_bitrate: "7000k"
+    bufsize: "9000k"
+    audio_codec: "aac"
+    audio_bitrate: "192k"
+    audio_sample_rate: 44100
+    audio_channels: 2
+    max_duration_s: 1800
+    min_duration_s: 5
+    cover_size: "1080x1440"
+    title_max_chars: 22       # 视频号标题更短
+    intro_max_chars: 600
+    tags_max: 3
+    watermark_pos: "bottom-left"
+    safe_area_top: 200
+    safe_area_bottom: 380
+
+  # 横屏（B站漫剧）—— 可选
+  bilibili:
+    label: "B 站"
+    aspect_ratios: ["16:9"]
+    primary_resolution: "1920x1080"
+    fps: 30
+    video_codec: "libx264"
+    profile: "high"
+    pixel_format: "yuv420p"
+    video_bitrate: "6000k"
+    max_bitrate: "10000k"
+    bufsize: "12000k"
+    audio_codec: "aac"
+    audio_bitrate: "192k"
+    audio_sample_rate: 48000
+    audio_channels: 2
+    max_duration_s: 7200
+    cover_size: "1920x1200"
+    title_max_chars: 80
+    intro_max_chars: 2000
+    tags_max: 12
+
+# 多格式导出（docx 八节末）
+multi_format:
+  short_video:
+    label: "短视频"
+    target_duration_s: 60
+    description: "单集 60s，匹配信息流"
+  long_manhua:
+    label: "长漫剧"
+    target_duration_s: 300
+    description: "多集拼接 5 min 长版"
+  graphic_pdf:
+    label: "图文漫剧"
+    output_format: "pdf"
+    description: "每镜抽 1 帧 + 字幕组成 PDF 故事板"

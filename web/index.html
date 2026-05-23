@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 漫剧 Autopilot v4 · 控制台</title>
+  <style>
+    :root {
+      --bg: #0e1218;
+      --fg: #f5f5f7;
+      --muted: #8a93a1;
+      --card: #161c25;
+      --border: #2a313d;
+      --accent: #ffd47a;
+      --accent2: #7fb3ff;
+      --success: #5fdc7f;
+      --warn: #ffb74d;
+      --danger: #ff6b6b;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", "Source Han Sans CN", "PingFang SC", sans-serif;
+      background: var(--bg); color: var(--fg); margin: 0; line-height: 1.6;
+    }
+    header {
+      padding: 16px 32px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(120deg, #161c25, #0e1218);
+    }
+    header h1 { font-size: 18px; margin: 0; letter-spacing: 1px; }
+    header .pill {
+      padding: 4px 10px; border-radius: 999px; font-size: 11px;
+      background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    }
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px 32px; }
+    .grid { display: grid; gap: 20px; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: 1.4fr 1fr; }
+    @media (max-width: 960px) {
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .card h2 { font-size: 14px; margin: 0 0 12px 0; color: var(--accent); letter-spacing: 1px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; }
+    input, textarea, select {
+      width: 100%; background: var(--bg); color: var(--fg);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 12px; font-size: 13px; font-family: inherit;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    button {
+      background: var(--accent); color: #1a1a1a; border: none;
+      padding: 10px 18px; border-radius: 8px; font-weight: 600;
+      cursor: pointer; font-size: 13px; margin-top: 16px;
+    }
+    button.ghost { background: transparent; color: var(--accent2); border: 1px solid var(--accent2); }
+    button:hover { opacity: 0.92; }
+    .stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0;
+            border-bottom: 1px dashed var(--border); font-size: 13px; }
+    .stat:last-child { border: none; }
+    .stat .v { font-family: 'JetBrains Mono', Consolas, monospace; color: var(--accent2); }
+    .pill-ok { background: rgba(95, 220, 127, 0.15); color: var(--success);
+               padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+    .pill-warn { background: rgba(255, 183, 77, 0.15); color: var(--warn);
+                 padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+    .pill-bad { background: rgba(255, 107, 107, 0.15); color: var(--danger);
+                padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 8px 4px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { color: var(--muted); font-weight: 500; font-size: 11px; }
+    code { font-family: 'JetBrains Mono', Consolas, monospace; color: var(--accent2); font-size: 11px; }
+    .small { font-size: 11px; color: var(--muted); }
+    .row { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
+    .footer { padding: 24px 32px; color: var(--muted); font-size: 11px; text-align: center; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>AI 漫剧 Autopilot · <span style="color:var(--accent);">v4</span></h1>
+  <span class="pill" id="mode-pill">loading…</span>
+</header>
+
+<div class="container grid grid-3">
+  <!-- 1. New project -->
+  <div class="card">
+    <h2>① 一键开剧</h2>
+    <label>题材</label>
+    <select id="genre">
+      <option value="ancient">古风</option>
+      <option value="modern">现代</option>
+      <option value="sweet_pet">甜宠</option>
+      <option value="suspense">悬疑</option>
+      <option value="xuanhuan">玄幻</option>
+      <option value="xianxia">仙侠</option>
+      <option value="campus">校园</option>
+      <option value="urban">都市</option>
+    </select>
+
+    <label>集数</label>
+    <input id="episode-count" type="number" value="3" min="1" max="120" />
+
+    <label>每集时长 (秒)</label>
+    <input id="episode-duration" type="number" value="75" min="30" max="180" />
+
+    <label>分发平台 (逗号分隔)</label>
+    <input id="platforms" value="douyin,kuaishou,weixin" />
+
+    <label>小说原文 / 概念</label>
+    <textarea id="novel-text" placeholder="贴入小说原文，或写一段构思（≥10 字）…"></textarea>
+
+    <button onclick="createProject()">提交 →</button>
+    <button class="ghost" onclick="loadDemo()">载入示例</button>
+    <div class="small" id="create-result"></div>
+  </div>
+
+  <!-- 2. Novel writer -->
+  <div class="card">
+    <h2>② 小说一键生成 / 续写 / 风格迁移</h2>
+    <label>模式</label>
+    <select id="novel-mode">
+      <option value="generate">generate · 全新</option>
+      <option value="continuation">continuation · 续写</option>
+      <option value="style_transfer">style_transfer · 风格迁移</option>
+    </select>
+    <label>题材</label>
+    <select id="novel-genre">
+      <option value="ancient">古风</option>
+      <option value="modern">现代</option>
+      <option value="sweet_pet">甜宠</option>
+      <option value="suspense">悬疑</option>
+      <option value="xuanhuan">玄幻</option>
+      <option value="xianxia">仙侠</option>
+    </select>
+    <label>章节数</label>
+    <input id="novel-chapters" type="number" value="12" min="1" max="60" />
+    <label>提示词 / 原文</label>
+    <textarea id="novel-prompt"
+      placeholder="generate 模式：写一段灵感 / 概念；continuation 模式：贴入原文；style_transfer：贴入待迁移原文"></textarea>
+    <button onclick="createNovel()">生成 →</button>
+    <div class="small" id="novel-result"></div>
+  </div>
+
+  <!-- 3. KPI -->
+  <div class="card">
+    <h2>③ v4 KPI 阈值</h2>
+    <div id="kpi-list"><div class="small">loading…</div></div>
+  </div>
+</div>
+
+<div class="container grid grid-2">
+  <!-- 4. Projects -->
+  <div class="card">
+    <h2>④ 最近项目</h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>项目 ID</th>
+            <th>状态</th>
+            <th>题材</th>
+            <th>阶段</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="projects-tbody"><tr><td colspan="5" class="small">loading…</td></tr></tbody>
+      </table>
+    </div>
+    <button class="ghost" onclick="loadProjects()">刷新</button>
+  </div>
+
+  <!-- 5. Capabilities -->
+  <div class="card">
+    <h2>⑤ Provider 能力图</h2>
+    <div id="providers"><div class="small">loading…</div></div>
+  </div>
+</div>
+
+<div class="footer">
+  Manhuaju Autopilot v4 · 小云雀 Agent 2.0 快路径 · 火山引擎 / Anthropic / ElevenLabs / fal.ai
+</div>
+
+<script>
+const API = window.API_BASE || '';
+
+async function jget(url) {
+  const r = await fetch(API + url);
+  if (!r.ok) throw new Error(r.statusText);
+  return r.json();
+}
+async function jpost(url, body) {
+  const r = await fetch(API + url, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  return r.json();
+}
+
+async function loadHealth() {
+  const h = await jget('/health');
+  document.getElementById('mode-pill').textContent =
+    `${h.system_mode} · ${h.fast_path_ready ? '✓ fast-path ready' : 'degraded'}`;
+
+  const prov = document.getElementById('providers');
+  prov.innerHTML = '';
+  for (const [name, info] of Object.entries(h.providers || {})) {
+    if (name === 'llm_chain') {
+      const div = document.createElement('div');
+      div.className = 'stat';
+      div.innerHTML = `<span>llm_chain</span><span class="v">${(info||[]).length} 家</span>`;
+      prov.appendChild(div);
+      continue;
+    }
+    const div = document.createElement('div');
+    div.className = 'stat';
+    const pill = info.enabled
+      ? '<span class="pill-ok">enabled</span>'
+      : '<span class="pill-bad">missing</span>';
+    div.innerHTML = `<span>${name}</span><span>${pill}</span>`;
+    prov.appendChild(div);
+  }
+}
+
+async function loadKpi() {
+  try {
+    const kpi = await jget('/v1/kpi');
+    const t = kpi.thresholds || {};
+    const el = document.getElementById('kpi-list');
+    el.innerHTML = '';
+    const rows = [
+      ['跨集 ArcFace ≥', t.arcface_min],
+      ['7 维 mean ≥', t.seven_dim_mean_min],
+      ['乱码率 ≤', t.garbled_text_rate_max],
+      ['高敏命中 ≤', t.sensitive_high_hit_max],
+      ['cycles ≤', t.cycles_max],
+      ['单集 RMB 软目标', (kpi.cost_caps_rmb||{}).per_episode_v4_target],
+      ['单集 RMB 硬上限', (kpi.cost_caps_rmb||{}).per_episode_v4_hard],
+    ];
+    rows.forEach(([k, v]) => {
+      const div = document.createElement('div');
+      div.className = 'stat';
+      div.innerHTML = `<span>${k}</span><span class="v">${v ?? '-'}</span>`;
+      el.appendChild(div);
+    });
+  } catch (e) {
+    document.getElementById('kpi-list').innerHTML = '<div class="small">无 KPI</div>';
+  }
+}
+
+async function loadProjects() {
+  try {
+    const j = await jget('/v1/projects?limit=20');
+    const tb = document.getElementById('projects-tbody');
+    tb.innerHTML = '';
+    if (!j.projects.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="small">暂无项目</td></tr>';
+      return;
+    }
+    for (const p of j.projects) {
+      const tr = document.createElement('tr');
+      let pill = '<span class="pill-warn">running</span>';
+      if (p.status === 'succeeded') pill = '<span class="pill-ok">succeeded</span>';
+      if (p.status === 'failed') pill = '<span class="pill-bad">failed</span>';
+      tr.innerHTML =
+        `<td><code>${p.project_id || '-'}</code></td>`
+      + `<td>${pill}</td>`
+      + `<td>${p.genre || '-'}</td>`
+      + `<td>${p.stage || '-'}</td>`
+      + `<td><a href="#" onclick="alert(JSON.stringify(${JSON.stringify(p).replace(/"/g, '&quot;')}, null, 2));return false">详情</a></td>`;
+      tb.appendChild(tr);
+    }
+  } catch (e) {
+    document.getElementById('projects-tbody').innerHTML =
+      '<tr><td colspan="5" class="small">列表暂不可用</td></tr>';
+  }
+}
+
+async function createProject() {
+  const body = {
+    novel_text: document.getElementById('novel-text').value || '示例小说内容…（请粘贴 ≥10 字）',
+    seed: 20260516,
+    episode_count: +document.getElementById('episode-count').value,
+    style_preset_id: 'cinematic_2d_v1',
+    genre: document.getElementById('genre').value,
+    episode_duration_s: +document.getElementById('episode-duration').value,
+    platforms: document.getElementById('platforms').value.split(',').map(s => s.trim()).filter(Boolean),
+  };
+  const r = await jpost('/v1/projects', body);
+  document.getElementById('create-result').innerHTML =
+    `<br>项目 <code>${r.project_id}</code> 已 ${r.status}.`;
+  loadProjects();
+}
+
+async function createNovel() {
+  const body = {
+    mode: document.getElementById('novel-mode').value,
+    prompt: document.getElementById('novel-prompt').value,
+    original_text: document.getElementById('novel-prompt').value,
+    genre: document.getElementById('novel-genre').value,
+    n_chapters: +document.getElementById('novel-chapters').value,
+    target_chars: 12000,
+  };
+  const r = await jpost('/v1/novels', body);
+  document.getElementById('novel-result').innerHTML =
+    `<br>小说 <code>${r.title || r.project_id}</code> 已生成（${r.n_chapters || 0} 章）。`;
+}
+
+function loadDemo() {
+  document.getElementById('novel-text').value =
+    "她从未想过，重生之后第一个见到的，竟是那个她以为已经死了的男人……";
+}
+
+(async () => {
+  await loadHealth();
+  await loadKpi();
+  await loadProjects();
+})();
+</script>
+</body>
+</html>

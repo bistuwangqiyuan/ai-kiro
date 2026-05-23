@@ -54,3 +54,51 @@ RETRY_BUDGETS = {"shot": 3, "scene": 2, "episode": 2, "project": 1}
 
 def strategy_for(fm: FailureMode) -> Strategy:
     return TABLE[fm]
+
+
+# ==================================================================
+# v4 Shell 4 重生路由表 — Doubao VLM 检测到的 issue.type → adapter
+# 见 tech.md 外壳 4 决策表 + docx 十二节「问题诊断 + 自动修正」
+# ==================================================================
+# issue.type → (adapter_kind, hint)
+#   adapter_kind: xiaoyunque | seedance | wanflf | overlay | discard
+#   hint:         传给 adapter 的额外指引
+V4_REPAIR_ROUTES: dict[str, tuple[str, str]] = {
+    "face_drift": (
+        "wanflf",
+        "FLF 首末帧锁脸；保留运动连续性",
+    ),
+    "axis_violation": (
+        "seedance",
+        "重抽镜头，强约束『保持轴线一致』，禁止越轴",
+    ),
+    "limb_distortion": (
+        "seedance",
+        "肢体结构修正：使用更强约束的 negative prompt（多手指、错位、扭曲）",
+    ),
+    "text_garbled": (
+        "overlay",
+        "去除 AI 字层后期 ASS 字幕烧入",
+    ),
+    "style_offshift": (
+        "xiaoyunque",
+        "强化 style_reference 权重至 1.0，加入风格关键词锁",
+    ),
+    "intent_mismatch": (
+        "xiaoyunque",
+        "prompt 重写突出关键动作与情绪",
+    ),
+    "detail_loss": (
+        "xiaoyunque",
+        "增加细节关键词与道具特写描述",
+    ),
+    "color_drift": (
+        "xiaoyunque",
+        "强约束色板，加入参考图 style_ref",
+    ),
+}
+
+
+def repair_route_for(issue_type: str) -> tuple[str, str]:
+    """Return (adapter_kind, hint) for a VLM-detected issue type. Defaults to seedance regen."""
+    return V4_REPAIR_ROUTES.get(issue_type, ("seedance", "default regen"))
