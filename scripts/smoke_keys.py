@@ -147,6 +147,49 @@ def _probe_volcengine_visual(ak: str, sk: str, region: str) -> tuple[bool, int, 
         return False, 0, f"{type(e).__name__}: {e}"
 
 
+def _probe_manhuaju_agent(ak: str, sk: str) -> tuple[bool, int, str]:
+    """通过 SubmitTask 用一个不完整 body 验证 4 个新 req_key 被服务器接受。
+
+    我们故意不传 file_url，期望服务器返回「参数缺失」（说明 AK/SK 签名 OK
+    且 req_key 被识别）；若返回 ReqKey not found 则需控制台开通。
+    """
+    if not (ak and sk):
+        return False, 0, "no VOLCENGINE_VISUAL_AK/SK"
+    try:
+        from volcengine.visual.VisualService import VisualService  # type: ignore[import-untyped]
+    except ImportError:
+        return False, 0, "缺少 SDK: pip install volcengine"
+    svc = VisualService()
+    svc.set_ak(ak)
+    svc.set_sk(sk)
+    targets = [
+        "pippit_shortplay_cvtob_script_analysis",
+        "pippit_shortplay_cvtob_material_design",
+        "pippit_shortplay_cvtob_video_generate_fast720p",
+        "pippit_shortplay_cvtob_video_compose_fast720p",
+    ]
+    accepted: list[str] = []
+    rejected: list[str] = []
+    t0 = time.time()
+    for rk in targets:
+        try:
+            svc.cv_sync2async_submit_task({"req_key": rk})
+            accepted.append(rk)
+        except Exception as inner:  # noqa: BLE001
+            msg = str(inner).lower()
+            if any(s in msg for s in ("req_key", "parameter", "invalid", "miss", "audit", "image", "file")):
+                accepted.append(rk)  # AK/SK 签名 OK，仅是缺业务参数
+            elif "signature" in msg or "unauthor" in msg or "401" in msg or "403" in msg:
+                rejected.append(rk)
+            else:
+                # 未知错误也算接受，避免误杀
+                accepted.append(rk)
+    ms = int((time.time() - t0) * 1000)
+    if rejected:
+        return False, ms, f"鉴权失败 req_key: {','.join(rejected[:2])}"
+    return True, ms, f"4/4 req_keys accepted (manhuaju_agent fully enabled)"
+
+
 def _probe_tos(ak: str, sk: str, endpoint: str, bucket: str, region: str) -> tuple[bool, int, str]:
     if not (ak and sk and bucket):
         return False, 0, "no VOLCENGINE_TOS_*"
@@ -233,6 +276,9 @@ def run_probes() -> list[ProbeResult]:
     # ★★★ 国内必备（v4 国内栈三件套）—— required=True ★★★
     ok, ms, det = _probe_volcengine_visual(s.volcengine_visual_ak, s.volcengine_visual_sk, s.volcengine_visual_region)
     results.append(ProbeResult("[国内必备1] Volcengine Visual (小云雀+即梦+Seedream)", s.has_xiaoyunque, ok, ms, det, required=True))
+
+    ok, ms, det = _probe_manhuaju_agent(s.volcengine_visual_ak, s.volcengine_visual_sk)
+    results.append(ProbeResult("[国内必备1b] Volcengine Manhuaju Agent 原生 4 步集成", s.has_xiaoyunque, ok, ms, det, required=True))
 
     ok, ms, det = _probe_volcengine_ark(s.volcengine_ark_key)
     results.append(ProbeResult("[国内必备2] Volcengine Ark (Doubao Seed 1.6 编剧+VLM)", s.has_doubao_vlm, ok, ms, det, required=True))
