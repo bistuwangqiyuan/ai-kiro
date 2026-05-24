@@ -132,6 +132,11 @@ class RenderOrchestratorAgent(BaseAgent):
         return candidate
 
     def run(self, req: AgentRunRequest) -> AgentRunResponse:
+        # 双轨路由：当外部已经通过「短剧漫剧 Agent」原生 4 步接口出了整集成片，
+        # 直接消化 ``req.inputs.manhuaju_storyboard``，跳过本地 per-shot 渲染。
+        if "manhuaju_storyboard" in req.inputs:
+            return self._consume_manhuaju_storyboard(req)
+
         storyboard = req.inputs["storyboard"]
         style_sha: str = req.inputs["style_sha"]
         episode_seed: int = req.inputs["episode_seed"]
@@ -190,4 +195,52 @@ class RenderOrchestratorAgent(BaseAgent):
                 "shots": float(len(results)),
                 "degraded": float(sum(1 for r in results if r["degraded"])),
             },
+        )
+
+    def _consume_manhuaju_storyboard(self, req: AgentRunRequest) -> AgentRunResponse:
+        """把 ``manhuaju_agent`` pipeline 的 ``StoryboardDetail`` 转成 shot results.
+
+        允许下游 stitch/QA 阶段无感复用本地 7 维 QA 与拼接逻辑。
+        """
+        storyboard: dict[str, Any] = req.inputs["manhuaju_storyboard"]
+        shots_in = storyboard.get("Shots") or []
+        results: list[dict[str, Any]] = []
+        for s in shots_in:
+            shot_id = str(s.get("ShotID") or s.get("shot_id") or "")
+            video_url = str(s.get("VideoURL") or s.get("video_url") or "")
+            duration_ms = int(s.get("Duration") or 0)
+            metadata = {
+                "width": int(s.get("Width") or 0),
+                "height": int(s.get("Height") or 0),
+                "format": str(s.get("Format") or "mp4"),
+                "size": int(s.get("Size") or 0),
+                "video_asset_id": str(s.get("VideoAssetID") or ""),
+                "model_name": str(s.get("ModelName") or ""),
+                "duration_s": duration_ms / 1000.0 if duration_ms else 0.0,
+                "engine": "manhuaju_agent",
+            }
+            results.append(
+                {
+                    "shot_id": shot_id,
+                    "output_uri": video_url,
+                    "metadata": metadata,
+                    "degraded": False,
+                    "seed": 0,
+                    "candidate_count": 1,
+                    "reference_images": [],
+                    "qa7": None,
+                }
+            )
+            if video_url:
+                self.ctx.provenance.record(
+                    artefact_uri=video_url,
+                    sha256="0" * 64,
+                    size=metadata["size"],
+                    producer_agent=self.name,
+                    seed=0,
+                )
+        return AgentRunResponse(
+            status="succeeded",
+            outputs={"shots": results, "engine": "manhuaju_agent"},
+            metrics={"shots": float(len(results)), "degraded": 0.0},
         )

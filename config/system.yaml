@@ -71,9 +71,14 @@ live:
     poll_interval_s: 3
     max_poll_s: 180
 
-  # ---- Shell 3 小云雀 Agent 2.0 ★ 核心生产引擎 ----
+  # ---- Shell 3 小云雀 Agent 2.0 ★ 核心生产引擎（双轨路由）----
   video:
-    primary: "volcengine_xiaoyunque"  # 小云雀 有参考接口
+    # engine 路由：
+    #   auto              → 按 budget_tier 自动选档（H → xiaoyunque_v2，M/L → manhuaju_agent）
+    #   xiaoyunque_v2     → 小云雀 Agent 2.0「有参考」单 shot（cinematic 最佳一致性）
+    #   manhuaju_agent    → 火山「短剧漫剧 Agent」原生 4 步端到端集成接口
+    engine: "auto"
+    primary: "volcengine_xiaoyunque"  # 小云雀 有参考接口（高质量档）
     fallback: "volcengine_seedance"   # 字节方舟 Seedance 2.0 (备选 / 单镜重生)
     xiaoyunque_req_key: "skylark_video_agent_v2_with_ref"
     duanju_req_key: "skylark_duanju_manhuaju_seedance_2_fast_720p"
@@ -83,6 +88,26 @@ live:
     max_poll_s: 2400                  # 40 min 单集上限（小云雀官方 30 min）
     max_concurrent: 8                 # tech.md 月产能假设
     retry_per_episode: 3
+    # 火山「短剧漫剧 Agent」原生 4 步集成 API（doc 85621/2459788）
+    manhuaju_agent:
+      req_keys:
+        script_analysis:   "pippit_shortplay_cvtob_script_analysis"
+        material_design:   "pippit_shortplay_cvtob_material_design"
+        video_generate_fast: "pippit_shortplay_cvtob_video_generate_fast720p"
+        video_generate_pro:  "pippit_shortplay_cvtob_video_generate_pro720p"
+        video_compose_fast:  "pippit_shortplay_cvtob_video_compose_fast720p"
+        video_compose_pro:   "pippit_shortplay_cvtob_video_compose_pro720p"
+      poll_interval_s: 10
+      max_poll_s: 2400
+      max_poll_video_s: 3600
+      max_poll_compose_s: 1800
+      default_visual_style: "真人写实, 电影风格, 冷色调,都市女频"
+      default_video_ratio: "16:9"
+      max_retries_per_episode: 2
+      output_root: "api_data/manhuaju_agent"
+    routing_rule: |
+      budget_tier == 'H' -> xiaoyunque_v2 (¥60-80/集，最佳一致性)
+      budget_tier in ('M','L') -> manhuaju_agent (¥30-50/集，集成度最高)
 
   # ---- Shell 4 质检与重生 ----
   vlm_qa:

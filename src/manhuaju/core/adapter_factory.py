@@ -49,6 +49,13 @@ class AdapterBundle:
     moderation: Any = None
     embedding: Any = None
     storage_tos: Any | None = None
+    # 火山「短剧漫剧 Agent」原生 4 步集成接口（双轨制 M/L 档默认走这套）
+    manhuaju_script_analyzer: Any | None = None
+    manhuaju_material_designer: Any | None = None
+    manhuaju_video_generator: Any | None = None
+    manhuaju_video_composer: Any | None = None
+    manhuaju_output_root: str = "api_data/manhuaju_agent"
+    video_engine: str = "auto"  # auto | xiaoyunque_v2 | manhuaju_agent
     cost: CostTracker = field(default_factory=CostTracker)
     settings: ProviderSettings = field(default_factory=ProviderSettings)
     config: dict[str, Any] = field(default_factory=dict)
@@ -132,6 +139,17 @@ def build_bundle(
     mock_image = MockImageAdapter(artefacts_root=images_root)
     mock_sfx = MockSFXAdapter(artefacts_root=sfx_root)
 
+    MockManhuajuAgentAdapter = _import(
+        "manhuaju.adapters.manhuaju_agent.mock_manhuaju_agent_adapter",
+        "MockManhuajuAgentAdapter",
+    )
+    manhuaju_out = (
+        (live_cfg.get("video", {}) or {})
+        .get("manhuaju_agent", {})
+        .get("output_root", "api_data/manhuaju_agent")
+    )
+    mock_manhuaju = MockManhuajuAgentAdapter(artefacts_root=storage_root / "_manhuaju_agent_mock")
+
     if mode == "mock":
         return AdapterBundle(
             mode="mock",
@@ -150,6 +168,12 @@ def build_bundle(
             moderation=mock_mod,
             embedding=mock_emb,
             storage_tos=None,
+            manhuaju_script_analyzer=mock_manhuaju,
+            manhuaju_material_designer=mock_manhuaju,
+            manhuaju_video_generator=mock_manhuaju,
+            manhuaju_video_composer=mock_manhuaju,
+            manhuaju_output_root=manhuaju_out,
+            video_engine=str((live_cfg.get("video", {}) or {}).get("engine", "auto")),
             cost=cost,
             settings=settings,
             config=cfg,
@@ -173,6 +197,12 @@ def build_bundle(
             moderation=mock_mod,
             embedding=mock_emb,
             storage_tos=None,
+            manhuaju_script_analyzer=mock_manhuaju,
+            manhuaju_material_designer=mock_manhuaju,
+            manhuaju_video_generator=mock_manhuaju,
+            manhuaju_video_composer=mock_manhuaju,
+            manhuaju_output_root=manhuaju_out,
+            video_engine=str((live_cfg.get("video", {}) or {}).get("engine", "auto")),
             cost=cost,
             settings=settings,
             config=cfg,
@@ -424,6 +454,39 @@ def build_bundle(
         mock_fallback=mock_qa if fallback else None,
     )
 
+    # ---- 火山「短剧漫剧 Agent」原生 4 步集成 OpenAPI（双轨 M/L 档默认） ----
+    ma_cfg_root = (live_cfg.get("video", {}) or {}).get("manhuaju_agent", {}) or {}
+    if settings.has_xiaoyunque:
+        ScriptAnalyzerAdapter = _import(
+            "manhuaju.adapters.manhuaju_agent.script_analyzer", "ScriptAnalyzerAdapter"
+        )
+        MaterialDesignerAdapter = _import(
+            "manhuaju.adapters.manhuaju_agent.material_designer", "MaterialDesignerAdapter"
+        )
+        VideoGeneratorAdapter = _import(
+            "manhuaju.adapters.manhuaju_agent.video_generator", "VideoGeneratorAdapter"
+        )
+        VideoComposerAdapter = _import(
+            "manhuaju.adapters.manhuaju_agent.video_composer", "VideoComposerAdapter"
+        )
+        manhuaju_script = ScriptAnalyzerAdapter(
+            settings=settings, cost=cost, config=ma_cfg_root, mock_fallback=mock_manhuaju
+        )
+        manhuaju_material = MaterialDesignerAdapter(
+            settings=settings, cost=cost, config=ma_cfg_root, mock_fallback=mock_manhuaju
+        )
+        manhuaju_video = VideoGeneratorAdapter(
+            settings=settings, cost=cost, config=ma_cfg_root, mock_fallback=mock_manhuaju
+        )
+        manhuaju_compose = VideoComposerAdapter(
+            settings=settings, cost=cost, config=ma_cfg_root, mock_fallback=mock_manhuaju
+        )
+    else:
+        manhuaju_script = mock_manhuaju
+        manhuaju_material = mock_manhuaju
+        manhuaju_video = mock_manhuaju
+        manhuaju_compose = mock_manhuaju
+
     return AdapterBundle(
         mode=mode,
         llm=real_llm,
@@ -441,6 +504,12 @@ def build_bundle(
         moderation=real_mod,
         embedding=real_emb,
         storage_tos=tos,
+        manhuaju_script_analyzer=manhuaju_script,
+        manhuaju_material_designer=manhuaju_material,
+        manhuaju_video_generator=manhuaju_video,
+        manhuaju_video_composer=manhuaju_compose,
+        manhuaju_output_root=str(ma_cfg_root.get("output_root", "api_data/manhuaju_agent")),
+        video_engine=str((live_cfg.get("video", {}) or {}).get("engine", "auto")),
         cost=cost,
         settings=settings,
         config=cfg,
