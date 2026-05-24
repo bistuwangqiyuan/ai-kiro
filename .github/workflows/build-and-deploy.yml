@@ -151,12 +151,14 @@ jobs:
           REF_NAME="${GITHUB_REF_NAME//\//-}"
           echo "tag_sha=$SHA" >> $GITHUB_OUTPUT
           echo "tag_ref=$REF_NAME" >> $GITHUB_OUTPUT
-      - name: Build + push (multi-arch)
+      - name: Build + push (amd64)
+        # VeFaaS / 火山引擎 serverless runs amd64 only; multi-arch builds add 30+ min via QEMU.
+        # 如需 arm64 单独 tag，可以另起 job + Graviton runner，避免阻塞主链。
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.tags.outputs.tag_sha }}
