@@ -1,4 +1,4 @@
-# =============================================================
+﻿# =============================================================
 # aliyun-fc-go-live.ps1 — 阿里云 FC 3.0 一键全自动上线
 #
 # 流程：
@@ -72,7 +72,8 @@ Get-Content $envFile -Encoding UTF8 | ForEach-Object {
     if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
         $idx = $line.IndexOf("=")
         $k = $line.Substring(0, $idx).Trim()
-        $v = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
+        $v = $line.Substring($idx + 1).Trim()
+        $v = $v.Trim([char]34).Trim([char]39)
         $envMap[$k] = $v
     }
 }
@@ -127,7 +128,8 @@ if (-not $OnlyProvision) {
         $credInfo = $jsonText | ConvertFrom-Json
         OK "ACR instance  : $($credInfo.instance_name) (id=$($credInfo.instance_id))"
         OK "ACR username  : $($credInfo.username)"
-        OK "ACR password  : (hidden, $($credInfo.password.Length) chars)"
+        $pwdLen = $credInfo.password.Length
+        OK "ACR password  : hidden, length=$pwdLen"
         OK "image prefix  : $($credInfo.image_prefix)"
     } finally { Pop-Location }
 }
@@ -234,18 +236,18 @@ if (-not $SkipProvision) {
 }
 
 # 6. done -----------------------------------------------------------
-H1 "5/5  Live!"
+H1 '5/5  Live!'
 if ($FinalEndpoint) {
-    Write-Host ""
-    Write-Host "  Public API endpoint:" -ForegroundColor Green
+    Write-Host ''
+    Write-Host '  Public API endpoint:' -ForegroundColor Green
     Write-Host "    $FinalEndpoint" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  Health check:" -ForegroundColor Green
+    Write-Host ''
+    Write-Host '  Health check:' -ForegroundColor Green
     Write-Host "    curl $FinalEndpoint/health" -ForegroundColor White
-    Write-Host ""
-    Write-Host "  Web console:" -ForegroundColor Green
+    Write-Host ''
+    Write-Host '  Web console:' -ForegroundColor Green
     Write-Host "    Start-Process $FinalEndpoint/console.html" -ForegroundColor White
 } else {
-    Write-Host "  Console: https://fc.console.aliyun.com -> manhuaju-api -> 触发器 -> URL" -ForegroundColor Yellow
+    Write-Host '  Console: https://fc.console.aliyun.com -> manhuaju-api -> triggers -> URL' -ForegroundColor Yellow
 }
-Write-Host ""
+Write-Host ''

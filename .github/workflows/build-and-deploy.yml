@@ -17,7 +17,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  REGISTRY: cr-cn-beijing.volces.com
+  REGISTRY: ${{ vars.VCR_REGISTRY_HOST || 'cr-cn-beijing.volces.com' }}
   IMAGE: manhuaju/manhuaju-autopilot
 
 jobs:

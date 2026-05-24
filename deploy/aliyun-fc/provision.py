@@ -436,12 +436,18 @@ def main() -> int:
     p.add_argument("--image-tag", default=os.environ.get("IMAGE_TAG", "latest"))
     p.add_argument("--json", action="store_true")
     args = p.parse_args()
+    args.region = (args.region or "cn-hangzhou").strip()
+    args.namespace = (args.namespace or "manhuaju").strip()
+    args.repo = (args.repo or "manhuaju-autopilot").strip()
+    args.image_tag = (args.image_tag or "latest").strip()
+    if args.acr_instance:
+        args.acr_instance = args.acr_instance.strip()
 
     root = Path(__file__).resolve().parents[2]
     env = load_env(root / ".env")
 
-    ak = env.get("ALIBABA_CLOUD_ACCESS_KEY_ID") or os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID")
-    sk = env.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET") or os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
+    ak = (env.get("ALIBABA_CLOUD_ACCESS_KEY_ID") or os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID") or "").strip()
+    sk = (env.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET") or os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET") or "").strip()
     if not ak or not sk:
         print("X 缺 ALIBABA_CLOUD_ACCESS_KEY_ID/SECRET", file=sys.stderr)
         print("  请到 https://ram.console.aliyun.com/manage/ak 创建 AccessKey, 然后填到 .env", file=sys.stderr)
