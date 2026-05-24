@@ -154,7 +154,9 @@ def setup_credentials_step(env: dict[str, str], region: str, vcr_name: str | Non
     except Exception as e:  # noqa: BLE001
         print(f"[vcr] i get_authorization_token check failed: {e}")
 
-    image_host = f"cr-{region}.volces.com"
+    # Volcengine VCR 域名规则：<instance>-<region>.cr.volces.com
+    # （旧版 cr-{region}.volces.com 是公共仓库前缀；私有 instance 必须用上面形式）
+    image_host = f"{registry}-{region}.cr.volces.com"
     image_prefix = f"{image_host}/{vcr_namespace}/{vcr_repo}"
     print(f"[vcr] image prefix = {image_prefix}")
 
@@ -377,7 +379,13 @@ def main() -> int:
         result.update(cred)
 
     if args.step in ("all", "functions"):
-        image_prefix = result.get("image_prefix") or f"cr-{args.region}.volces.com/{args.vcr_namespace}/{args.vcr_repo}"
+        # Prefer prefix from credentials_step; otherwise discover registry on the fly
+        image_prefix = result.get("image_prefix")
+        if not image_prefix:
+            import volcenginesdkcr as cr
+            api = cr.CRApi()
+            registry = discover_registry(api, prefer=args.vcr_name)
+            image_prefix = f"{registry}-{args.region}.cr.volces.com/{args.vcr_namespace}/{args.vcr_repo}"
         full_image = f"{image_prefix}:{args.image_tag}"
         result["full_image"] = full_image
         fn = functions_step(env, full_image)
