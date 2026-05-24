@@ -153,18 +153,20 @@ jobs:
           echo "tag_ref=$REF_NAME" >> $GITHUB_OUTPUT
       - name: Build + push (amd64)
         # VeFaaS / 火山引擎 serverless runs amd64 only; multi-arch builds add 30+ min via QEMU.
-        # 如需 arm64 单独 tag，可以另起 job + Graviton runner，避免阻塞主链。
+        # Use GHA cache (free, fast, in same datacenter) instead of pushing buildcache to VCR
+        # (cross-region GHA→Beijing upload is the slow path; pushing only final image saves ~30 min).
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/amd64
+          provenance: false
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.tags.outputs.tag_sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.tags.outputs.tag_ref }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE }}:buildcache,mode=max
+          cache-from: type=gha,scope=manhuaju-amd64
+          cache-to: type=gha,scope=manhuaju-amd64,mode=max
 
   deploy-vefaas:
     runs-on: ubuntu-latest
