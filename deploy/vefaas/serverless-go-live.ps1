@@ -150,11 +150,14 @@ if (-not $SkipGhSecrets -and -not $OnlyProvision) {
         if ($LASTEXITCODE -eq 0) { OK "secret $k (len=$($v.Length))" } else { WARN "secret $k failed" }
     }
 
-    $regHost = $credInfo.registry
+    # VCR_REGISTRY_HOST = 域名 (FQDN), e.g. cr-cn-beijing.volces.com — GHA docker login & image URL 用
+    # VCR_REGISTRY      = 实例名, e.g. manhuaju — provision.py & vefaas image discovery 用
+    $regHost = if ($credInfo.image_host) { $credInfo.image_host } else { "cr-$Region.volces.com" }
+    $regName = $credInfo.registry
     gh variable set VCR_REGISTRY_HOST --repo $repo --body $regHost 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) { OK "variable VCR_REGISTRY_HOST=$regHost" } else { WARN "VCR_REGISTRY_HOST failed" }
-    gh variable set VCR_REGISTRY --repo $repo --body $regHost 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) { OK "variable VCR_REGISTRY=$regHost" } else { WARN "VCR_REGISTRY failed" }
+    gh variable set VCR_REGISTRY --repo $repo --body $regName 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { OK "variable VCR_REGISTRY=$regName" } else { WARN "VCR_REGISTRY failed" }
     gh variable set VCR_NAMESPACE --repo $repo --body $VcrNamespace 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) { OK "variable VCR_NAMESPACE=$VcrNamespace" } else { WARN "VCR_NAMESPACE failed" }
     gh variable set VCR_REPO --repo $repo --body $VcrRepo 2>&1 | Out-Null
