@@ -33,8 +33,7 @@ COPY web ./web
 
 # Install with live + observability + db extras
 RUN pip install --upgrade pip \
- && pip install ".[live,observe,db]" \
- && pip cache purge
+ && pip install --no-cache-dir ".[live,observe,db]"
 
 # ============================================================
 # Runtime stage — lean
