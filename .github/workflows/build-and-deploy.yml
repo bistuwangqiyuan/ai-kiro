@@ -87,12 +87,63 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+      - name: Resolve VCR docker credentials
+        id: vcr_creds
+        env:
+          VOLCENGINE_AK: ${{ secrets.VOLCENGINE_AK || secrets.VOLCENGINE_VISUAL_AK }}
+          VOLCENGINE_SK: ${{ secrets.VOLCENGINE_SK || secrets.VOLCENGINE_VISUAL_SK }}
+          VCR_USERNAME_SECRET: ${{ secrets.VCR_USERNAME }}
+          VCR_PASSWORD_SECRET: ${{ secrets.VCR_PASSWORD }}
+          REGISTRY_HOST: ${{ env.REGISTRY }}
+        run: |
+          # 优先用永久 VCR_USERNAME/PASSWORD；否则 Micro tier 临时 token
+          if [ -n "${VCR_USERNAME_SECRET:-}" ] && [ -n "${VCR_PASSWORD_SECRET:-}" ]; then
+            echo "::add-mask::${VCR_USERNAME_SECRET}"
+            echo "::add-mask::${VCR_PASSWORD_SECRET}"
+            echo "username=${VCR_USERNAME_SECRET}" >> $GITHUB_OUTPUT
+            echo "password=${VCR_PASSWORD_SECRET}" >> $GITHUB_OUTPUT
+            echo "i Using permanent VCR credentials"
+            exit 0
+          fi
+          pip install --quiet volcengine-python-sdk
+          python - <<'PY'
+          import os, sys
+          try:
+              import volcenginesdkcore as core
+              import volcenginesdkcr as cr
+          except ImportError as e:
+              print(f"::error::SDK import failed: {e}"); sys.exit(1)
+          conf = core.Configuration()
+          conf.ak = os.environ['VOLCENGINE_AK']
+          conf.sk = os.environ['VOLCENGINE_SK']
+          conf.region = 'cn-beijing'
+          core.Configuration.set_default(conf)
+          api = cr.CRApi()
+          # discover registry
+          regs = api.list_registries(cr.ListRegistriesRequest(page_size=50))
+          items = getattr(regs, 'items', None) or []
+          if not items:
+              print('::error::No VCR registries'); sys.exit(2)
+          registry = getattr(items[0], 'name')
+          # username
+          u = api.get_user(cr.GetUserRequest(registry=registry))
+          username = getattr(u, 'username', None) or ''
+          # token
+          tok = api.get_authorization_token(cr.GetAuthorizationTokenRequest(registry=registry))
+          password = getattr(tok, 'token', None) or ''
+          out = os.environ['GITHUB_OUTPUT']
+          with open(out, 'a') as f:
+              f.write(f"username={username}\n")
+              f.write(f"password={password}\n")
+          print(f"::add-mask::{password}")
+          print(f"i Fetched temporary VCR token for {username} @ {registry}")
+          PY
       - name: Login to Volcengine VCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.VCR_USERNAME }}
-          password: ${{ secrets.VCR_PASSWORD }}
+          username: ${{ steps.vcr_creds.outputs.username }}
+          password: ${{ steps.vcr_creds.outputs.password }}
       - name: Compute tags
         id: tags
         run: |
@@ -124,56 +175,49 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install Volcengine SDK
-        run: pip install volcengine-python-sdk
-      - name: Update VeFaaS functions to new image
+        run: pip install --quiet volcengine volcengine-python-sdk
+      - name: Update VeFaaS functions (image + env)
         env:
-          VOLCENGINE_AK: ${{ secrets.VOLCENGINE_AK }}
-          VOLCENGINE_SK: ${{ secrets.VOLCENGINE_SK }}
-          VCR_NAMESPACE: ${{ vars.VCR_NAMESPACE }}
+          VEFAAS_REGION: cn-beijing
+          VCR_NAMESPACE_NAME: ${{ vars.VCR_NAMESPACE || 'manhuaju' }}
+          VCR_REPO_NAME: ${{ vars.VCR_REPO || 'manhuaju-autopilot' }}
           IMAGE_TAG: ${{ needs.build-and-push.outputs.tag_sha }}
+          # ---- visual (must-have for live mode) ----
+          VOLCENGINE_VISUAL_AK: ${{ secrets.VOLCENGINE_VISUAL_AK || secrets.VOLCENGINE_AK }}
+          VOLCENGINE_VISUAL_SK: ${{ secrets.VOLCENGINE_VISUAL_SK || secrets.VOLCENGINE_SK }}
+          VOLCENGINE_VISUAL_REGION: cn-north-1
+          # ---- ark / tos ----
+          VOLCENGINE_ARK_API_KEY: ${{ secrets.VOLCENGINE_ARK_API_KEY }}
+          VOLCENGINE_TOS_AK: ${{ secrets.VOLCENGINE_TOS_AK }}
+          VOLCENGINE_TOS_SK: ${{ secrets.VOLCENGINE_TOS_SK }}
+          VOLCENGINE_TOS_BUCKET: ${{ secrets.VOLCENGINE_TOS_BUCKET || 'manhuaju-assets' }}
+          VOLCENGINE_TOS_REGION: ${{ secrets.VOLCENGINE_TOS_REGION || 'cn-beijing' }}
+          VOLCENGINE_TOS_ENDPOINT: ${{ secrets.VOLCENGINE_TOS_ENDPOINT || 'tos-cn-beijing.volces.com' }}
+          # ---- 国产 LLM chain ----
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          TONGYI_API_KEY: ${{ secrets.TONGYI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+          MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          SPARK_API_KEY: ${{ secrets.SPARK_API_KEY }}
+          # ---- optional international ----
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          FAL_KEY: ${{ secrets.FAL_KEY }}
         run: |
-          # 当 VOLCENGINE_AK/SK 或 VCR_NAMESPACE 缺时，自动跳过（不影响构建）
-          if [ -z "${VOLCENGINE_AK:-}" ] || [ -z "${VCR_NAMESPACE:-}" ]; then
-            echo "i  VOLCENGINE_AK / VCR_NAMESPACE 未配置，跳过 VeFaaS 自动更新"
+          if [ -z "${VOLCENGINE_VISUAL_AK:-}" ]; then
+            echo "i  VOLCENGINE_VISUAL_AK 未配置，跳过 VeFaaS 自动更新"
             exit 0
           fi
-          python - <<'PY'
-          import os, sys, json
-          try:
-              import volcenginesdkcore as core
-              import volcenginesdkvefaas as vefaas
-          except ImportError as e:
-              print(f"SDK import fail: {e}; skipping"); sys.exit(0)
-
-          conf = core.Configuration()
-          conf.ak = os.environ['VOLCENGINE_AK']
-          conf.sk = os.environ['VOLCENGINE_SK']
-          conf.region = 'cn-beijing'
-          core.Configuration.set_default(conf)
-          api = vefaas.VEFAASApi()
-
-          ns   = os.environ['VCR_NAMESPACE']
-          tag  = os.environ['IMAGE_TAG']
-          img  = f"cr-cn-beijing.volces.com/{ns}/manhuaju-autopilot:{tag}"
-
-          for name in ('manhuaju-api', 'manhuaju-worker'):
-              try:
-                  r = api.list_functions(vefaas.ListFunctionsRequest(name=name, page_size=10))
-                  items = getattr(r, 'items', None) or []
-                  if not items:
-                      print(f"i  function {name} 不存在，跳过")
-                      continue
-                  fid = items[0].id
-                  api.update_function(vefaas.UpdateFunctionRequest(
-                      id=fid, source={'type': 'image', 'image': img}))
-                  try:
-                      api.release(vefaas.ReleaseRequest(id=fid))
-                      print(f"OK {name} 已更新到 {tag}")
-                  except Exception as e:
-                      print(f"i  {name} update 成功，但 release 失败：{e}")
-              except Exception as e:
-                  print(f"X  {name} 更新失败：{e}"); sys.exit(2)
-          PY
+          # 复用 provision.py 一行命令：自动 update + release，env 全注入
+          python deploy/vefaas/provision.py --step functions --image-tag "${IMAGE_TAG}" --json || {
+            echo "::warning::provision.py exited non-zero; functions may still be partial"
+            exit 0
+          }
 
   deploy-vke:
     runs-on: ubuntu-latest

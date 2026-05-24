@@ -291,22 +291,37 @@ def functions_step(env: dict[str, str], full_image: str) -> dict[str, Any]:
     ak = env.get("VOLCENGINE_VISUAL_AK") or os.environ["VOLCENGINE_VISUAL_AK"]
     sk = env.get("VOLCENGINE_VISUAL_SK") or os.environ["VOLCENGINE_VISUAL_SK"]
     common_envs: dict[str, str] = {
+        # ---- runtime ----
         "MANHUAJU_LIVE_MODE": "live",
         "MANHUAJU_API_DATA": "/data",
+        "MANHUAJU_VIDEO_ENGINE": env.get("MANHUAJU_VIDEO_ENGINE", "auto"),
+        # ---- Volcengine Visual (Xiaoyunque + Manhuaju Agent + Seedream + Jimeng) ----
         "VOLCENGINE_VISUAL_AK": ak,
         "VOLCENGINE_VISUAL_SK": sk,
+        "VOLCENGINE_VISUAL_REGION": env.get("VOLCENGINE_VISUAL_REGION", "cn-north-1"),
+        # ---- Volcengine Ark (Doubao Seed 1.6 LLM + VLM) ----
         "VOLCENGINE_ARK_API_KEY": env.get("VOLCENGINE_ARK_API_KEY", ""),
+        # ---- Volcengine TOS ----
         "VOLCENGINE_TOS_AK": env.get("VOLCENGINE_TOS_AK", ak),
         "VOLCENGINE_TOS_SK": env.get("VOLCENGINE_TOS_SK", sk),
         "VOLCENGINE_TOS_BUCKET": env.get("VOLCENGINE_TOS_BUCKET", "manhuaju-assets"),
         "VOLCENGINE_TOS_REGION": env.get("VOLCENGINE_TOS_REGION", "cn-beijing"),
         "VOLCENGINE_TOS_ENDPOINT": env.get("VOLCENGINE_TOS_ENDPOINT", "tos-cn-beijing.volces.com"),
+        # ---- 国产 LLM fallback chain ----
         "DASHSCOPE_API_KEY": env.get("DASHSCOPE_API_KEY", ""),
+        "TONGYI_API_KEY": env.get("TONGYI_API_KEY", ""),
         "DEEPSEEK_API_KEY": env.get("DEEPSEEK_API_KEY", ""),
         "GLM_API_KEY": env.get("GLM_API_KEY", ""),
         "MOONSHOT_API_KEY": env.get("MOONSHOT_API_KEY", ""),
+        "MISTRAL_API_KEY": env.get("MISTRAL_API_KEY", ""),
+        "GROQ_API_KEY": env.get("GROQ_API_KEY", ""),
+        "XAI_API_KEY": env.get("XAI_API_KEY", ""),
+        "SPARK_API_KEY": env.get("SPARK_API_KEY", ""),
+        # ---- optional international ----
         "ANTHROPIC_API_KEY": env.get("ANTHROPIC_API_KEY", ""),
         "ANTHROPIC_BASE_URL": env.get("ANTHROPIC_BASE_URL", ""),
+        "ELEVENLABS_API_KEY": env.get("ELEVENLABS_API_KEY", ""),
+        "FAL_KEY": env.get("FAL_KEY", ""),
     }
 
     api_fid = ensure_function(

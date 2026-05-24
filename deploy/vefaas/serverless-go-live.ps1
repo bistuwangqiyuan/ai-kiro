@@ -1,4 +1,4 @@
-# =============================================================
+﻿# =============================================================
 # serverless-go-live.ps1 — 火山 VeFaaS 一键全自动上线 (v3)
 #
 # 升级亮点：GHA 在 build 时实时调火山 OpenAPI 拿 docker login 临时 token，
@@ -116,20 +116,49 @@ if (-not $SkipGhSecrets -and -not $OnlyProvision) {
     H1 "2/5  GitHub Secrets and Variables"
     $repo = (gh repo view --json nameWithOwner --jq ".nameWithOwner").Trim()
     INFO "target repo = $repo"
-    $secrets = @{
-        "VOLCENGINE_AK" = $envMap["VOLCENGINE_VISUAL_AK"]
-        "VOLCENGINE_SK" = $envMap["VOLCENGINE_VISUAL_SK"]
+
+    # 必备：build 阶段 GHA 拿 VCR 临时 docker token 用
+    $mustSecrets = @(
+        "VOLCENGINE_VISUAL_AK", "VOLCENGINE_VISUAL_SK"
+    )
+    # 选填：runtime function envs（缺失自动跳过，不报错）
+    $optionalSecrets = @(
+        "VOLCENGINE_ARK_API_KEY",
+        "VOLCENGINE_TOS_AK", "VOLCENGINE_TOS_SK", "VOLCENGINE_TOS_BUCKET",
+        "VOLCENGINE_TOS_REGION", "VOLCENGINE_TOS_ENDPOINT",
+        "DASHSCOPE_API_KEY", "TONGYI_API_KEY",
+        "DEEPSEEK_API_KEY", "GLM_API_KEY", "MOONSHOT_API_KEY",
+        "MISTRAL_API_KEY", "GROQ_API_KEY", "XAI_API_KEY", "SPARK_API_KEY",
+        "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL",
+        "ELEVENLABS_API_KEY", "FAL_KEY"
+    )
+
+    foreach ($k in $mustSecrets) {
+        $v = $envMap[$k]
+        if (-not $v) { ERR ".env missing required key: $k"; exit 1 }
+        # 双写 — VOLCENGINE_AK/SK 是 GHA workflow 引用的旧名字，向后兼容
+        $kAlt = $k -replace "_VISUAL", ""
+        gh secret set $k    --repo $repo --body $v 2>&1 | Out-Null
+        gh secret set $kAlt --repo $repo --body $v 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) { OK "secret $k / $kAlt (len=$($v.Length))" } else { ERR "secret $k FAILED"; exit 1 }
     }
-    foreach ($k in $secrets.Keys) {
-        $v = $secrets[$k]
-        # 直接 --body 传字符串；不要用 stdin 管道（PS 会加 \r\n 污染 secret 末尾，导致 HMAC 签名错）
+
+    foreach ($k in $optionalSecrets) {
+        $v = $envMap[$k]
+        if (-not $v) { INFO "skip optional $k (not in .env)"; continue }
         gh secret set $k --repo $repo --body $v 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) { OK "secret $k (len=$($v.Length))" } else { ERR "secret $k FAILED"; exit 1 }
+        if ($LASTEXITCODE -eq 0) { OK "secret $k (len=$($v.Length))" } else { WARN "secret $k failed" }
     }
-    gh variable set VCR_REGISTRY --repo $repo --body $credInfo.registry 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) { OK "variable VCR_REGISTRY=$($credInfo.registry)" } else { WARN "VCR_REGISTRY failed" }
+
+    $regHost = $credInfo.registry
+    gh variable set VCR_REGISTRY_HOST --repo $repo --body $regHost 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { OK "variable VCR_REGISTRY_HOST=$regHost" } else { WARN "VCR_REGISTRY_HOST failed" }
+    gh variable set VCR_REGISTRY --repo $repo --body $regHost 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { OK "variable VCR_REGISTRY=$regHost" } else { WARN "VCR_REGISTRY failed" }
     gh variable set VCR_NAMESPACE --repo $repo --body $VcrNamespace 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) { OK "variable VCR_NAMESPACE=$VcrNamespace" } else { WARN "VCR_NAMESPACE failed" }
+    gh variable set VCR_REPO --repo $repo --body $VcrRepo 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { OK "variable VCR_REPO=$VcrRepo" } else { WARN "VCR_REPO failed" }
 }
 
 # 4. trigger GHA + wait ---------------------------------------------
