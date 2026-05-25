@@ -172,9 +172,21 @@ def setup_credentials_step(env: dict[str, str], region: str, vcr_name: str | Non
 # Step 2: VeFaaS functions
 # --------------------------------------------------------------------------- #
 def list_functions(api: Any, name: str) -> list[Any]:
+    """Filter functions by exact name.
+
+    新版 SDK 用 ``filters=[FilterForListFunctionsInput(name='Name', values=[...])]``，
+    没有顶层 ``name`` 关键字。后兜底再做一次精确匹配，防止 server 返回前缀近似项。
+    """
     import volcenginesdkvefaas as vefaas
-    r = api.list_functions(vefaas.ListFunctionsRequest(name=name, page_size=20))
-    return list(getattr(r, "items", None) or [])
+
+    try:
+        flt = vefaas.FilterForListFunctionsInput(name="Name", values=[name])
+        r = api.list_functions(vefaas.ListFunctionsRequest(filters=[flt], page_size=20))
+    except Exception:
+        # 部分老 SDK 没有 filter，直接列全量
+        r = api.list_functions(vefaas.ListFunctionsRequest(page_size=100))
+    items = list(getattr(r, "items", None) or [])
+    return [it for it in items if getattr(it, "name", "") == name]
 
 
 def build_envs(envs: dict[str, str]) -> list[Any]:
@@ -187,10 +199,55 @@ def build_envs(envs: dict[str, str]) -> list[Any]:
     return out
 
 
-def ensure_function(*, fn_name: str, image: str, command: list[str] | None,
+def _build_source_access(env: dict[str, str]) -> Any | None:
+    """构造 VCR Private 镜像拉取凭据（VeFaaS 需要显式传 username/password）。"""
+    import volcenginesdkvefaas as vefaas
+
+    user = env.get("VCR_USERNAME") or os.environ.get("VCR_USERNAME") or ""
+    pwd = env.get("VCR_PASSWORD") or os.environ.get("VCR_PASSWORD") or ""
+    if not user or not pwd:
+        return None
+    return vefaas.SourceAccessConfigForCreateFunctionInput(username=user, password=pwd)
+
+
+def _build_source_access_update(env: dict[str, str]) -> Any | None:
+    import volcenginesdkvefaas as vefaas
+
+    user = env.get("VCR_USERNAME") or os.environ.get("VCR_USERNAME") or ""
+    pwd = env.get("VCR_PASSWORD") or os.environ.get("VCR_PASSWORD") or ""
+    if not user or not pwd:
+        return None
+    return vefaas.SourceAccessConfigForUpdateFunctionInput(username=user, password=pwd)
+
+
+def _release(fid: str, fn_name: str) -> None:
+    """Publish the function's Latest code as a new revision (revision_number=0 ⇒ Latest)."""
+    import volcenginesdkvefaas as vefaas
+
+    api = vefaas.VEFAASApi()
+    try:
+        api.release(vefaas.ReleaseRequest(
+            function_id=fid,
+            revision_number=0,             # 0 ⇒ "publish current Latest as new revision"
+            target_traffic_weight=100,     # full traffic to the new revision
+            description=f"auto-publish {fn_name}",
+        ))
+        print(f"[vefaas] OK {fn_name} release submitted (revision_number=0)")
+    except Exception as e:  # noqa: BLE001
+        print(f"[vefaas] i release skipped: {type(e).__name__}: {str(e)[:200]}")
+
+
+def ensure_function(*, fn_name: str, image: str, command: str | None,
                     port: int | None, cpu_milli: int, memory_mb: int,
                     request_timeout: int, max_concurrency: int,
-                    envs: dict[str, str]) -> str:
+                    envs: dict[str, str], src_env: dict[str, str],
+                    exclusive_mode: bool = False) -> str:
+    """Create or update a native/v1 VeFaaS function.
+
+    ``command`` is a single string (VeFaaS only supports native/v1 command field as ``str``).
+    ``src_env`` is the loaded ``.env`` map used to extract VCR pull credentials.
+    ``exclusive_mode`` must be True for max_concurrency < 10.
+    """
     import volcenginesdkvefaas as vefaas
     api = vefaas.VEFAASApi()
     existing = list_functions(api, fn_name)
@@ -202,15 +259,14 @@ def ensure_function(*, fn_name: str, image: str, command: list[str] | None,
                 id=fid, source=image, source_type="image",
                 envs=build_envs(envs),
             )
+            sac = _build_source_access_update(src_env)
+            if sac is not None:
+                kw["source_access_config"] = sac
             if command is not None:
                 kw["command"] = command
             api.update_function(vefaas.UpdateFunctionRequest(**kw))
             print(f"[vefaas] OK {fn_name} updated")
-            try:
-                api.release(vefaas.ReleaseRequest(id=fid))
-                print(f"[vefaas] OK {fn_name} released")
-            except Exception as e:  # noqa: BLE001
-                print(f"[vefaas] i release skipped: {e}")
+            _release(fid, fn_name)
         except Exception as e:  # noqa: BLE001
             print(f"[vefaas] X update failed: {type(e).__name__}: {e}", file=sys.stderr)
         return fid
@@ -219,15 +275,19 @@ def ensure_function(*, fn_name: str, image: str, command: list[str] | None,
     kw: dict[str, Any] = dict(
         name=fn_name,
         description=f"AI 漫剧 v4 auto-provisioned {fn_name}",
-        runtime="native-custom-container",
+        runtime="native/v1",
         source=image,
         source_type="image",
         cpu_milli=cpu_milli,
         memory_mb=memory_mb,
         request_timeout=request_timeout,
         max_concurrency=max_concurrency,
+        exclusive_mode=exclusive_mode,
         envs=build_envs(envs),
     )
+    sac = _build_source_access(src_env)
+    if sac is not None:
+        kw["source_access_config"] = sac
     if port is not None:
         kw["port"] = port
     if command is not None:
@@ -237,23 +297,19 @@ def ensure_function(*, fn_name: str, image: str, command: list[str] | None,
         fid = resp.id
         print(f"[vefaas] OK {fn_name} created id={fid}")
     except Exception as e:  # noqa: BLE001
-        print(f"[vefaas] X create_function {fn_name} failed: {type(e).__name__}: {e}", file=sys.stderr)
+        print(f"[vefaas] X create_function {fn_name} failed: {type(e).__name__}: {e}")
         raise
 
-    try:
-        api.release(vefaas.ReleaseRequest(id=fid))
-        print(f"[vefaas] OK {fn_name} released")
-    except Exception as e:  # noqa: BLE001
-        print(f"[vefaas] i release skipped: {e}")
+    _release(fid, fn_name)
     return fid
 
 
-def ensure_timer(fn_id: str, cron: str = "0 * * * * *") -> None:
-    """Crontab format on VeFaaS may use 6 fields (sec min hr day mon dow)."""
+def ensure_timer(fn_id: str, cron: str = "*/1 * * * *") -> None:
+    """Crontab format on VeFaaS is the standard 5-field form (min hr day mon dow)."""
     import volcenginesdkvefaas as vefaas
     api = vefaas.VEFAASApi()
     try:
-        triggers = api.list_triggers(vefaas.ListTriggersRequest(function_id=fn_id, page_size=20))
+        triggers = api.list_triggers(vefaas.ListTriggersRequest(function_id=fn_id))
         items = getattr(triggers, "items", None) or []
         for t in items:
             t_type = (getattr(t, "type", "") or "").lower()
@@ -264,29 +320,76 @@ def ensure_timer(fn_id: str, cron: str = "0 * * * * *") -> None:
         print(f"[vefaas] i list_triggers skipped: {e}")
 
     print(f"[vefaas] adding timer (cron='{cron}') ...")
-    # 火山 VeFaaS Timer crontab：6 字段（秒 分 时 日 月 周）
+    # 火山 VeFaaS Timer crontab：标准 5 字段（分 时 日 月 周）
     try:
         api.create_timer(vefaas.CreateTimerRequest(
             function_id=fn_id, name="every-minute", crontab=cron, enabled=True,
         ))
         print("[vefaas] OK timer added")
     except Exception as e:  # noqa: BLE001
-        print(f"[vefaas] X create_timer failed: {type(e).__name__}: {e}", file=sys.stderr)
+        # Optional: if AK/SK lacks vefaas:CreateTimer scope (e.g. Visual-scoped key),
+        # we get HTTP 403. Worker already self-loops, so this is non-fatal.
+        msg = str(e).replace("\n", " ")[:200]
+        print(f"[vefaas] i create_timer skipped (non-fatal, worker self-loops): {type(e).__name__}: {msg}")
 
 
 def get_api_endpoint(fn_id: str) -> str | None:
+    """Return public endpoint if an APIG trigger is bound to the function.
+
+    VeFaaS native/v1 functions are NOT publicly reachable out-of-the-box —
+    HTTP exposure requires a separate API Gateway (APIG) instance. The CLI/SDK
+    does not auto-provision an APIG, so this returns ``None`` until the user
+    manually adds an APIG trigger via the console (see :func:`get_release_summary`).
+    """
     import volcenginesdkvefaas as vefaas
     try:
         api = vefaas.VEFAASApi()
-        triggers = api.list_triggers(vefaas.ListTriggersRequest(function_id=fn_id, page_size=20))
+        triggers = api.list_triggers(vefaas.ListTriggersRequest(function_id=fn_id))
         for t in getattr(triggers, "items", None) or []:
-            ep = getattr(t, "endpoint", None) or getattr(t, "url", None)
-            if ep:
-                return ep
+            for attr in ("endpoint", "url", "domain", "host", "public_url", "trigger_url"):
+                ep = getattr(t, attr, None)
+                if ep:
+                    return str(ep)
         r = api.get_function(vefaas.GetFunctionRequest(id=fn_id))
-        return getattr(r, "trigger_url", None) or getattr(r, "endpoint", None)
+        for attr in ("trigger_url", "endpoint", "public_url", "url"):
+            ep = getattr(r, attr, None)
+            if ep:
+                return str(ep)
     except Exception:
-        return None
+        pass
+    return None
+
+
+def get_release_summary(fn_id: str, fn_name: str, region: str) -> dict[str, Any]:
+    """Collect release status + console URL + manual-trigger instructions."""
+    import volcenginesdkvefaas as vefaas
+
+    api = vefaas.VEFAASApi()
+    out: dict[str, Any] = {
+        "function_id": fn_id,
+        "name": fn_name,
+        "region": region,
+        "console_url": f"https://console.volcengine.com/vefaas/region:vefaas+{region}/function/detail/{fn_id}",
+    }
+    try:
+        rs = api.get_release_status(vefaas.GetReleaseStatusRequest(function_id=fn_id))
+        out["release_status"] = getattr(rs, "status", None)
+        out["stable_revision"] = getattr(rs, "stable_revision_number", None)
+        if out["release_status"] == "failed":
+            out["error_code"] = getattr(rs, "error_code", None)
+            out["status_message"] = getattr(rs, "status_message", None)
+    except Exception as e:  # noqa: BLE001
+        out["release_status_err"] = str(e)[:160]
+    try:
+        instances = api.list_function_instances(vefaas.ListFunctionInstancesRequest(function_id=fn_id))
+        running = [
+            getattr(i, "instance_status", "?")
+            for i in (getattr(instances, "items", None) or [])
+        ]
+        out["instance_states"] = running
+    except Exception as e:  # noqa: BLE001
+        out["instances_err"] = str(e)[:160]
+    return out
 
 
 def functions_step(env: dict[str, str], full_image: str) -> dict[str, Any]:
@@ -326,25 +429,53 @@ def functions_step(env: dict[str, str], full_image: str) -> dict[str, Any]:
         "FAL_KEY": env.get("FAL_KEY", ""),
     }
 
+    # VeFaaS native/v1 ignores the Dockerfile CMD/ENTRYPOINT — must pass full command.
+    api_command = (
+        "uvicorn manhuaju.api.app:app "
+        "--host 0.0.0.0 --port 8080 "
+        "--workers ${UVICORN_WORKERS:-2}"
+    )
     api_fid = ensure_function(
         fn_name="manhuaju-api",
-        image=full_image, command=None, port=8080,
+        image=full_image, command=api_command, port=8080,
         cpu_milli=2000, memory_mb=4096, request_timeout=1800, max_concurrency=10,
         envs={**common_envs, "UVICORN_WORKERS": "2"},
+        src_env=env,
+    )
+    # Worker: VeFaaS native/v1 expects a long-running process. Wrap the burst-once script
+    # in an infinite loop so VeFaaS's startup probe sees a living process; an APIG timer
+    # triggers the underlying ``run_worker_once`` once per minute via in-process loop too.
+    worker_command = (
+        "/bin/sh -c "
+        "'while true; do "
+        "python -m scripts.run_worker_once || true; "
+        "sleep ${MANHUAJU_BURST_LOOP_S:-60}; "
+        "done'"
     )
     worker_fid = ensure_function(
         fn_name="manhuaju-worker",
         image=full_image,
-        command=["python", "-m", "scripts.run_worker_once"],
+        command=worker_command,
         port=None,
         cpu_milli=2000, memory_mb=4096, request_timeout=1800, max_concurrency=1,
-        envs={**common_envs, "MANHUAJU_BURST_JOBS": "1", "MANHUAJU_BURST_BUDGET_S": "1500"},
+        envs={
+            **common_envs,
+            "MANHUAJU_BURST_JOBS": "1",
+            "MANHUAJU_BURST_BUDGET_S": "1500",
+            "MANHUAJU_BURST_LOOP_S": "60",
+        },
+        src_env=env,
+        # max_concurrency<10 requires exclusive_mode=True
+        exclusive_mode=True,
     )
-    ensure_timer(worker_fid, cron="0 */1 * * * *")
+    ensure_timer(worker_fid, cron="*/1 * * * *")
+    region = env.get("VEFAAS_REGION", os.environ.get("VEFAAS_REGION", "cn-beijing"))
     return {
         "api_fid": api_fid,
         "worker_fid": worker_fid,
         "api_endpoint": get_api_endpoint(api_fid),
+        "api_summary": get_release_summary(api_fid, "manhuaju-api", region),
+        "worker_summary": get_release_summary(worker_fid, "manhuaju-worker", region),
     }
 
 

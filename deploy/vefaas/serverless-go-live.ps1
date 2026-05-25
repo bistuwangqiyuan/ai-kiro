@@ -225,12 +225,26 @@ if (-not $SkipProvision) {
         if ($LASTEXITCODE -ne 0) { ERR "VeFaaS provision failed"; exit 1 }
         if ($jsonText) {
             $fn = $jsonText | ConvertFrom-Json
-            OK "API   fn id: $($fn.api_fid)"
-            OK "Worker fn id: $($fn.worker_fid)"
+            $apiFid = $fn.api_fid
+            $workerFid = $fn.worker_fid
+            OK ("API    fn id: {0}" -f $apiFid)
+            OK ("Worker fn id: {0}" -f $workerFid)
+            if ($fn.api_summary) {
+                $rs = $fn.api_summary.release_status
+                $inst = ($fn.api_summary.instance_states -join ",")
+                OK ("API    release={0} instances=[{1}]" -f $rs, $inst)
+            }
+            if ($fn.worker_summary) {
+                $rs = $fn.worker_summary.release_status
+                $inst = ($fn.worker_summary.instance_states -join ",")
+                OK ("Worker release={0} instances=[{1}]" -f $rs, $inst)
+            }
             if ($fn.api_endpoint) {
-                OK "API endpoint: $($fn.api_endpoint)"
+                OK ("API endpoint: {0}" -f $fn.api_endpoint)
                 $FinalEndpoint = $fn.api_endpoint
             }
+            $script:LastApiFid = $apiFid
+            $script:LastApiConsole = $fn.api_summary.console_url
         }
     } finally { Pop-Location }
 }
@@ -240,14 +254,43 @@ H1 "5/5  Live"
 if ($FinalEndpoint) {
     Write-Host ""
     Write-Host "  Public API endpoint:" -ForegroundColor Green
-    Write-Host "    $FinalEndpoint" -ForegroundColor White
+    Write-Host ("    {0}" -f $FinalEndpoint) -ForegroundColor White
     Write-Host ""
     Write-Host "  Health check:" -ForegroundColor Green
-    Write-Host "    curl $FinalEndpoint/health" -ForegroundColor White
+    Write-Host ("    curl {0}/health" -f $FinalEndpoint) -ForegroundColor White
     Write-Host ""
     Write-Host "  Web console:" -ForegroundColor Green
-    Write-Host "    Start-Process $FinalEndpoint/console.html" -ForegroundColor White
+    Write-Host ("    Start-Process {0}/console.html" -f $FinalEndpoint) -ForegroundColor White
+
+    INFO "Probing /health endpoint ..."
+    $healthOk = $false
+    for ($i = 0; $i -lt 30; $i++) {
+        try {
+            $resp = Invoke-WebRequest -Uri ("{0}/health" -f $FinalEndpoint) -TimeoutSec 5 -ErrorAction Stop
+            if ($resp.StatusCode -eq 200) { OK "/health returned 200"; $healthOk = $true; break }
+        } catch {
+            Start-Sleep -Seconds 6
+        }
+    }
+    if (-not $healthOk) { WARN "/health did not return 200 within 180s — check function logs in console" }
 } else {
-    Write-Host "  Go to https://console.volcengine.com/vefaas , click manhuaju-api -> Triggers tab -> copy URL" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  VeFaaS function deployed but no HTTP endpoint bound yet." -ForegroundColor Yellow
+    Write-Host "  VeFaaS native/v1 requires an API Gateway trigger for public HTTP access," -ForegroundColor Yellow
+    Write-Host "  which the SDK cannot auto-provision. Add one in 30s via the console:" -ForegroundColor Yellow
+    Write-Host ""
+    if ($script:LastApiConsole) {
+        Write-Host "  Function detail:" -ForegroundColor Cyan
+        Write-Host ("    {0}" -f $script:LastApiConsole) -ForegroundColor White
+    } else {
+        Write-Host "    https://console.volcengine.com/vefaas" -ForegroundColor White
+    }
+    Write-Host ""
+    Write-Host "  Steps:" -ForegroundColor Cyan
+    Write-Host "    1. Open the function detail page (link above)" -ForegroundColor White
+    Write-Host "    2. Click 'Triggers' tab -> 'Create Trigger' -> 'API Gateway'" -ForegroundColor White
+    Write-Host "    3. If no API Gateway exists, create a Serverless tier instance (free quota)" -ForegroundColor White
+    Write-Host "    4. Bind the gateway to '/' path -> save" -ForegroundColor White
+    Write-Host "    5. Copy the generated public URL and run:  curl <URL>/health" -ForegroundColor White
 }
 Write-Host ""
