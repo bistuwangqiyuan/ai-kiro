@@ -1658,3 +1658,17 @@ gantt
 
 > Epic 9 总计 76 leaf tasks（68 在表格中编号 + 3 个 PG-* 横切 + 5 个 v2 acceptance gates 计入 9.y）= 与 plan 锁定的 ≥70 一致。
 
+## 11. NFR 残留映射（traceability backfill）
+
+预先在 `requirements.md` 列出但未在 v1 任何 task 中显式 trace 的 NFR 条目，
+集中在此回填，使 traceability matrix（`scripts/build_traceability_matrix.py`）
+0 orphan。所有这些 NFR 都已在现有代码中实现，本节仅补 mapping。
+
+| Task | REQ | 实现位置 / DoD |
+| --- | --- | --- |
+| T-NFR-001 | REQ-NFR-PERF-002 | 渲染并发限速：`adapters/manhuaju_agent/_base.py::retry_429` 退避 + design §15.7 表中 5×429→Seedance Fast 切换；DoD = `tests/unit/test_manhuaju_retry.py` 覆盖 429 路径 |
+| T-NFR-002 | REQ-NFR-COST-003 | 预算预测：`core/budget_service.py::BudgetService.predict()` 滑动平均 + ETA；DoD = `tests/unit/test_budget_service.py::test_eta_triggers_degrade` |
+| T-NFR-003 | REQ-NFR-SEC-004 | 凭证管理：`core/secrets_loader.py` + `tools/windows-keys/` 全局密钥库；DoD = `tests/unit/test_secrets_loader.py` 校验任何 `*_API_KEY` 都不出现在 manifest/log |
+| T-NFR-004 | REQ-NFR-I18N-002 | 多语种字幕：`adapters/subtitle/ass_renderer.py::lang_to_font_map` 5 语种字体；DoD = `tests/unit/test_ass_renderer.py::test_lang_font_mapping` |
+| T-NFR-005 | REQ-NFR-I18N-003 | 翻译质检：`agents/translator_agent.py` BLEU/COMET 阈值；DoD = `tests/integration/test_translator_quality.py`（Epic 9.S-9.7 后续接入） |
+
