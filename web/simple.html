@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manhuaju Autopilot — Simple Mode</title>
+  <style>
+    :root {
+      --bg: #0e0f13;
+      --panel: #161821;
+      --line: #2a2c39;
+      --fg: #e4e6ee;
+      --fg-mut: #969ab1;
+      --accent: #ff5c8a;
+      --accent2: #6da0ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { background: var(--bg); color: var(--fg); font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.5; }
+    header { padding: 24px 28px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+    header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 1px; }
+    header .mode-switch a { color: var(--fg-mut); margin-left: 18px; text-decoration: none; }
+    header .mode-switch a.active { color: var(--accent); }
+    main { max-width: 720px; margin: 40px auto; padding: 0 24px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+    h2 { margin: 0 0 12px; font-size: 24px; }
+    .hint { color: var(--fg-mut); margin-bottom: 22px; font-size: 14px; }
+    label { display: block; font-size: 13px; color: var(--fg-mut); margin: 16px 0 6px; }
+    input, select, textarea { width: 100%; background: #0c0d12; color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; font-family: inherit; }
+    textarea { min-height: 200px; resize: vertical; }
+    button { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #fff; padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; margin-top: 24px; cursor: pointer; width: 100%; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .summary { margin-top: 16px; font-size: 12px; color: var(--fg-mut); border: 1px dashed var(--line); padding: 12px; border-radius: 10px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; background: #2c2e3a; margin-right: 6px; color: var(--fg-mut); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>漫剧 Autopilot · Simple</h1>
+    <nav class="mode-switch">
+      <a href="./simple.html" class="active">Simple</a>
+      <a href="./pro.html">Pro</a>
+    </nav>
+  </header>
+  <main>
+    <div class="panel">
+      <h2>一键出片</h2>
+      <p class="hint">输入小说文本，剩下交给我们。预设：60s 短剧 / 古装 / M-tier 渲染 / 双层风控。</p>
+      <form id="form">
+        <label for="title">作品标题</label>
+        <input id="title" name="title" placeholder="《奶茶街的姐姐》" required />
+        <label for="novel_text">小说正文</label>
+        <textarea id="novel_text" name="novel_text" placeholder="把整段小说粘贴进来…" required></textarea>
+        <label for="language">语种</label>
+        <select id="language" name="language">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+          <option value="ko">한국어</option>
+          <option value="th">ไทย</option>
+        </select>
+        <button type="submit" id="go">开始出片</button>
+        <div class="summary">
+          <span class="badge">mode=simple</span>
+          <span class="badge">episode=3</span>
+          <span class="badge">duration=60s</span>
+          <span class="badge">tier=M</span>
+          <span class="badge">moderation=dual</span>
+          <span class="badge">scene_reuse=0.85</span>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script>
+    const form = document.getElementById('form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('go');
+      btn.disabled = true; btn.textContent = '提交中…';
+      const data = {
+        mode: 'simple',
+        title: form.title.value.trim(),
+        novel_text: form.novel_text.value.trim(),
+        language: form.language.value,
+      };
+      const res = await fetch('/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      btn.textContent = res.ok ? '已提交：' + (await res.json()).project_id : '失败：请用 Pro 模式调试';
+    });
+  </script>
+</body>
+</html>

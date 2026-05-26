@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manhuaju Autopilot — Pro Mode</title>
+  <style>
+    :root {
+      --bg: #0a0b0e;
+      --panel: #13151c;
+      --line: #2a2c39;
+      --fg: #e4e6ee;
+      --fg-mut: #969ab1;
+      --accent: #ff5c8a;
+      --accent2: #6da0ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { background: var(--bg); color: var(--fg); font-family: -apple-system, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.5; }
+    header { padding: 18px 28px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+    header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+    header .mode-switch a { color: var(--fg-mut); margin-left: 18px; text-decoration: none; font-size: 14px; }
+    header .mode-switch a.active { color: var(--accent); }
+    .container { display: grid; grid-template-columns: 1fr 360px; gap: 24px; max-width: 1280px; margin: 24px auto; padding: 0 24px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+    h2 { margin: 0 0 14px; font-size: 16px; color: var(--accent2); }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    label { display: block; font-size: 12px; color: var(--fg-mut); margin: 12px 0 4px; }
+    input, select, textarea { width: 100%; background: #0c0d12; color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: inherit; }
+    textarea { min-height: 220px; }
+    button { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-top: 18px; cursor: pointer; }
+    .right-rail { position: sticky; top: 80px; align-self: start; }
+    .kpi { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .kpi:last-child { border-bottom: none; }
+    .kpi .v { color: var(--accent); font-variant-numeric: tabular-nums; }
+    .meta { font-size: 11px; color: var(--fg-mut); margin-top: 8px; }
+    .anchor { display: inline-block; padding: 2px 6px; background: #2a2c39; border-radius: 4px; margin-left: 6px; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>漫剧 Autopilot · Pro</h1>
+    <nav class="mode-switch">
+      <a href="./simple.html">Simple</a>
+      <a href="./pro.html" class="active">Pro</a>
+    </nav>
+  </header>
+  <div class="container">
+    <main>
+      <form id="form">
+        <div class="panel">
+          <h2>1 · 文本输入</h2>
+          <label>作品标题</label>
+          <input id="title" />
+          <label>小说正文</label>
+          <textarea id="novel_text"></textarea>
+          <div class="grid3">
+            <div><label>语种</label><select id="language"><option value="zh">中文</option><option value="en">English</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="th">ไทย</option></select></div>
+            <div><label>题材</label><select id="genre"><option>cdrama_classic</option><option>sweet_pet</option><option>xianxia_epic</option><option>ancient</option><option>modern</option></select></div>
+            <div><label>受众</label><select id="target_audience"><option>general</option><option>female_youth</option><option>male_youth</option></select></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>2 · 制作参数</h2>
+          <div class="grid3">
+            <div><label>集数</label><input id="episode_count" type="number" min="1" max="120" value="3" /></div>
+            <div><label>单集时长 (s)</label><input id="episode_duration_s" type="number" min="60" max="180" value="60" /></div>
+            <div><label>渲染 tier</label><select id="render_tier"><option>L</option><option selected>M</option><option>H</option></select></div>
+            <div><label>并发渲染槽</label><input id="parallel_render_slots" type="number" min="2" max="32" value="16" /></div>
+            <div><label>风格预设</label><input id="style_preset_id" value="cinematic_2d_v1" /></div>
+            <div><label>修复最大迭代</label><input id="repair_max_attempts" type="number" min="1" max="6" value="4" /></div>
+            <div><label>场景复用阈值</label><input id="scene_reuse_threshold" type="number" step="0.01" min="0.5" max="0.99" value="0.85" /></div>
+            <div><label>情绪 ArcFace ≥</label><input id="emotion_arcface_min" type="number" step="0.01" min="0.85" max="0.99" value="0.94" /></div>
+            <div><label>换装 ArcFace ≥</label><input id="outfit_arcface_min" type="number" step="0.01" min="0.85" max="0.99" value="0.94" /></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>3 · 高阶</h2>
+          <div class="grid2">
+            <div><label>定时表达式 (cron)</label><input id="cron_schedule" placeholder="0 8 * * *" /></div>
+            <div><label>自动续写</label><select id="auto_continue"><option>off</option><option>on</option></select></div>
+            <div><label>水印文字</label><input id="watermark_text" placeholder="© Manhuaju Autopilot" /></div>
+            <div><label>水印位置</label><select id="watermark_position"><option>bottom_right</option><option>bottom_left</option><option>top_right</option><option>top_left</option></select></div>
+            <div><label>分发平台 (逗号分隔)</label><input id="distribution_platforms" value="douyin,kuaishou,bilibili,video_hao,youtube" /></div>
+            <div><label>封面文案模板</label><input id="cover_text_template" value="{title} · 第{episode}集" /></div>
+          </div>
+          <button type="submit">提交制作任务</button>
+        </div>
+      </form>
+    </main>
+    <aside class="right-rail">
+      <div class="panel">
+        <h2>白皮书锚定 KPI</h2>
+        <div class="kpi"><span>单集成本 (P95)</span><span class="v" id="kpi-cost">¥— <span class="anchor">≤ ¥80</span></span></div>
+        <div class="kpi"><span>单集 P95 时延</span><span class="v" id="kpi-latency">— <span class="anchor">≤ 60min</span></span></div>
+        <div class="kpi"><span>主角 ArcFace 5-ep</span><span class="v" id="kpi-arcface">— <span class="anchor">≥ 0.92</span></span></div>
+        <div class="kpi"><span>7-dim 通过率</span><span class="v" id="kpi-7d">— <span class="anchor">≥ 0.55</span></span></div>
+        <div class="kpi"><span>每小时出片</span><span class="v" id="kpi-hr">— <span class="anchor">≥ 8</span></span></div>
+        <div class="meta">数字源：<code>research/whitepaper/data/computed/*.json</code>（seed = 20260526）。</div>
+      </div>
+    </aside>
+  </div>
+  <script>
+    fetch('/v1/whitepaper/anchors').then(r => r.json()).then(d => {
+      if (!d) return;
+      document.getElementById('kpi-cost').firstChild.nodeValue = `¥${d.cost_p95?.toFixed(1) ?? '—'} `;
+      document.getElementById('kpi-latency').firstChild.nodeValue = `${(d.episode_p95_s/60).toFixed(1)}min `;
+      document.getElementById('kpi-arcface').firstChild.nodeValue = `${d.arcface_lead?.toFixed(3) ?? '—'} `;
+      document.getElementById('kpi-7d').firstChild.nodeValue = `${(d.seven_dim_pass*100).toFixed(1)}% `;
+      document.getElementById('kpi-hr').firstChild.nodeValue = `${d.episodes_per_hour?.toFixed(1) ?? '—'} `;
+    }).catch(() => {});
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = document.getElementById('form');
+      const get = (k) => f.querySelector('#' + k)?.value;
+      const payload = {
+        mode: 'pro',
+        title: get('title'), novel_text: get('novel_text'),
+        language: get('language'), genre: get('genre'), target_audience: get('target_audience'),
+        episode_count: +get('episode_count'), episode_duration_s: +get('episode_duration_s'),
+        render_tier: get('render_tier'), parallel_render_slots: +get('parallel_render_slots'),
+        style_preset_id: get('style_preset_id'),
+        repair_max_attempts: +get('repair_max_attempts'),
+        scene_reuse_threshold: +get('scene_reuse_threshold'),
+        emotion_arcface_min: +get('emotion_arcface_min'),
+        outfit_arcface_min: +get('outfit_arcface_min'),
+        cron_schedule: get('cron_schedule') || null,
+        auto_continue: get('auto_continue') === 'on',
+        watermark_text: get('watermark_text'),
+        watermark_position: get('watermark_position'),
+        distribution_platforms: (get('distribution_platforms') || '').split(',').map(s => s.trim()).filter(Boolean),
+        cover_text_template: get('cover_text_template'),
+      };
+      const res = await fetch('/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      alert(res.ok ? 'Submitted: ' + (await res.json()).project_id : 'Failed');
+    });
+  </script>
+</body>
+</html>

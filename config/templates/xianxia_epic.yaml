@@ -1,0 +1,97 @@
+# Template: 仙侠史诗 (xianxia_epic)
+# Cinematic xianxia with battle setpieces.
+
+template_id: xianxia_epic
+version: 1
+display_name_zh: "仙侠史诗"
+display_name_en: "Xianxia Epic"
+
+defaults:
+  episode_count: 3
+  episode_duration_s: 90
+  genre: xianxia_epic
+  style_preset_id: cinematic_2d_v1
+  render_tier: H
+  scene_reuse_threshold: 0.85
+  emotion_arcface_min: 0.94
+  outfit_arcface_min: 0.94
+  parallel_render_slots: 24
+  repair_max_attempts: 4
+
+variables:
+  - name: cultivator_name
+    type: string
+    required: true
+  - name: sect_name
+    type: string
+    required: false
+    default: "天玄宗"
+  - name: villain_name
+    type: string
+    required: true
+  - name: signature_artifact
+    type: string
+    required: false
+    default: "玄机剑"
+
+beats:
+  - sect_intro_s: 8
+  - inciting_threat_s: 22
+  - training_montage_s: 40
+  - confrontation_s: 60
+  - sword_clash_climax_s: 80
+  - aftermath_s: 90
+
+shot_plan_template:
+  - shot_id: "ep{{ ep }}-shot-001"
+    scale: wide
+    duration_s: 6
+    purpose: "{{ sect_name }} establishing aerial"
+  - shot_id: "ep{{ ep }}-shot-002"
+    scale: medium
+    duration_s: 6
+    purpose: "{{ cultivator_name }} mediating"
+  - shot_id: "ep{{ ep }}-shot-003"
+    scale: close
+    duration_s: 5
+    purpose: "{{ cultivator_name }} eye open snap"
+  - shot_id: "ep{{ ep }}-shot-004"
+    scale: wide
+    duration_s: 8
+    purpose: "{{ villain_name }} arrival storm"
+  - shot_id: "ep{{ ep }}-shot-005"
+    scale: medium
+    duration_s: 6
+    purpose: "training with {{ signature_artifact }}"
+  - shot_id: "ep{{ ep }}-shot-006"
+    scale: close
+    duration_s: 5
+    purpose: "{{ cultivator_name }} resolve"
+  - shot_id: "ep{{ ep }}-shot-007"
+    scale: wide
+    duration_s: 8
+    purpose: "first clash with {{ villain_name }}"
+  - shot_id: "ep{{ ep }}-shot-008"
+    scale: medium
+    duration_s: 7
+    purpose: "sword draw {{ signature_artifact }}"
+  - shot_id: "ep{{ ep }}-shot-009"
+    scale: close
+    duration_s: 6
+    purpose: "{{ villain_name }} smirk"
+  - shot_id: "ep{{ ep }}-shot-010"
+    scale: wide
+    duration_s: 9
+    purpose: "sword clash climax"
+  - shot_id: "ep{{ ep }}-shot-011"
+    scale: medium
+    duration_s: 8
+    purpose: "{{ cultivator_name }} ascending stance"
+  - shot_id: "ep{{ ep }}-shot-012"
+    scale: wide
+    duration_s: 9
+    purpose: "aftermath skyscape with {{ sect_name }} banner"
+
+distribution:
+  platforms: [douyin, kuaishou, bilibili, youtube]
+  hashtags: [仙侠, "{{ cultivator_name }}", "{{ sect_name }}", 国漫]

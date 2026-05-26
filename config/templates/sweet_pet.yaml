@@ -1,0 +1,97 @@
+# Template: 甜宠短剧 (sweet_pet)
+# Light romantic comedy with daily-life tones.
+
+template_id: sweet_pet
+version: 1
+display_name_zh: "甜宠日常"
+display_name_en: "Sweet Pet Romance"
+
+defaults:
+  episode_count: 3
+  episode_duration_s: 60
+  genre: sweet_pet
+  style_preset_id: pastel_warm_v1
+  render_tier: M
+  scene_reuse_threshold: 0.85
+  emotion_arcface_min: 0.94
+  outfit_arcface_min: 0.94
+  parallel_render_slots: 16
+  repair_max_attempts: 4
+
+variables:
+  - name: heroine_name
+    type: string
+    required: true
+  - name: hero_name
+    type: string
+    required: true
+  - name: meet_cute_setting
+    type: string
+    required: false
+    default: "咖啡店"
+  - name: signature_line
+    type: string
+    required: false
+    default: "你是我整个春天"
+
+beats:
+  - meet_cute_s: 6
+  - misunderstanding_s: 18
+  - apology_s: 30
+  - reveal_s: 42
+  - romantic_climax_s: 52
+  - cuddle_close_s: 60
+
+shot_plan_template:
+  - shot_id: "ep{{ ep }}-shot-001"
+    scale: wide
+    duration_s: 4
+    purpose: "{{ meet_cute_setting }} establishing"
+  - shot_id: "ep{{ ep }}-shot-002"
+    scale: medium
+    duration_s: 5
+    purpose: "{{ heroine_name }} introduction"
+  - shot_id: "ep{{ ep }}-shot-003"
+    scale: close
+    duration_s: 5
+    purpose: "{{ heroine_name }} blush reaction"
+  - shot_id: "ep{{ ep }}-shot-004"
+    scale: medium
+    duration_s: 5
+    purpose: "{{ hero_name }} entrance"
+  - shot_id: "ep{{ ep }}-shot-005"
+    scale: close
+    duration_s: 5
+    purpose: "first eye contact"
+  - shot_id: "ep{{ ep }}-shot-006"
+    scale: medium
+    duration_s: 5
+    purpose: "playful banter"
+  - shot_id: "ep{{ ep }}-shot-007"
+    scale: close
+    duration_s: 5
+    purpose: "misunderstanding pout"
+  - shot_id: "ep{{ ep }}-shot-008"
+    scale: medium
+    duration_s: 5
+    purpose: "{{ hero_name }} apology"
+  - shot_id: "ep{{ ep }}-shot-009"
+    scale: close
+    duration_s: 5
+    purpose: "tearful reconciliation"
+  - shot_id: "ep{{ ep }}-shot-010"
+    scale: medium
+    duration_s: 5
+    purpose: "shared moment"
+  - shot_id: "ep{{ ep }}-shot-011"
+    scale: close
+    duration_s: 6
+    purpose: "signature line: {{ signature_line }}"
+  - shot_id: "ep{{ ep }}-shot-012"
+    scale: wide
+    duration_s: 6
+    purpose: "warm cuddle close"
+
+distribution:
+  platforms: [douyin, kuaishou, video_hao, bilibili]
+  hashtags: [甜宠, "{{ heroine_name }}", "{{ hero_name }}", 恋爱日常]

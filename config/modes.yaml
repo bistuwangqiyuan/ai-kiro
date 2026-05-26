@@ -1,0 +1,67 @@
+# Manhuaju Autopilot v2.0 — dual-mode entry presets (REQ-MODE-001..006).
+# Two presets share the same backend; `simple` locks 80%+ of advanced params.
+
+modes:
+  simple:
+    locked_params:
+      - episode_count
+      - style_preset_id
+      - genre
+      - target_audience
+      - episode_duration_s
+      - render_tier
+      - parallel_render_slots
+      - repair_max_attempts
+      - moderation_layers
+      - scene_reuse_threshold
+      - emotion_arcface_min
+      - outfit_arcface_min
+      - frame_repair_thresholds
+    defaults:
+      episode_count: 3
+      style_preset_id: cinematic_2d_v1
+      genre: cdrama_classic
+      target_audience: general
+      episode_duration_s: 60
+      render_tier: M
+      parallel_render_slots: 8
+      repair_max_attempts: 4
+      moderation_layers: dual
+      scene_reuse_threshold: 0.85
+      emotion_arcface_min: 0.94
+      outfit_arcface_min: 0.94
+      frame_repair_thresholds:
+        face: 0.65
+        hand: 0.55
+        limb: 0.50
+    exposed_params:
+      - novel_text
+      - title
+      - language
+
+  pro:
+    locked_params: []
+    defaults: {}
+    exposed_params:
+      - novel_text
+      - title
+      - language
+      - episode_count
+      - style_preset_id
+      - genre
+      - target_audience
+      - episode_duration_s
+      - render_tier
+      - parallel_render_slots
+      - repair_max_attempts
+      - moderation_layers
+      - scene_reuse_threshold
+      - emotion_arcface_min
+      - outfit_arcface_min
+      - frame_repair_thresholds
+      - auto_continue
+      - cron_schedule
+      - distribution_platforms
+      - watermark_text
+      - watermark_position
+      - cover_text_template
