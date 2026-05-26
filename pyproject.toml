@@ -62,8 +62,13 @@ db = [
     "sqlalchemy>=2.0",
     "alembic>=1.13",
 ]
+whitepaper = [
+    "scipy>=1.13",
+    "matplotlib>=3.8",
+    "pandas>=2.2",
+]
 all = [
-    "manhuaju-autopilot[live,consistency,i18n,observe,db]",
+    "manhuaju-autopilot[live,consistency,i18n,observe,db,whitepaper]",
 ]
 
 [project.scripts]

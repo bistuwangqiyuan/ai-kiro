@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
 
 PKG_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PKG_ROOT / "data"
@@ -49,6 +48,8 @@ def load_bench(name: str) -> Snapshot:
     """Load a benchmark CSV snapshot by base filename (without extension)."""
 
     p = BENCH_DIR / f"{name}.csv"
+    import pandas as pd  # local import keeps `pandas` an optional whitepaper dep
+
     payload = pd.read_csv(p)
     return Snapshot(name=name, path=p, sha256=_hash_file(p), payload=payload)
 
