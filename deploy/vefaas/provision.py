@@ -47,6 +47,15 @@ def load_env(path: Path) -> dict[str, str]:
     return out
 
 
+def env_get(env: dict[str, str], key: str, default: str = "") -> str:
+    """Prefer ``.env`` map, then process environment (GHA secrets / shell export)."""
+
+    v = env.get(key)
+    if v:
+        return v
+    return os.environ.get(key, default)
+
+
 def setup_creds(ak: str, sk: str, region: str) -> None:
     import volcenginesdkcore as core
     cfg = core.Configuration()
@@ -225,16 +234,22 @@ def _release(fid: str, fn_name: str) -> None:
     import volcenginesdkvefaas as vefaas
 
     api = vefaas.VEFAASApi()
-    try:
-        api.release(vefaas.ReleaseRequest(
-            function_id=fid,
-            revision_number=0,             # 0 ⇒ "publish current Latest as new revision"
-            target_traffic_weight=100,     # full traffic to the new revision
-            description=f"auto-publish {fn_name}",
-        ))
-        print(f"[vefaas] OK {fn_name} release submitted (revision_number=0)")
-    except Exception as e:  # noqa: BLE001
-        print(f"[vefaas] i release skipped: {type(e).__name__}: {str(e)[:200]}")
+    req = vefaas.ReleaseRequest(
+        function_id=fid,
+        revision_number=0,
+        target_traffic_weight=100,
+        description=f"auto-publish {fn_name}",
+    )
+    for attempt in (1, 2):
+        try:
+            api.release(req)
+            print(f"[vefaas] OK {fn_name} release submitted (revision_number=0)")
+            return
+        except Exception as e:  # noqa: BLE001
+            if attempt == 1:
+                print(f"[vefaas] i release attempt {attempt} failed, retrying: {type(e).__name__}")
+                continue
+            print(f"[vefaas] i release skipped: {type(e).__name__}: {str(e)[:200]}")
 
 
 def ensure_function(*, fn_name: str, image: str, command: str | None,
@@ -404,40 +419,54 @@ def get_release_summary(fn_id: str, fn_name: str, region: str) -> dict[str, Any]
 
 
 def functions_step(env: dict[str, str], full_image: str) -> dict[str, Any]:
-    ak = env.get("VOLCENGINE_VISUAL_AK") or os.environ["VOLCENGINE_VISUAL_AK"]
-    sk = env.get("VOLCENGINE_VISUAL_SK") or os.environ["VOLCENGINE_VISUAL_SK"]
+    ak = env_get(env, "VOLCENGINE_VISUAL_AK")
+    sk = env_get(env, "VOLCENGINE_VISUAL_SK")
+    if not ak or not sk:
+        raise RuntimeError("VOLCENGINE_VISUAL_AK/SK required")
+    ark_key = (
+        env_get(env, "VOLCENGINE_ARK_API_KEY")
+        or env_get(env, "VOLCENGINE_API_KEY")
+        or env_get(env, "ARK_API_KEY")
+    )
     common_envs: dict[str, str] = {
         # ---- runtime ----
         "MANHUAJU_LIVE_MODE": "live",
         "MANHUAJU_API_DATA": "/data",
-        "MANHUAJU_VIDEO_ENGINE": env.get("MANHUAJU_VIDEO_ENGINE", "auto"),
+        "MANHUAJU_VIDEO_ENGINE": env_get(env, "MANHUAJU_VIDEO_ENGINE", "auto"),
         # ---- Volcengine Visual (Xiaoyunque + Manhuaju Agent + Seedream + Jimeng) ----
         "VOLCENGINE_VISUAL_AK": ak,
         "VOLCENGINE_VISUAL_SK": sk,
-        "VOLCENGINE_VISUAL_REGION": env.get("VOLCENGINE_VISUAL_REGION", "cn-north-1"),
+        "VOLCENGINE_VISUAL_REGION": env_get(env, "VOLCENGINE_VISUAL_REGION", "cn-north-1"),
         # ---- Volcengine Ark (Doubao Seed 1.6 LLM + VLM) ----
-        "VOLCENGINE_ARK_API_KEY": env.get("VOLCENGINE_ARK_API_KEY", ""),
+        "VOLCENGINE_ARK_API_KEY": ark_key,
+        "VOLCENGINE_API_KEY": ark_key,
+        "ARK_API_KEY": ark_key,
         # ---- Volcengine TOS ----
-        "VOLCENGINE_TOS_AK": env.get("VOLCENGINE_TOS_AK", ak),
-        "VOLCENGINE_TOS_SK": env.get("VOLCENGINE_TOS_SK", sk),
-        "VOLCENGINE_TOS_BUCKET": env.get("VOLCENGINE_TOS_BUCKET", "manhuaju-assets"),
-        "VOLCENGINE_TOS_REGION": env.get("VOLCENGINE_TOS_REGION", "cn-beijing"),
-        "VOLCENGINE_TOS_ENDPOINT": env.get("VOLCENGINE_TOS_ENDPOINT", "tos-cn-beijing.volces.com"),
+        "VOLCENGINE_TOS_AK": env_get(env, "VOLCENGINE_TOS_AK", ak),
+        "VOLCENGINE_TOS_SK": env_get(env, "VOLCENGINE_TOS_SK", sk),
+        "VOLCENGINE_TOS_BUCKET": env_get(env, "VOLCENGINE_TOS_BUCKET", "manhuaju-assets"),
+        "VOLCENGINE_TOS_REGION": env_get(env, "VOLCENGINE_TOS_REGION", "cn-beijing"),
+        "VOLCENGINE_TOS_ENDPOINT": env_get(
+            env, "VOLCENGINE_TOS_ENDPOINT", "tos-cn-beijing.volces.com"
+        ),
         # ---- 国产 LLM fallback chain ----
-        "DASHSCOPE_API_KEY": env.get("DASHSCOPE_API_KEY", ""),
-        "TONGYI_API_KEY": env.get("TONGYI_API_KEY", ""),
-        "DEEPSEEK_API_KEY": env.get("DEEPSEEK_API_KEY", ""),
-        "GLM_API_KEY": env.get("GLM_API_KEY", ""),
-        "MOONSHOT_API_KEY": env.get("MOONSHOT_API_KEY", ""),
-        "MISTRAL_API_KEY": env.get("MISTRAL_API_KEY", ""),
-        "GROQ_API_KEY": env.get("GROQ_API_KEY", ""),
-        "XAI_API_KEY": env.get("XAI_API_KEY", ""),
-        "SPARK_API_KEY": env.get("SPARK_API_KEY", ""),
+        "DASHSCOPE_API_KEY": env_get(env, "DASHSCOPE_API_KEY"),
+        "TONGYI_API_KEY": env_get(env, "TONGYI_API_KEY"),
+        "DEEPSEEK_API_KEY": env_get(env, "DEEPSEEK_API_KEY"),
+        "GLM_API_KEY": env_get(env, "GLM_API_KEY"),
+        "MOONSHOT_API_KEY": env_get(env, "MOONSHOT_API_KEY"),
+        "MISTRAL_API_KEY": env_get(env, "MISTRAL_API_KEY"),
+        "GROQ_API_KEY": env_get(env, "GROQ_API_KEY"),
+        "XAI_API_KEY": env_get(env, "XAI_API_KEY"),
+        "SPARK_API_KEY": env_get(env, "SPARK_API_KEY"),
         # ---- optional international ----
-        "ANTHROPIC_API_KEY": env.get("ANTHROPIC_API_KEY", ""),
-        "ANTHROPIC_BASE_URL": env.get("ANTHROPIC_BASE_URL", ""),
-        "ELEVENLABS_API_KEY": env.get("ELEVENLABS_API_KEY", ""),
-        "FAL_KEY": env.get("FAL_KEY", ""),
+        "ANTHROPIC_API_KEY": env_get(env, "ANTHROPIC_API_KEY"),
+        "ANTHROPIC_BASE_URL": env_get(env, "ANTHROPIC_BASE_URL"),
+        "ELEVENLABS_API_KEY": env_get(env, "ELEVENLABS_API_KEY"),
+        "FAL_KEY": env_get(env, "FAL_KEY"),
+        # ---- VCR pull creds (VeFaaS image source access) ----
+        "VCR_USERNAME": env_get(env, "VCR_USERNAME"),
+        "VCR_PASSWORD": env_get(env, "VCR_PASSWORD"),
     }
 
     # VeFaaS native/v1 ignores the Dockerfile CMD/ENTRYPOINT — must pass full command.

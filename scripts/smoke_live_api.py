@@ -118,7 +118,7 @@ def main() -> int:
             if stage != last_stage:
                 print(f"  [{int(time.time())}] status={stat} stage={stage}")
                 last_stage = stage
-            if stat in ("completed", "succeeded", "failed", "error"):
+            if stat in ("completed", "succeeded", "released", "failed", "error"):
                 print(f"  TERMINAL status={stat}")
                 print(f"  full body: {json.dumps(body, ensure_ascii=False)[:1500]}")
                 break

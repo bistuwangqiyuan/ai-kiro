@@ -37,6 +37,7 @@ flowchart LR
 | Key | 用途 | 申请入口 |
 |:---|:---|:---|
 | `ALIBABA_CLOUD_ACCESS_KEY_ID/SECRET` | 阿里 FC 备份方案 | <https://ram.console.aliyun.com/manage/ak> |
+| `TENCENTCLOUD_SECRET_ID` / `TENCENTCLOUD_SECRET_KEY` | 腾讯云 CAM（CloudBase / CLS / EdgeOne 等） | <https://console.cloud.tencent.com/cam/capi> |
 | `VCR_USERNAME` / `VCR_PASSWORD` | 火山 VCR Docker 永久密码 | 控制台 → CR 实例 → 用户管理（Micro tier 不可设；用 GHA 自动 token） |
 
 ## 安全模型

@@ -50,6 +50,11 @@ def _post(base: str, path: str, body: dict, **kw) -> tuple[int, Any]:
         return r.status_code, r.text
 
 
+def _terminal_ok(status: str | None) -> bool:
+    """Project pipeline terminal success states (see ``project_flow.run``)."""
+    return status in ("succeeded", "released", "completed")
+
+
 def gate_health(base: str) -> GateResult:
     code, body = _get(base, "/health")
     if code != 200:
@@ -105,10 +110,10 @@ def gate_project(base: str, *, episodes: int = 1, wait_s: int = 120) -> GateResu
         c2, state = _get(base, f"/v1/projects/{pid}")
         if c2 == 200 and isinstance(state, dict):
             last_state = state
-            if state.get("status") in ("succeeded", "failed"):
+            if _terminal_ok(state.get("status")):
                 break
         time.sleep(5)
-    if last_state.get("status") != "succeeded":
+    if not _terminal_ok(last_state.get("status")):
         return GateResult(
             "project_create",
             False,
