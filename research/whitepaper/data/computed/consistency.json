@@ -1,0 +1,84 @@
+{
+  "lead_refresh_10": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.463158,
+    "p_drift_per_ep": 0.2316,
+    "refresh_every": 10,
+    "role": "lead",
+    "window5_mean": 0.8959,
+    "window5_mean_lower_ci": 0.8727,
+    "window5_mean_upper_ci": 0.9204
+  },
+  "lead_refresh_3": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.463158,
+    "p_drift_per_ep": 0.2316,
+    "refresh_every": 3,
+    "role": "lead",
+    "window5_mean": 0.9382,
+    "window5_mean_lower_ci": 0.9346,
+    "window5_mean_upper_ci": 0.9414
+  },
+  "lead_refresh_5": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.463158,
+    "p_drift_per_ep": 0.2316,
+    "refresh_every": 5,
+    "role": "lead",
+    "window5_mean": 0.9288,
+    "window5_mean_lower_ci": 0.9201,
+    "window5_mean_upper_ci": 0.9371
+  },
+  "lead_refresh_60": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.463158,
+    "p_drift_per_ep": 0.2316,
+    "refresh_every": 60,
+    "role": "lead",
+    "window5_mean": 0.5708,
+    "window5_mean_lower_ci": 0.5474,
+    "window5_mean_upper_ci": 0.6564
+  },
+  "need_md_anchor_lead_min": 0.92,
+  "need_md_anchor_support_min": 0.88,
+  "support_refresh_10": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.6,
+    "p_drift_per_ep": 0.3474,
+    "refresh_every": 10,
+    "role": "support",
+    "window5_mean": 0.8841,
+    "window5_mean_lower_ci": 0.8657,
+    "window5_mean_upper_ci": 0.9056
+  },
+  "support_refresh_3": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.6,
+    "p_drift_per_ep": 0.3474,
+    "refresh_every": 3,
+    "role": "support",
+    "window5_mean": 0.9356,
+    "window5_mean_lower_ci": 0.9318,
+    "window5_mean_upper_ci": 0.9393
+  },
+  "support_refresh_5": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.6,
+    "p_drift_per_ep": 0.3474,
+    "refresh_every": 5,
+    "role": "support",
+    "window5_mean": 0.9233,
+    "window5_mean_lower_ci": 0.9148,
+    "window5_mean_upper_ci": 0.9317
+  },
+  "support_refresh_60": {
+    "n_episodes": 60,
+    "p_break_per_ep": 0.6,
+    "p_drift_per_ep": 0.3474,
+    "refresh_every": 60,
+    "role": "support",
+    "window5_mean": 0.5586,
+    "window5_mean_lower_ci": 0.5474,
+    "window5_mean_upper_ci": 0.6111
+  }
+}

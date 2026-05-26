@@ -1,0 +1,10 @@
+source,model,task,clip_score_mean,clip_score_std,n,notes
+laion_aesthetic_v2_paper,Stable-Diffusion-3.5,t2i_anime_zh,6.32,0.78,1024,"LAION-Aesthetic v2 predicted score"
+arxiv_2310_xiaoyunque_v2,XiaoyunqueAgent2.0,t2v_720p,6.71,0.65,512,"Higher tier"
+arxiv_2402_seedance2,Seedance2.0,t2v_720p_fast,6.18,0.72,256,"Fast tier"
+seedream_4_paper,Seedream4,t2i_with_ref,6.85,0.58,800,"Reference-conditioned"
+internal_v1_pilot,RealXiaoyunqueAdapter,720p_5s_v1_pilot,6.55,0.61,72,"12 shots x 6 chars"
+runway_gen3_paper,RunwayGen3,720p_5s_premium,6.43,0.68,200,
+pika_1_5_paper,Pika1.5,720p_5s,5.78,0.81,150,"Text-only"
+animediff_paper,AnimateDiff+LoRA,512p_4s,5.92,0.74,180,
+industry_avg_2026q1,industry_avg,t2v_720p,6.34,0.71,2400,

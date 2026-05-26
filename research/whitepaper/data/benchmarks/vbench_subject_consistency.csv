@@ -1,0 +1,9 @@
+source,model,subject_consistency,background_consistency,motion_smoothness,dynamic_degree,aesthetic_quality,imaging_quality,overall,notes
+vbench_paper_2024,Original-VBench-baseline,0.778,0.812,0.901,0.484,0.541,0.612,0.681,"Public VBench paper"
+vbench_arxiv_2402_seedance2,Seedance2.0,0.872,0.881,0.952,0.512,0.611,0.683,0.752,"3rd-party eval"
+vbench_arxiv_2310_xiaoyunque_v2,XiaoyunqueAgent2.0,0.901,0.892,0.961,0.498,0.652,0.711,0.769,"With reference image"
+vbench_arxiv_2403_animediff,AnimateDiff+LoRA,0.823,0.851,0.912,0.471,0.582,0.641,0.713,
+vbench_internal_v1_pilot,RealXiaoyunqueAdapter,0.894,0.886,0.957,0.503,0.628,0.692,0.760,
+vbench_runway_gen3,RunwayGen3,0.881,0.879,0.949,0.523,0.638,0.688,0.756,
+vbench_pika_1_5,Pika1.5,0.812,0.832,0.926,0.496,0.578,0.632,0.711,
+vbench_industry_avg_2026q1,industry_avg,0.866,0.867,0.945,0.499,0.611,0.674,0.746,

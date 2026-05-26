@@ -1,0 +1,294 @@
+{
+  "need_md_anchor_max_cny": 80.0,
+  "tier_H": {
+    "mc_mean": 180.5793295426391,
+    "mc_n_samples": 100000,
+    "mc_p50": 180.40628365581932,
+    "mc_p95": 198.18775624052256,
+    "mc_p99": 205.66340681740513,
+    "retry_factor": 0.18,
+    "stages": [
+      {
+        "n_units": 1,
+        "name": "script_analysis",
+        "raw_cny": 0.5,
+        "unit_price_cny": 0.5,
+        "with_retry_cny": 0.59
+      },
+      {
+        "n_units": 4,
+        "name": "character_generate",
+        "raw_cny": 4.8,
+        "unit_price_cny": 1.2,
+        "with_retry_cny": 5.664
+      },
+      {
+        "n_units": 3.5999999999999996,
+        "name": "scene_generate",
+        "raw_cny": 2.16,
+        "unit_price_cny": 0.6,
+        "with_retry_cny": 2.549
+      },
+      {
+        "n_units": 1,
+        "name": "storyboard_generate",
+        "raw_cny": 2.0,
+        "unit_price_cny": 2.0,
+        "with_retry_cny": 2.36
+      },
+      {
+        "n_units": 12,
+        "name": "video_generate",
+        "raw_cny": 138.0,
+        "unit_price_cny": 11.5,
+        "with_retry_cny": 162.84
+      },
+      {
+        "n_units": 1,
+        "name": "video_compose",
+        "raw_cny": 1.0,
+        "unit_price_cny": 1.0,
+        "with_retry_cny": 1.18
+      },
+      {
+        "n_units": 0.22,
+        "name": "tts_dialog",
+        "raw_cny": 3.96,
+        "unit_price_cny": 18.0,
+        "with_retry_cny": 4.673
+      },
+      {
+        "n_units": 1,
+        "name": "bgm_per_episode",
+        "raw_cny": 0.3,
+        "unit_price_cny": 0.3,
+        "with_retry_cny": 0.354
+      },
+      {
+        "n_units": 1,
+        "name": "sfx_per_episode",
+        "raw_cny": 0.2,
+        "unit_price_cny": 0.2,
+        "with_retry_cny": 0.236
+      },
+      {
+        "n_units": 0.22,
+        "name": "moderation_text",
+        "raw_cny": 0.088,
+        "unit_price_cny": 0.4,
+        "with_retry_cny": 0.104
+      },
+      {
+        "n_units": 0.0012,
+        "name": "moderation_image",
+        "raw_cny": 0.001,
+        "unit_price_cny": 1.2,
+        "with_retry_cny": 0.002
+      },
+      {
+        "n_units": 0.18,
+        "name": "tos_storage_30d",
+        "raw_cny": 0.018,
+        "unit_price_cny": 0.099,
+        "with_retry_cny": 0.021
+      }
+    ],
+    "tier": "H",
+    "total_raw_cny": 153.027,
+    "total_with_retry_cny": 180.572
+  },
+  "tier_L": {
+    "mc_mean": 81.44183704572893,
+    "mc_n_samples": 100000,
+    "mc_p50": 81.36709934654476,
+    "mc_p95": 89.3931369696188,
+    "mc_p99": 92.71879576716618,
+    "retry_factor": 0.18,
+    "stages": [
+      {
+        "n_units": 1,
+        "name": "script_analysis",
+        "raw_cny": 0.5,
+        "unit_price_cny": 0.5,
+        "with_retry_cny": 0.59
+      },
+      {
+        "n_units": 4,
+        "name": "character_generate",
+        "raw_cny": 4.8,
+        "unit_price_cny": 1.2,
+        "with_retry_cny": 5.664
+      },
+      {
+        "n_units": 3.5999999999999996,
+        "name": "scene_generate",
+        "raw_cny": 2.16,
+        "unit_price_cny": 0.6,
+        "with_retry_cny": 2.549
+      },
+      {
+        "n_units": 1,
+        "name": "storyboard_generate",
+        "raw_cny": 2.0,
+        "unit_price_cny": 2.0,
+        "with_retry_cny": 2.36
+      },
+      {
+        "n_units": 12,
+        "name": "video_generate",
+        "raw_cny": 54.0,
+        "unit_price_cny": 4.5,
+        "with_retry_cny": 63.72
+      },
+      {
+        "n_units": 1,
+        "name": "video_compose",
+        "raw_cny": 1.0,
+        "unit_price_cny": 1.0,
+        "with_retry_cny": 1.18
+      },
+      {
+        "n_units": 0.22,
+        "name": "tts_dialog",
+        "raw_cny": 3.96,
+        "unit_price_cny": 18.0,
+        "with_retry_cny": 4.673
+      },
+      {
+        "n_units": 1,
+        "name": "bgm_per_episode",
+        "raw_cny": 0.3,
+        "unit_price_cny": 0.3,
+        "with_retry_cny": 0.354
+      },
+      {
+        "n_units": 1,
+        "name": "sfx_per_episode",
+        "raw_cny": 0.2,
+        "unit_price_cny": 0.2,
+        "with_retry_cny": 0.236
+      },
+      {
+        "n_units": 0.22,
+        "name": "moderation_text",
+        "raw_cny": 0.088,
+        "unit_price_cny": 0.4,
+        "with_retry_cny": 0.104
+      },
+      {
+        "n_units": 0.0012,
+        "name": "moderation_image",
+        "raw_cny": 0.001,
+        "unit_price_cny": 1.2,
+        "with_retry_cny": 0.002
+      },
+      {
+        "n_units": 0.18,
+        "name": "tos_storage_30d",
+        "raw_cny": 0.018,
+        "unit_price_cny": 0.099,
+        "with_retry_cny": 0.021
+      }
+    ],
+    "tier": "L",
+    "total_raw_cny": 69.027,
+    "total_with_retry_cny": 81.452
+  },
+  "tier_M": {
+    "mc_mean": 71.5304959554338,
+    "mc_n_samples": 100000,
+    "mc_p50": 71.47436606201788,
+    "mc_p95": 78.53206188026027,
+    "mc_p99": 81.35509498997968,
+    "retry_factor": 0.18,
+    "stages": [
+      {
+        "n_units": 1,
+        "name": "script_analysis",
+        "raw_cny": 0.5,
+        "unit_price_cny": 0.5,
+        "with_retry_cny": 0.59
+      },
+      {
+        "n_units": 4,
+        "name": "character_generate",
+        "raw_cny": 4.8,
+        "unit_price_cny": 1.2,
+        "with_retry_cny": 5.664
+      },
+      {
+        "n_units": 3.5999999999999996,
+        "name": "scene_generate",
+        "raw_cny": 2.16,
+        "unit_price_cny": 0.6,
+        "with_retry_cny": 2.549
+      },
+      {
+        "n_units": 1,
+        "name": "storyboard_generate",
+        "raw_cny": 2.0,
+        "unit_price_cny": 2.0,
+        "with_retry_cny": 2.36
+      },
+      {
+        "n_units": 12,
+        "name": "video_generate",
+        "raw_cny": 45.6,
+        "unit_price_cny": 3.8,
+        "with_retry_cny": 53.808
+      },
+      {
+        "n_units": 1,
+        "name": "video_compose",
+        "raw_cny": 1.0,
+        "unit_price_cny": 1.0,
+        "with_retry_cny": 1.18
+      },
+      {
+        "n_units": 0.22,
+        "name": "tts_dialog",
+        "raw_cny": 3.96,
+        "unit_price_cny": 18.0,
+        "with_retry_cny": 4.673
+      },
+      {
+        "n_units": 1,
+        "name": "bgm_per_episode",
+        "raw_cny": 0.3,
+        "unit_price_cny": 0.3,
+        "with_retry_cny": 0.354
+      },
+      {
+        "n_units": 1,
+        "name": "sfx_per_episode",
+        "raw_cny": 0.2,
+        "unit_price_cny": 0.2,
+        "with_retry_cny": 0.236
+      },
+      {
+        "n_units": 0.22,
+        "name": "moderation_text",
+        "raw_cny": 0.088,
+        "unit_price_cny": 0.4,
+        "with_retry_cny": 0.104
+      },
+      {
+        "n_units": 0.0012,
+        "name": "moderation_image",
+        "raw_cny": 0.001,
+        "unit_price_cny": 1.2,
+        "with_retry_cny": 0.002
+      },
+      {
+        "n_units": 0.18,
+        "name": "tos_storage_30d",
+        "raw_cny": 0.018,
+        "unit_price_cny": 0.099,
+        "with_retry_cny": 0.021
+      }
+    ],
+    "tier": "M",
+    "total_raw_cny": 60.627,
+    "total_with_retry_cny": 71.54
+  }
+}

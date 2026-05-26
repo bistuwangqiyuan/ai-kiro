@@ -1,0 +1,31 @@
+{
+  "source": "https://www.volcengine.com/docs/82379/1521837",
+  "snapshot_date": "2026-05-26",
+  "currency": "CNY",
+  "product": "Seedance 2.0 \u5c0f\u4e91\u96c0\u5e95\u5c42 — fallback path",
+  "billing_model": "per-task",
+  "endpoints": {
+    "seedance_2_t2v_720p": {
+      "unit": "per_shot_5s",
+      "price": 4.2,
+      "median_latency_s": 95,
+      "notes": "Text-to-video, no reference image"
+    },
+    "seedance_2_i2v_720p": {
+      "unit": "per_shot_5s",
+      "price": 4.5,
+      "median_latency_s": 105,
+      "notes": "Image-to-video, single first-frame"
+    },
+    "seedance_2_keyframe_720p": {
+      "unit": "per_shot_5s",
+      "price": 5.0,
+      "median_latency_s": 115,
+      "notes": "First+last frame keyframe control"
+    }
+  },
+  "concurrency_quota": {
+    "default": 32,
+    "notes": "Higher than manhuaju agent because foundation model is multi-tenant"
+  }
+}

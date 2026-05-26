@@ -1,0 +1,312 @@
+{
+  "all_candidates": [
+    {
+      "cost_cny": 231.89,
+      "latency_s": 1528.5,
+      "p_pass": 0.65,
+      "parallelism": 4,
+      "quality": 0.75,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 203.24,
+      "latency_s": 1479.0,
+      "p_pass": 0.75,
+      "parallelism": 4,
+      "quality": 0.85,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 179.94,
+      "latency_s": 1447.4,
+      "p_pass": 0.85,
+      "parallelism": 4,
+      "quality": 0.95,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 231.89,
+      "latency_s": 1234.1,
+      "p_pass": 0.65,
+      "parallelism": 8,
+      "quality": 0.75,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 203.24,
+      "latency_s": 1183.5,
+      "p_pass": 0.75,
+      "parallelism": 8,
+      "quality": 0.85,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 179.94,
+      "latency_s": 1147.3,
+      "p_pass": 0.85,
+      "parallelism": 8,
+      "quality": 0.95,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 231.89,
+      "latency_s": 1079.0,
+      "p_pass": 0.65,
+      "parallelism": 16,
+      "quality": 0.75,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 203.24,
+      "latency_s": 1033.5,
+      "p_pass": 0.75,
+      "parallelism": 16,
+      "quality": 0.85,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 179.94,
+      "latency_s": 996.8,
+      "p_pass": 0.85,
+      "parallelism": 16,
+      "quality": 0.95,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 231.89,
+      "latency_s": 928.1,
+      "p_pass": 0.65,
+      "parallelism": 32,
+      "quality": 0.75,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 203.24,
+      "latency_s": 884.4,
+      "p_pass": 0.75,
+      "parallelism": 32,
+      "quality": 0.85,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 179.94,
+      "latency_s": 842.3,
+      "p_pass": 0.85,
+      "parallelism": 32,
+      "quality": 0.95,
+      "tier": "H"
+    },
+    {
+      "cost_cny": 91.87,
+      "latency_s": 1523.8,
+      "p_pass": 0.65,
+      "parallelism": 4,
+      "quality": 0.75,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 80.52,
+      "latency_s": 1482.3,
+      "p_pass": 0.75,
+      "parallelism": 4,
+      "quality": 0.85,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 71.29,
+      "latency_s": 1440.0,
+      "p_pass": 0.85,
+      "parallelism": 4,
+      "quality": 0.95,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 91.87,
+      "latency_s": 1232.7,
+      "p_pass": 0.65,
+      "parallelism": 8,
+      "quality": 0.75,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 80.52,
+      "latency_s": 1186.2,
+      "p_pass": 0.75,
+      "parallelism": 8,
+      "quality": 0.85,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 71.29,
+      "latency_s": 1150.6,
+      "p_pass": 0.85,
+      "parallelism": 8,
+      "quality": 0.95,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 91.87,
+      "latency_s": 1079.0,
+      "p_pass": 0.65,
+      "parallelism": 16,
+      "quality": 0.75,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 80.52,
+      "latency_s": 1032.0,
+      "p_pass": 0.75,
+      "parallelism": 16,
+      "quality": 0.85,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 71.29,
+      "latency_s": 996.4,
+      "p_pass": 0.85,
+      "parallelism": 16,
+      "quality": 0.95,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 91.87,
+      "latency_s": 922.3,
+      "p_pass": 0.65,
+      "parallelism": 32,
+      "quality": 0.75,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 80.52,
+      "latency_s": 877.5,
+      "p_pass": 0.75,
+      "parallelism": 32,
+      "quality": 0.85,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 71.29,
+      "latency_s": 837.3,
+      "p_pass": 0.85,
+      "parallelism": 32,
+      "quality": 0.95,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 104.6,
+      "latency_s": 1528.2,
+      "p_pass": 0.65,
+      "parallelism": 4,
+      "quality": 0.75,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 91.68,
+      "latency_s": 1482.5,
+      "p_pass": 0.75,
+      "parallelism": 4,
+      "quality": 0.85,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 81.17,
+      "latency_s": 1449.7,
+      "p_pass": 0.85,
+      "parallelism": 4,
+      "quality": 0.95,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 104.6,
+      "latency_s": 1231.0,
+      "p_pass": 0.65,
+      "parallelism": 8,
+      "quality": 0.75,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 91.68,
+      "latency_s": 1186.9,
+      "p_pass": 0.75,
+      "parallelism": 8,
+      "quality": 0.85,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 81.17,
+      "latency_s": 1152.3,
+      "p_pass": 0.85,
+      "parallelism": 8,
+      "quality": 0.95,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 104.6,
+      "latency_s": 1074.0,
+      "p_pass": 0.65,
+      "parallelism": 16,
+      "quality": 0.75,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 91.68,
+      "latency_s": 1031.5,
+      "p_pass": 0.75,
+      "parallelism": 16,
+      "quality": 0.85,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 81.17,
+      "latency_s": 998.6,
+      "p_pass": 0.85,
+      "parallelism": 16,
+      "quality": 0.95,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 104.6,
+      "latency_s": 923.9,
+      "p_pass": 0.65,
+      "parallelism": 32,
+      "quality": 0.75,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 91.68,
+      "latency_s": 878.2,
+      "p_pass": 0.75,
+      "parallelism": 32,
+      "quality": 0.85,
+      "tier": "L"
+    },
+    {
+      "cost_cny": 81.17,
+      "latency_s": 837.2,
+      "p_pass": 0.85,
+      "parallelism": 32,
+      "quality": 0.95,
+      "tier": "L"
+    }
+  ],
+  "frontier": [
+    {
+      "cost_cny": 71.29,
+      "latency_s": 837.3,
+      "p_pass": 0.85,
+      "parallelism": 32,
+      "quality": 0.95,
+      "tier": "M"
+    },
+    {
+      "cost_cny": 81.17,
+      "latency_s": 837.2,
+      "p_pass": 0.85,
+      "parallelism": 32,
+      "quality": 0.95,
+      "tier": "L"
+    }
+  ],
+  "n_candidates": 36,
+  "n_frontier": 2
+}

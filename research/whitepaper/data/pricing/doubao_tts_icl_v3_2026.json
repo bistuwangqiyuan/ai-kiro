@@ -1,0 +1,31 @@
+{
+  "source": "https://www.volcengine.com/docs/6561/1257584",
+  "snapshot_date": "2026-05-26",
+  "currency": "CNY",
+  "product": "\u8c46\u5305 TTS ICL V3 \u4e0e\u58f0\u97f3\u590d\u523b",
+  "billing_model": "per-character",
+  "endpoints": {
+    "tts_icl_v3_dialog": {
+      "unit": "per_10k_chars",
+      "price": 18.0,
+      "median_latency_s_per_1k_chars": 6,
+      "notes": "Voice clone tier, emotion + prosody injection"
+    },
+    "tts_icl_v3_narration": {
+      "unit": "per_10k_chars",
+      "price": 12.0,
+      "median_latency_s_per_1k_chars": 5,
+      "notes": "Standard narration"
+    },
+    "tts_voice_clone_train": {
+      "unit": "per_voice_30s_sample",
+      "price": 15.0,
+      "median_latency_s": 90,
+      "notes": "One-time per voice; reusable across project"
+    }
+  },
+  "free_tier": {
+    "free_chars_per_month": 200000,
+    "notes": "First 200k chars free monthly"
+  }
+}

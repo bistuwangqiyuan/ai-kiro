@@ -1,0 +1,97 @@
+{
+  "episodes_per_hour_at_burst_c": 725.33,
+  "episodes_per_hour_at_default_c": 362.67,
+  "lambda_10_per_hour": {
+    "arrivals_per_hour": 10.0,
+    "episodes_per_hour": 10.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.687289,
+    "rho": 0.0234,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "lambda_12_per_hour": {
+    "arrivals_per_hour": 12.0,
+    "episodes_per_hour": 12.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.637628,
+    "rho": 0.0281,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "lambda_16_per_hour": {
+    "arrivals_per_hour": 16.0,
+    "episodes_per_hour": 16.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.548812,
+    "rho": 0.0375,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "lambda_20_per_hour": {
+    "arrivals_per_hour": 20.0,
+    "episodes_per_hour": 20.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.472367,
+    "rho": 0.0469,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "lambda_24_per_hour": {
+    "arrivals_per_hour": 24.0,
+    "episodes_per_hour": 24.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.40657,
+    "rho": 0.0562,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "lambda_4_per_hour": {
+    "arrivals_per_hour": 4.0,
+    "episodes_per_hour": 4.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.860708,
+    "rho": 0.0094,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "lambda_6_per_hour": {
+    "arrivals_per_hour": 6.0,
+    "episodes_per_hour": 6.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.798516,
+    "rho": 0.0141,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "lambda_8_per_hour": {
+    "arrivals_per_hour": 8.0,
+    "episodes_per_hour": 8.0,
+    "erlang_c_wait_prob": 0.0,
+    "lq_expected_queue": 0.0,
+    "p0_idle_prob": 0.740818,
+    "rho": 0.0187,
+    "servers": 16,
+    "service_rate_per_hour": 26.667,
+    "wq_seconds_expected_wait": 0.0
+  },
+  "mean_render_per_episode_seconds": 135.0,
+  "need_md_anchor_eps_per_hour_min": 8.0,
+  "saturation_at_default_c": 362.67,
+  "servers_burst": 32,
+  "servers_default": 16
+}

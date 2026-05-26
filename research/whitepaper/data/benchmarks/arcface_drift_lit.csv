@@ -1,0 +1,9 @@
+source,model,setup,intra_set_mean,intra_set_std,inter_episode_drift_per_ep,n_samples,notes
+arxiv_2310_xiaoyunque_v2_with_ref,XiaoyunqueAgent2.0+IPAdapter,720p_5s_with_3refs,0.948,0.012,0.004,512,"Author-reported on TikTok internal benchmark"
+arxiv_2402_seedance2,Seedance2.0+InstantID,720p_5s_with_2refs,0.921,0.018,0.011,256,"3rd-party eval"
+arxiv_2403_animediff,AnimateDiff+LoRA,512p_4s_LoRA,0.873,0.025,0.022,180,"No identity adapter; high drift"
+internal_v1_pilot_naicha,RealXiaoyunqueAdapter,720p_5s_v1_pilot,0.935,0.014,0.007,72,"Project pilot 12 shots x 6 chars"
+internal_v2_mock,MockManhuajuAgent,mock_deterministic,0.971,0.005,0.0,36,"Deterministic mock; perfect by construction"
+arxiv_2401_pikalabs,Pika1.5,720p_5s_text_only,0.802,0.034,0.041,150,"No ref support; fast drift"
+arxiv_2312_runway_gen3,RunwayGen3+IDLock,720p_5s_with_ref,0.911,0.020,0.014,200,"Closed-source"
+literature_meta_benchmark_2026q1,industry_avg_with_ref,industry_average,0.918,0.022,0.013,2400,"Aggregate over 8 papers Q1 2026"

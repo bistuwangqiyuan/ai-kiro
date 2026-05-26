@@ -1,0 +1,37 @@
+{
+  "snapshot_date": "2026-05-26",
+  "currency": "CNY",
+  "tos": {
+    "source": "https://www.volcengine.com/docs/6349/74840",
+    "storage_per_gb_month": 0.099,
+    "request_get_per_10k": 0.01,
+    "request_put_per_10k": 0.05,
+    "egress_internal_free": true,
+    "egress_internet_per_gb": 0.50,
+    "average_episode_artefact_size_gb": 0.18,
+    "notes": "Includes 12 ref imgs (\u22487MB) + 12 shots (\u2248160MB) + 1 final mp4 (\u224825MB)"
+  },
+  "dashscope": {
+    "source": "https://help.aliyun.com/zh/dashscope/price",
+    "qwen_max_input_per_1k_tokens": 0.020,
+    "qwen_max_output_per_1k_tokens": 0.060,
+    "text_embedding_v3_per_1k_tokens": 0.0007,
+    "average_chapter_input_tokens": 8000,
+    "average_chapter_output_tokens": 6000
+  },
+  "moderation": {
+    "source": "https://www.volcengine.com/docs/6790",
+    "bytedance_text_per_10k": 0.40,
+    "bytedance_image_per_10k": 1.20,
+    "openai_moderation_per_call": 0.0,
+    "notes": "OpenAI moderation is free; ByteDance reviewed all assets"
+  },
+  "llm_pool": {
+    "deepseek_v4_pro_input_per_1m": 4.0,
+    "deepseek_v4_pro_output_per_1m": 8.0,
+    "moonshot_kimi_input_per_1m": 60.0,
+    "moonshot_kimi_output_per_1m": 60.0,
+    "ark_doubao_pro_input_per_1m": 3.0,
+    "ark_doubao_pro_output_per_1m": 6.0
+  }
+}

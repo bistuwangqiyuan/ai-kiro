@@ -1,0 +1,56 @@
+{
+  "asymptotic_reuse_rate": 1.0,
+  "curve": [
+    {
+      "fresh_scenes_needed": 4.626,
+      "library_size": 10,
+      "reuse_rate": 0.2289,
+      "saving_per_ep_cny": 0.824,
+      "scene_cost_per_ep_cny": 2.776
+    },
+    {
+      "fresh_scenes_needed": 3.132,
+      "library_size": 25,
+      "reuse_rate": 0.478,
+      "saving_per_ep_cny": 1.721,
+      "scene_cost_per_ep_cny": 1.879
+    },
+    {
+      "fresh_scenes_needed": 1.635,
+      "library_size": 50,
+      "reuse_rate": 0.7275,
+      "saving_per_ep_cny": 2.619,
+      "scene_cost_per_ep_cny": 0.981
+    },
+    {
+      "fresh_scenes_needed": 0.446,
+      "library_size": 100,
+      "reuse_rate": 0.9257,
+      "saving_per_ep_cny": 3.333,
+      "scene_cost_per_ep_cny": 0.267
+    },
+    {
+      "fresh_scenes_needed": 0.033,
+      "library_size": 200,
+      "reuse_rate": 0.9945,
+      "saving_per_ep_cny": 3.58,
+      "scene_cost_per_ep_cny": 0.02
+    },
+    {
+      "fresh_scenes_needed": 0.0,
+      "library_size": 500,
+      "reuse_rate": 1.0,
+      "saving_per_ep_cny": 3.6,
+      "scene_cost_per_ep_cny": 0.0
+    },
+    {
+      "fresh_scenes_needed": 0.0,
+      "library_size": 1000,
+      "reuse_rate": 1.0,
+      "saving_per_ep_cny": 3.6,
+      "scene_cost_per_ep_cny": 0.0
+    }
+  ],
+  "k_default": 0.026,
+  "library_size_for_90pct": 89
+}

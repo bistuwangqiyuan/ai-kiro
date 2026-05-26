@@ -1,0 +1,68 @@
+{
+  "source": "https://www.volcengine.com/docs/85621/2459788",
+  "snapshot_date": "2026-05-26",
+  "currency": "CNY",
+  "product": "Volcengine Pippit Shortplay Manhuaju Agent (6-step OpenAPI)",
+  "billing_model": "per-task",
+  "endpoints": {
+    "script_analysis": {
+      "req_key": "pippit_shortplay_cvtob_script_analysis",
+      "unit": "per_call",
+      "price": 0.5,
+      "median_latency_s": 35,
+      "notes": "Single docx upload; covers chunking + character/scene/episode list extraction"
+    },
+    "character_generate": {
+      "req_key": "pippit_shortplay_cvtob_character_generate",
+      "unit": "per_character",
+      "price": 1.2,
+      "median_latency_s": 60,
+      "notes": "Multi-view sheet (front/side/back/expression) per character"
+    },
+    "scene_generate": {
+      "req_key": "pippit_shortplay_cvtob_scene_generate",
+      "unit": "per_scene",
+      "price": 0.6,
+      "median_latency_s": 25,
+      "notes": "Single ambient scene (location + time + weather)"
+    },
+    "storyboard_generate": {
+      "req_key": "pippit_shortplay_cvtob_storyboard_generate",
+      "unit": "per_episode",
+      "price": 2.0,
+      "median_latency_s": 90,
+      "notes": "Per-episode storyboard panel grid (9-25 cells)"
+    },
+    "video_generate_fast720p": {
+      "req_key": "pippit_shortplay_cvtob_video_generate_fast720p",
+      "unit": "per_shot_5s",
+      "price": 3.8,
+      "list_price": 4.5,
+      "median_latency_s": 120,
+      "notes": "5s clip @ 720p; commercial tier with >=1k shots/month volume discount; list 4.5; 1080p tier x1.4"
+    },
+    "video_compose_fast720p": {
+      "req_key": "pippit_shortplay_cvtob_video_compose_fast720p",
+      "unit": "per_episode",
+      "price": 1.0,
+      "median_latency_s": 30,
+      "notes": "Final mux + transitions + watermark"
+    }
+  },
+  "concurrency_quota": {
+    "default": 16,
+    "burst": 32,
+    "notes": "Per-AK concurrent task slots; OpenAPI rate limit 60 QPS"
+  },
+  "task_expiry_hours": 12,
+  "error_codes": {
+    "50411": "image_review",
+    "50511": "image_review",
+    "50412": "text_review",
+    "50512": "text_review",
+    "50413": "text_review",
+    "50429": "rate_limit",
+    "50430": "rate_limit",
+    "50500": "internal"
+  }
+}

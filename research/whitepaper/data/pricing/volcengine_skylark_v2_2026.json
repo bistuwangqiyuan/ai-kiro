@@ -1,0 +1,61 @@
+{
+  "source": "https://www.volcengine.com/docs/85621/2359610",
+  "snapshot_date": "2026-05-26",
+  "currency": "CNY",
+  "product": "Volcengine Jimeng Xiaoyunque (\u5c0f\u4e91\u96c0) Agent 2.0 + Seedance 2.0 fast 720p with reference",
+  "billing_model": "per-task",
+  "endpoints": {
+    "skylark_video_agent_v2_with_ref": {
+      "model_id": "skylark_video_agent_v2_with_ref",
+      "unit": "per_shot_5s",
+      "price": 6.8,
+      "median_latency_s": 150,
+      "notes": "Best identity preservation; uses IP-Adapter+InstantID; \u00a560-80/episode"
+    },
+    "skylark_video_agent_v2_with_ref_pro_1080p": {
+      "model_id": "skylark_video_agent_v2_with_ref_pro",
+      "unit": "per_shot_5s",
+      "price": 11.5,
+      "median_latency_s": 220,
+      "notes": "1080p pro tier"
+    },
+    "seedance_2_fast_720p_with_ref": {
+      "model_id": "seedance_2_fast720p_with_ref",
+      "unit": "per_shot_5s",
+      "price": 4.8,
+      "median_latency_s": 110,
+      "notes": "Fallback path; 720p with reference image"
+    },
+    "seedream_4_image_with_ref": {
+      "model_id": "seedream_4_with_ref",
+      "unit": "per_image",
+      "price": 0.18,
+      "median_latency_s": 12,
+      "notes": "1024x1024 reference asset / character master"
+    },
+    "seededit_inpaint": {
+      "model_id": "seededit_v3",
+      "unit": "per_image",
+      "price": 0.22,
+      "median_latency_s": 14,
+      "notes": "Local repaint for face/hand/limb correction"
+    }
+  },
+  "tiers": {
+    "H_premium": {
+      "model": "skylark_video_agent_v2_with_ref_pro",
+      "per_episode_avg_cny": 80,
+      "shot_count_avg": 12
+    },
+    "M_standard": {
+      "model": "manhuaju_agent_video_generate_fast720p",
+      "per_episode_avg_cny": 50,
+      "shot_count_avg": 12
+    },
+    "L_economy": {
+      "model": "seedance_2_fast720p_with_ref",
+      "per_episode_avg_cny": 38,
+      "shot_count_avg": 12
+    }
+  }
+}

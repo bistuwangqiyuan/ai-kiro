@@ -1,0 +1,8 @@
+dimension,name_zh,description,prior_alpha,prior_beta,need_md_threshold,notes
+structure,结构正确性,人体比例与透视,40,5,8.0,"Beta(40,5) -> mean=8.89; from Seedream4+SeedEdit eval after pose-fix loop"
+style,风格一致性,与项目设定画风偏差度,55,5,8.5,"Tighter; with style_lock"
+detail,细节完整性,服饰纹理背景元素,32,5,7.5,
+clarity,画质清晰度,分辨率与压缩artefact,60,4,8.7,
+color,色彩协调性,与palette deltaE2000,48,6,8.3,
+no_warp,无崩坏,面手肢畸形检测,38,4.5,8.0,"After SeedEdit local repair"
+intent,意图匹配度,与prompt/剧本语义对齐,45,5,8.2,

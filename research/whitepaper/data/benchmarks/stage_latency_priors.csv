@@ -1,0 +1,13 @@
+stage,name_zh,distribution,mu_log,sigma_log,p50_seconds,p95_seconds,source,notes
+script_analysis,剧本解析,lognormal,3.555,0.30,35,57,volcengine_manhuaju_2026,
+character_generate,角色生成,lognormal,4.094,0.35,60,107,volcengine_manhuaju_2026,"per character"
+scene_generate,场景生成,lognormal,3.219,0.32,25,42,volcengine_manhuaju_2026,
+storyboard_generate,分镜生成,lognormal,4.500,0.30,90,148,volcengine_manhuaju_2026,
+video_generate,视频生成,lognormal,4.787,0.40,120,232,volcengine_manhuaju_2026,"per 5s shot"
+video_compose,视频合成,lognormal,3.401,0.25,30,45,volcengine_manhuaju_2026,
+tts_generation,TTS生成,lognormal,3.000,0.35,20,36,doubao_tts_icl_v3_2026,
+bgm_alignment,BGM卡点,lognormal,2.197,0.20,9,13,internal_v1_pilot,
+qa_seven_dim,QA评估,lognormal,2.708,0.30,15,25,internal_v1_pilot,
+moderation_dual,双层风控,lognormal,2.303,0.25,10,15,internal_v1_pilot,
+repair_iteration,修复一轮,lognormal,4.500,0.35,90,160,internal_v1_pilot,
+distribution_pack,分发打包,lognormal,2.890,0.20,18,25,internal_v1_pilot,

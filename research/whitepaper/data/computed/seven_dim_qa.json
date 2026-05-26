@@ -1,0 +1,129 @@
+{
+  "need_md_anchor_min_pass_rate": 0.85,
+  "need_md_anchor_threshold": 8.0,
+  "threshold_7.0": {
+    "mean_per_dim": {
+      "clarity": 9.375,
+      "color": 8.888,
+      "detail": 8.648,
+      "intent": 8.999,
+      "no_warp": 8.942,
+      "structure": 8.889,
+      "style": 9.166
+    },
+    "mean_score": 8.987,
+    "n_samples": 200000,
+    "pass_rate": 0.9904,
+    "per_dim_pass_rate": {
+      "clarity": 1.0,
+      "color": 0.9997,
+      "detail": 0.9927,
+      "intent": 0.9998,
+      "no_warp": 0.9991,
+      "structure": 0.9991,
+      "style": 1.0
+    },
+    "threshold": 7.0,
+    "worst_dim": "detail"
+  },
+  "threshold_7.5": {
+    "mean_per_dim": {
+      "clarity": 9.374,
+      "color": 8.889,
+      "detail": 8.649,
+      "intent": 8.999,
+      "no_warp": 8.939,
+      "structure": 8.889,
+      "style": 9.165
+    },
+    "mean_score": 8.986,
+    "n_samples": 200000,
+    "pass_rate": 0.9456,
+    "per_dim_pass_rate": {
+      "clarity": 1.0,
+      "color": 0.9961,
+      "detail": 0.966,
+      "intent": 0.9974,
+      "no_warp": 0.9931,
+      "structure": 0.9926,
+      "style": 0.9996
+    },
+    "threshold": 7.5,
+    "worst_dim": "detail"
+  },
+  "threshold_8.0": {
+    "mean_per_dim": {
+      "clarity": 9.375,
+      "color": 8.889,
+      "detail": 8.648,
+      "intent": 8.999,
+      "no_warp": 8.94,
+      "structure": 8.889,
+      "style": 9.167
+    },
+    "mean_score": 8.987,
+    "n_samples": 200000,
+    "pass_rate": 0.7551,
+    "per_dim_pass_rate": {
+      "clarity": 0.9994,
+      "color": 0.9672,
+      "detail": 0.8725,
+      "intent": 0.9779,
+      "no_warp": 0.9613,
+      "structure": 0.9563,
+      "style": 0.9954
+    },
+    "threshold": 8.0,
+    "worst_dim": "detail"
+  },
+  "threshold_8.5": {
+    "mean_per_dim": {
+      "clarity": 9.375,
+      "color": 8.888,
+      "detail": 8.649,
+      "intent": 8.998,
+      "no_warp": 8.94,
+      "structure": 8.888,
+      "style": 9.166
+    },
+    "mean_score": 8.986,
+    "n_samples": 200000,
+    "pass_rate": 0.2949,
+    "per_dim_pass_rate": {
+      "clarity": 0.9896,
+      "color": 0.8265,
+      "detail": 0.644,
+      "intent": 0.8758,
+      "no_warp": 0.8317,
+      "structure": 0.8096,
+      "style": 0.9524
+    },
+    "threshold": 8.5,
+    "worst_dim": "detail"
+  },
+  "threshold_9.0": {
+    "mean_per_dim": {
+      "clarity": 9.375,
+      "color": 8.889,
+      "detail": 8.65,
+      "intent": 9.001,
+      "no_warp": 8.942,
+      "structure": 8.888,
+      "style": 9.167
+    },
+    "mean_score": 8.987,
+    "n_samples": 200000,
+    "pass_rate": 0.01,
+    "per_dim_pass_rate": {
+      "clarity": 0.8858,
+      "color": 0.4397,
+      "detail": 0.2895,
+      "intent": 0.5507,
+      "no_warp": 0.503,
+      "structure": 0.4526,
+      "style": 0.7149
+    },
+    "threshold": 9.0,
+    "worst_dim": "detail"
+  }
+}

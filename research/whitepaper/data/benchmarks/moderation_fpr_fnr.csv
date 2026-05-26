@@ -1,0 +1,7 @@
+layer,provider,modality,false_positive_rate,false_negative_rate,latency_ms,price_per_call_cny,source
+1,bytedance_text_audit,text,0.020,0.018,150,0.00004,bytedance_2026q1
+1,bytedance_image_audit,image,0.025,0.022,400,0.00012,bytedance_2026q1
+2,llm_judge_doubao_pro,text+image,0.012,0.030,2200,0.005,internal_pilot
+2,llm_judge_deepseek_v4,text+image,0.014,0.028,1800,0.004,internal_pilot
+2,llm_judge_qwen_max,text+image,0.011,0.032,2400,0.006,internal_pilot
+ground_truth,human_audit_baseline,text+image,0.0,0.0,86400000,15.0,industry_audit_2026

@@ -1,0 +1,109 @@
+{
+  "episode": {
+    "mean_s": 682.56,
+    "p50_s": 673.62,
+    "p95_s": 849.37,
+    "p99_s": 943.54
+  },
+  "first_token": {
+    "mean_s": 2.1,
+    "p50_s": 1.8,
+    "p95_s": 4.2,
+    "p99_s": 4.9,
+    "source": "ark_doubao_pro_streaming"
+  },
+  "image_generation": {
+    "mean_s": 10.11,
+    "p50_s": 10.0,
+    "p95_s": 12.8,
+    "p99_s": 14.18,
+    "source": "seedream_4_image_with_ref"
+  },
+  "meta": {
+    "n_characters": 4,
+    "n_samples": 100000,
+    "n_scenes": 6,
+    "n_shots": 18,
+    "parallel_video_slots": 16,
+    "repair_iterations_p95": 1.0
+  },
+  "need_md_anchor_episode_p95_max_s": 3600.0,
+  "need_md_anchor_firsttoken_p95_max_s": 5.0,
+  "need_md_anchor_image_p95_max_s": 15.0,
+  "need_md_anchor_video5s_p95_max_s": 180.0,
+  "per_stage": {
+    "bgm_alignment": {
+      "mean_s": 9.16,
+      "p50_s": 8.98,
+      "p95_s": 12.49,
+      "p99_s": 14.27
+    },
+    "character_generate": {
+      "mean_s": 63.85,
+      "p50_s": 60.12,
+      "p95_s": 106.63,
+      "p99_s": 134.62
+    },
+    "distribution_pack": {
+      "mean_s": 18.35,
+      "p50_s": 17.99,
+      "p95_s": 24.97,
+      "p99_s": 28.57
+    },
+    "moderation_dual": {
+      "mean_s": 10.32,
+      "p50_s": 10.01,
+      "p95_s": 15.1,
+      "p99_s": 17.92
+    },
+    "qa_seven_dim": {
+      "mean_s": 15.7,
+      "p50_s": 15.01,
+      "p95_s": 24.5,
+      "p99_s": 30.12
+    },
+    "scene_generate": {
+      "mean_s": 26.33,
+      "p50_s": 25.01,
+      "p95_s": 42.28,
+      "p99_s": 52.64
+    },
+    "script_analysis": {
+      "mean_s": 36.58,
+      "p50_s": 35.02,
+      "p95_s": 57.2,
+      "p99_s": 70.1
+    },
+    "storyboard_generate": {
+      "mean_s": 94.22,
+      "p50_s": 90.03,
+      "p95_s": 147.71,
+      "p99_s": 181.03
+    },
+    "tts_generation": {
+      "mean_s": 21.3,
+      "p50_s": 20.02,
+      "p95_s": 35.62,
+      "p99_s": 45.22
+    },
+    "video_compose": {
+      "mean_s": 30.97,
+      "p50_s": 30.01,
+      "p95_s": 45.36,
+      "p99_s": 53.63
+    },
+    "video_generate": {
+      "mean_s": 259.97,
+      "p50_s": 249.09,
+      "p95_s": 401.32,
+      "p99_s": 487.07
+    }
+  },
+  "video_5s": {
+    "mean_s": 99.0,
+    "p50_s": 95.0,
+    "p95_s": 143.33,
+    "p99_s": 169.93,
+    "source": "seedance_2_i2v_720p"
+  }
+}

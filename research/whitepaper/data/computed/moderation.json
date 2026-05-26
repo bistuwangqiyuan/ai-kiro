@@ -1,0 +1,33 @@
+{
+  "deepseek_v4": {
+    "cost_per_call_cny": 0.0041,
+    "fnr_and_ci95_lower": 0.00048415,
+    "fnr_and_ci95_upper": 0.00078973,
+    "fnr_and_point": 0.000616,
+    "fnr_layer1": 0.022,
+    "fnr_layer2": 0.028,
+    "layer1": "bytedance_image_audit",
+    "layer2": "llm_judge_deepseek_v4"
+  },
+  "doubao_pro": {
+    "cost_per_call_cny": 0.0051,
+    "fnr_and_ci95_lower": 0.00052024,
+    "fnr_and_ci95_upper": 0.00084333,
+    "fnr_and_point": 0.00066,
+    "fnr_layer1": 0.022,
+    "fnr_layer2": 0.03,
+    "layer1": "bytedance_image_audit",
+    "layer2": "llm_judge_doubao_pro"
+  },
+  "qwen_max": {
+    "cost_per_call_cny": 0.0061,
+    "fnr_and_ci95_lower": 0.00055712,
+    "fnr_and_ci95_upper": 0.0008974,
+    "fnr_and_point": 0.000704,
+    "fnr_layer1": 0.022,
+    "fnr_layer2": 0.032,
+    "layer1": "bytedance_image_audit",
+    "layer2": "llm_judge_qwen_max"
+  },
+  "target_max_fnr_and_ci_upper": 0.001
+}
