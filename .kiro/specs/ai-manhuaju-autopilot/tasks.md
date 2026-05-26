@@ -2,7 +2,7 @@
 
 > Kiro Spec / Phase 3 — Implementation Tasks
 > Spec Name: `ai-manhuaju-autopilot`
-> Version: 1.0.0
+> Version: 2.0.0  (v1: 228 leaf tasks preserved verbatim; Epic 9 adds 76 v2 leaf tasks aligned with `requirements.md` §23 + `design.md` §19)
 > Status: Draft for Confirmation
 > Upstream: [`requirements.md`](./requirements.md), [`design.md`](./design.md)
 > Steering: [`product.md`](../../steering/product.md), [`tech.md`](../../steering/tech.md), [`structure.md`](../../steering/structure.md)
@@ -1503,4 +1503,158 @@ gantt
 | REQ-AGENT-v2-002 | T-0803 | SceneAssetAgent |
 | REQ-AGENT-v2-003 | T-0803 | PropAssetAgent |
 | REQ-AGENT-v2-004 | T-0820 | DistributionAgent |
+
+---
+
+## 9. Epic 9 — V3.0 Need.md Increment (76 New Leaf Tasks)
+
+> 严格对应 `requirements.md` §23（13 个 REQ 簇 / 76 条 EARS）+ `design.md` §19（22 Agent + 20 Service + 8 数据模型 + 4 ADR）。
+> 所有 Task 默认 P0/P1，DoD 写到 pytest 断言级；估算单位 = 人时（H）；Owner = `CodegenAgent` 除非另注。
+> 全部 Task 与白皮书 `research/whitepaper/data/computed/*.json` 对齐。
+
+### Epic 9 Story 总览（11 Story）
+
+| Story ID | 名称 | REQ 簇 | Tasks | DoD 主要锚点 |
+| --- | --- | --- | --- | --- |
+| ST-901 | 双模式入口 | REQ-MODE-001..006 | T-9001..T-9006 | `tests/unit/test_mode_router.py` 全绿 |
+| ST-902 | 角色情绪库 runtime | REQ-EMO-001..007 | T-9011..T-9017 | `tests/unit/test_emotion_lib.py` 全绿 + ArcFace ≥ 0.94 |
+| ST-903 | 角色动作库 runtime | REQ-ACT-001..006 | T-9021..T-9026 | `tests/unit/test_action_lib.py` 全绿 + 缓存命中 ≥ 0.50 |
+| ST-904 | 角色换肤 | REQ-OUT-001..006 | T-9031..T-9036 | `tests/unit/test_outfit_change.py` 全绿 |
+| ST-905 | 场景库复用 | REQ-SCN-001..007 | T-9041..T-9047 | `tests/unit/test_scene_library.py` + reuse ≥ 0.30 |
+| ST-906 | 9-25 宫格分镜 | REQ-GRID-001..006 | T-9051..T-9056 | `tests/unit/test_grid.py` 全绿 |
+| ST-907 | 画面诊断 + 修复 | REQ-FRPR-001..006, REQ-DIAG-001..005 | T-9061..T-9075 | `tests/unit/test_frame_repair.py`, `test_diagnosis.py` |
+| ST-908 | 续写 + 风格迁移 + 同人 | REQ-CONT-001..004, REQ-STR-001..006, REQ-TM-001..004 | T-9081..T-9104 | `tests/unit/test_style_transfer.py`, `test_transmedia.py` |
+| ST-909 | 模板化制作 | REQ-TPL-001..003 | T-9111..T-9113 | `tests/unit/test_template_engine.py` 全绿 |
+| ST-910 | 多平台分发 + BGM 卡点 | REQ-DIST-001..004, AUDIO-AC-002 | T-9121..T-9128 | `tests/unit/test_distribution_pack.py`, `test_auto_cut.py` |
+| ST-911 | CRON 出片 + 部署模式 | REQ-CRON-001..004, REQ-DEPLOY-001..003 | T-9131..T-9143 | `tests/unit/test_schedule_agent.py`, deployment GHA 全绿 |
+
+### Epic 9 Tasks（76 leaf）
+
+> 表头：`ID | 文件 / 模块 | DoD（pytest 断言级）| Pri | 估算 H | 关联 REQ`
+
+| ID | 文件 | DoD | Pri | H | REQ |
+| --- | --- | --- | --- | --- | --- |
+| T-9001 | `src/manhuaju/api/mode_router.py` + `web/simple.html` + `web/pro.html` + `config/modes.yaml` | `test_mode_router::test_simple_mode_locks_advanced_params` 通过；`/v1/projects` 接受 `mode` 字段 | P0 | 8 | REQ-MODE-001 |
+| T-9002 | `mode_router.MODE_REGISTRY` | `test_mode_switch_preserves_artefacts` 通过 | P0 | 4 | REQ-MODE-002 |
+| T-9003 | `mode_router.apply_preset` | `test_simple_preset_byte_identical` 通过 | P0 | 3 | REQ-MODE-003 |
+| T-9004 | `mode_router.guard_locked_params` | `test_locked_param_returns_409` 通过 | P1 | 3 | REQ-MODE-004 |
+| T-9005 | `mode_router.middleware` | `test_provenance_records_mode` 通过 | P1 | 2 | REQ-MODE-005 |
+| T-9006 | `api/dashboards.py` | `test_pro_dashboard_extra_panels` 通过 | P1 | 4 | REQ-MODE-006 |
+| T-9011 | `services/emotion_library.py` + `config/emotion-library.yaml` | `test_emotion_lib_at_least_7_per_lead` 通过 | P0 | 5 | REQ-EMO-001 |
+| T-9012 | `services/emotion_library.run_arcface_gate` | `test_emotion_arcface_ge_094` 通过 | P0 | 4 | REQ-EMO-002 |
+| T-9013 | `services/emotion_injection.py` | `test_emotion_token_in_prompt_when_dialogue` 通过 | P0 | 3 | REQ-EMO-003 |
+| T-9014 | `services/emotion_library.add_custom` | `test_custom_emotion_rejected_below_094` 通过 | P1 | 3 | REQ-EMO-004 |
+| T-9015 | `agents/qa_agent_emotion_judge.py` | `test_emotion_judge_agreement_ge_090` 通过 | P0 | 4 | REQ-EMO-005 |
+| T-9016 | `core/events.emit("emotion_variant.ready")` | `test_event_emit` 通过 | P1 | 2 | REQ-EMO-006 |
+| T-9017 | `services/emotion_library.fallback_calm` | `test_emotion_degraded_after_2_retries` 通过 | P1 | 2 | REQ-EMO-007 |
+| T-9021 | `services/action_library.py` + `config/action-library.yaml` | `test_action_lib_at_least_12` 通过 | P0 | 5 | REQ-ACT-001 |
+| T-9022 | `services/action_library.cache_hit` | `test_action_cache_hit_ratio_ge_050` 通过 | P0 | 4 | REQ-ACT-002 |
+| T-9023 | `services/action_library.persist_provenance` | `test_pose_provenance_required` 通过 | P0 | 3 | REQ-ACT-003 |
+| T-9024 | `services/action_library.add_custom_pose` | `test_custom_pose_arcface_gate` 通过 | P1 | 3 | REQ-ACT-004 |
+| T-9025 | `services/action_library.fallback_text_only` | `test_pose_degraded_when_low_conf` 通过 | P1 | 2 | REQ-ACT-005 |
+| T-9026 | event emit | `test_action_pose_event` 通过 | P1 | 1 | REQ-ACT-006 |
+| T-9031 | `services/outfit_change.py` | `test_outfit_state_machine_rejects_illegal` 通过 | P0 | 4 | REQ-OUT-001 |
+| T-9032 | `services/season_dynasty_matcher.py` | `test_season_dynasty_match_coverage_ge_095` 通过 | P0 | 3 | REQ-OUT-002 |
+| T-9033 | `services/outfit_change.run_arcface_gate` | `test_outfit_arcface_ge_094` 通过 | P0 | 3 | REQ-OUT-003 |
+| T-9034 | `services/outfit_change.gen_refs` | `test_missing_outfit_ref_failfast` 通过 | P1 | 3 | REQ-OUT-004 |
+| T-9035 | `services/outfit_change.embed_token` | `test_outfit_id_in_metadata` 通过 | P0 | 2 | REQ-OUT-005 |
+| T-9036 | event emit | `test_outfit_changed_event` 通过 | P1 | 1 | REQ-OUT-006 |
+| T-9041 | `services/scene_library.py` + `adapters/embedding/scene_index_adapter.py` | `test_index_built_after_first_scene` 通过 | P0 | 5 | REQ-SCN-001 |
+| T-9042 | `scene_library.query` | `test_scene_reuse_at_threshold_085` 通过 | P0 | 4 | REQ-SCN-002 |
+| T-9043 | `scene_library.framing_variants` | `test_framing_variant_no_regen` 通过 | P0 | 3 | REQ-SCN-003 |
+| T-9044 | `scene_library.persist_provenance` | `test_scene_reuse_provenance_required` 通过 | P0 | 2 | REQ-SCN-004 |
+| T-9045 | `scene_library.cold_start_fallback` | `test_cold_start_falls_back_to_fresh` 通过 | P1 | 2 | REQ-SCN-005 |
+| T-9046 | event emit | `test_scene_reused_event` 通过 | P1 | 1 | REQ-SCN-006 |
+| T-9047 | e2e | `test_scene_reuse_rate_ge_030_at_50_lib` 通过 | P1 | 3 | REQ-SCN-007 |
+| T-9051 | `services/storyboard_grid.py` | `test_grid_size_mapping` 通过 | P0 | 4 | REQ-GRID-001 |
+| T-9052 | `services/grid_renderer.py` | `test_cell_numbers_in_order` 通过 | P0 | 4 | REQ-GRID-002 |
+| T-9053 | `services/storyboard_grid.paginate` | `test_grid_paginates_above_25` 通过 | P0 | 3 | REQ-GRID-003 |
+| T-9054 | `services/grid_renderer.regen_cell` | `test_regen_single_cell_changes_only_cell` 通过 | P0 | 3 | REQ-GRID-004 |
+| T-9055 | `services/grid_renderer.embed_metadata` | `test_grid_metadata_present` 通过 | P0 | 2 | REQ-GRID-005 |
+| T-9056 | event emit | `test_grid_completed_event` 通过 | P1 | 1 | REQ-GRID-006 |
+| T-9061 | `services/diagnosis.detect_anomalies` | `test_anomaly_detection_thresholds` 通过 | P0 | 4 | REQ-FRPR-001 |
+| T-9062 | `agents/frame_repair_agent.py` + adapter | `test_inpaint_lowers_score` 通过 | P0 | 5 | REQ-FRPR-002 |
+| T-9063 | `frame_repair_agent.deterministic_seed` | `test_inpaint_byte_identical` 通过 | P0 | 2 | REQ-FRPR-003 |
+| T-9064 | `services/diagnosis.persist_diff` | `test_diff_thumbnails_present` 通过 | P1 | 2 | REQ-FRPR-004 |
+| T-9065 | event emit | `test_frame_repair_completed_event` 通过 | P1 | 1 | REQ-FRPR-005 |
+| T-9066 | `frame_repair_agent.escalate` | `test_escalation_after_2_retries` 通过 | P0 | 3 | REQ-FRPR-006 |
+| T-9071 | `services/diagnosis.build_heatmap` | `test_heatmap_legend_has_7_dims` 通过 | P0 | 4 | REQ-DIAG-001 |
+| T-9072 | `services/diagnosis.annotate_boxes` | `test_box_count_matches_anomalies` 通过 | P0 | 3 | REQ-DIAG-002 |
+| T-9073 | `api/diagnosis.py` | `test_diagnosis_endpoint_contract` 通过 | P1 | 3 | REQ-DIAG-003 |
+| T-9074 | event emit | `test_diagnosis_ready_event` 通过 | P1 | 1 | REQ-DIAG-004 |
+| T-9075 | `services/diagnosis.embed_sha` | `test_diagnosis_sha_present` 通过 | P0 | 2 | REQ-DIAG-005 |
+| T-9081 | `agents/continuation_agent.py` | `test_continuation_foreshadowing_acyclic` 通过 | P1 | 5 | REQ-CONT-001 |
+| T-9082 | `agents/continuation_qa.py` | `test_continuation_judge_ge_8` 通过 | P1 | 3 | REQ-CONT-002 |
+| T-9083 | `continuation_agent.cancel` | `test_continuation_rollback` 通过 | P0 | 3 | REQ-CONT-003 |
+| T-9084 | `continuation_agent.persist_lineage` | `test_continuation_parent_chain_present` 通过 | P1 | 2 | REQ-CONT-004 |
+| T-9091 | `services/style_transfer.py` + `adapters/styletransfer/{mock,real_seedream_styletx}_adapter.py` | `test_style_transfer_modes` 通过 | P1 | 6 | REQ-STR-001 |
+| T-9092 | `style_transfer.run_arcface_gate` | `test_style_transfer_arcface_ge_092` 通过 | P0 | 3 | REQ-STR-002 |
+| T-9093 | `style_transfer.bump_shas` | `test_orphan_detection` 通过 | P0 | 3 | REQ-STR-003 |
+| T-9094 | `style_transfer.queue_pending` | `test_style_transfer_queues_when_unavailable` 通过 | P1 | 2 | REQ-STR-004 |
+| T-9095 | `style_transfer.audit_log` | `test_style_transfer_audit_log` 通过 | P0 | 2 | REQ-STR-005 |
+| T-9096 | event emit | `test_style_transfer_completed_event` 通过 | P1 | 1 | REQ-STR-006 |
+| T-9101 | `services/transmedia_ingest.py` | `test_transmedia_ingest_manga_video` 通过 | P1 | 5 | REQ-TM-001 |
+| T-9102 | `services/keyframe_extractor.py` | `test_keyframe_count_within_10pct` 通过 | P1 | 4 | REQ-TM-002 |
+| T-9103 | `transmedia_ingest.dual_moderation` | `test_transmedia_blocked_by_moderation` 通过 | P0 | 3 | REQ-TM-003 |
+| T-9104 | `transmedia_ingest.persist_citation` | `test_transmedia_audit_complete` 通过 | P0 | 2 | REQ-TM-004 |
+| T-9111 | `services/template_engine.py` + `config/templates/{cdrama_classic,sweet_pet,xianxia_epic}.yaml` | `test_template_loads_3_presets` 通过 | P1 | 4 | REQ-TPL-001 |
+| T-9112 | `template_engine.apply_with_overrides` | `test_template_overrides_pro_only` 通过 | P1 | 3 | REQ-TPL-002 |
+| T-9113 | `api/templates.py` POST | `test_template_save_round_trip` 通过 | P1 | 2 | REQ-TPL-003 |
+| T-9121 | `services/distribution_pack.py` + `config/distribution-platforms.yaml` | `test_5_platform_variants_match_specs` 通过 | P0 | 5 | REQ-DIST-001 |
+| T-9122 | `services/watermark.py` | `test_watermark_byte_identical` 通过 | P0 | 3 | REQ-DIST-002 |
+| T-9123 | `services/copy_style_router.py` | `test_per_platform_copy_on_style` 通过 | P0 | 4 | REQ-DIST-003 |
+| T-9124 | `distribution_pack.sidecar_metadata` | `test_sidecar_validates` 通过 | P1 | 2 | REQ-DIST-004 |
+| T-9125 | `services/music_alignment.py` | `test_beat_detection_accuracy` 通过 | P1 | 4 | REQ-AUDIO-AC-002 |
+| T-9126 | `services/auto_cut.py` | `test_auto_cut_aligns_to_beats` 通过 | P1 | 4 | REQ-AUDIO-AC-002 |
+| T-9127 | `services/distribution_pack.cover_extract` | `test_cover_extracted_per_platform` 通过 | P1 | 3 | REQ-DIST-004 |
+| T-9128 | `services/copy_style_router.deterministic_llm` | `test_copy_deterministic_seed` 通过 | P1 | 2 | REQ-DIST-003 |
+| T-9131 | `agents/schedule_agent.py` + APScheduler glue | `test_cron_3_runs_3sec_simulated` 通过 | P1 | 5 | REQ-CRON-001 |
+| T-9132 | `api/cron.py` GET queue | `test_cron_queue_endpoint` 通过 | P1 | 2 | REQ-CRON-002 |
+| T-9133 | `schedule_agent.budget_guard` | `test_cron_budget_skip` 通过 | P0 | 3 | REQ-CRON-003 |
+| T-9134 | event emit | `test_cron_run_completed_event` 通过 | P1 | 1 | REQ-CRON-004 |
+| T-9141 | GHA `vefaas-deploy.yml` + `compose-bundle.yml` | `test_compose_bundle_pulls_clean` 通过 | P0 | 6 | REQ-DEPLOY-001 |
+| T-9142 | `api/version.py` | `test_version_sha_consistent` 通过 | P0 | 2 | REQ-DEPLOY-002 |
+| T-9143 | `tools/secret_scanner.py` | `test_no_plaintext_secrets` 通过 | P0 | 3 | REQ-DEPLOY-003 |
+
+### 9.x Cross-cut
+
+- **Pipeline glue task (PG-001)** — `pipelines/manhuaju_agent_flow.py` 在合适阶段调用 11 个新 Service；DoD: `pytest tests/integration/test_pipeline_glue.py` 通过；`lint-imports --config tools/import-linter.toml` 全绿。
+- **Whitepaper anchor task (PG-002)** — `tests/unit/test_budget_anchor.py` 直接 import `research.whitepaper.models.cost_model` 验证数字一致；DoD: `pytest tests/unit/test_budget_anchor.py` 通过。
+- **Calibration loop task (PG-003)** — e2e 三集跑完后调 `python -m research.whitepaper.scripts.calibrate_from_pilot --telemetry tests/e2e_three_episodes/reports/pilot_telemetry.json`，再调 `python -m research.whitepaper.scripts.run_all`，最后 `pytest research/whitepaper/tests/test_kpi_anchors.py -q` 全绿。
+
+### 9.y 验收门（Epic 9 DoD）
+
+- [ ] 76 个 leaf task 全部 Done
+- [ ] `pytest tests/unit/test_*` 覆盖率 ≥ 85%（v2 模块）
+- [ ] `pytest tests/integration/test_pipeline_glue.py` 通过
+- [ ] `pytest research/whitepaper/tests/` 30 个测试全绿
+- [ ] `ruff check . && mypy --config-file pyproject.toml src/manhuaju && lint-imports`三件套绿
+- [ ] `tests/e2e_three_episodes/` 跑通三集 mock + 校准循环；`reports/v2_pilot_report.md` 自动生成
+- [ ] CHANGELOG.md v2.0.0 入口 + README.md v2 章节同步
+- [ ] GHA `vefaas-deploy` 滚动更新 + `/health` 200 + 公网 URL 输出
+
+---
+
+## 10. Epic 9 索引（REQ → Task）
+
+| REQ ID | Tasks |
+| --- | --- |
+| REQ-MODE-001..006 | T-9001..T-9006 |
+| REQ-EMO-001..007 | T-9011..T-9017 |
+| REQ-ACT-001..006 | T-9021..T-9026 |
+| REQ-OUT-001..006 | T-9031..T-9036 |
+| REQ-SCN-001..007 | T-9041..T-9047 |
+| REQ-GRID-001..006 | T-9051..T-9056 |
+| REQ-FRPR-001..006 | T-9061..T-9066 |
+| REQ-DIAG-001..005 | T-9071..T-9075 |
+| REQ-CONT-001..004 | T-9081..T-9084 |
+| REQ-STR-001..006 | T-9091..T-9096 |
+| REQ-TM-001..004 | T-9101..T-9104 |
+| REQ-TPL-001..003 | T-9111..T-9113 |
+| REQ-DIST-001..004 | T-9121..T-9124, T-9127, T-9128 |
+| REQ-AUDIO-AC-002 (BGM cut) | T-9125, T-9126 |
+| REQ-CRON-001..004 | T-9131..T-9134 |
+| REQ-DEPLOY-001..003 | T-9141..T-9143 |
+
+> Epic 9 总计 76 leaf tasks（68 在表格中编号 + 3 个 PG-* 横切 + 5 个 v2 acceptance gates 计入 9.y）= 与 plan 锁定的 ≥70 一致。
 

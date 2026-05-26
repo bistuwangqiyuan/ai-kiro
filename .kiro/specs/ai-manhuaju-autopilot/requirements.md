@@ -2,7 +2,7 @@
 
 > Kiro Spec / Phase 1 — Requirements Document
 > Spec Name: `ai-manhuaju-autopilot`
-> Version: 1.0.0
+> Version: 2.0.0  (v1 = 189 EARS preserved verbatim; §23 adds 76 new EARS that reflect `need.md` V3.0 Final)
 > Status: Draft for Confirmation
 > Owner Agents: `MasterOrchestratorAgent`, `RequirementsAuthoringAgent`
 > Reviewer Agents: `SpecReviewAgent`, `ConsistencyAuditAgent`
@@ -1351,5 +1351,447 @@ TOTAL                  189 normative EARS items
 
 ---
 
-> 至此 Phase 1 完成。下一阶段：[`design.md`](./design.md)。
+## 23. V2.0 增量章节 — `need.md` V3.0 Final 全覆盖（76 条新 EARS）
+
+> v1 章节 1–22 一字不改保留；以下 13 个 REQ 簇是为对齐 `need.md` V3.0 Final（13 大功能域）新增。
+> 每条 REQ 的数字均锚定 `research/whitepaper/data/computed/*.json` 中的具体 key（`需 anchor` 字段），
+> 由 `research/whitepaper/tests/test_kpi_anchors.py` 在 CI 中校验。
+
+### 23.1 双模式入口 (REQ-MODE-***)
+
+[REQ-MODE-001] Priority=Must  Source=P-1  Verify=Integration
+EARS  : THE SYSTEM SHALL expose two coexisting interaction modes (`simple`, `pro`) selectable via `POST /v1/projects` request body field `mode` and the `web/simple.html` / `web/pro.html` browser entry-points.
+AC    : Both endpoints respond `200`; mode=`simple` hides ≥ 80% of advanced parameters; mode=`pro` exposes 100%.
+Trace : Design §3 (mode router) → Task T-9001.
+
+[REQ-MODE-002] Priority=Must  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL preserve identical core feature coverage across modes; switching modes mid-project never loses data.
+AC    : Mode-switch test mutates 0 artefact SHA.
+Trace : Design §3 → Task T-9002.
+
+[REQ-MODE-003] Priority=Must  Source=P-3  Verify=Unit
+EARS  : WHERE `mode == simple` THE SYSTEM SHALL apply the preset bundle in `config/modes.yaml` (genre, aspect, fps, budget tier) so the user only chooses topic + story.
+AC    : Generated `ProjectInput.config` matches the preset bundle byte-for-byte for any input.
+Trace : Design §6.1 → Task T-9003.
+
+[REQ-MODE-004] Priority=Should  Source=P-1  Verify=Unit
+EARS  : THE SYSTEM SHALL forbid any mode-locked parameter from being changed in `simple` mode by any client; attempts return `409 mode_locked`.
+AC    : Negative tests cover all locked params in the preset.
+Trace : Design §3 → Task T-9004.
+
+[REQ-MODE-005] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL log the active mode in `99_provenance/manifest.json.mode` and propagate `X-Manhuaju-Mode` header on every internal call.
+AC    : Header present and matches.
+Trace : Design §11 → Task T-9005.
+
+[REQ-MODE-006] Priority=Must  Source=P-8  Verify=Integration
+EARS  : THE SYSTEM SHALL display the same KPI dashboards in both modes, with `pro` exposing additional cost-burn / consistency-drift / pareto panels.
+AC    : `/v1/projects/{id}/dashboards` returns mode-aware payload.
+Trace : Design §11 → Task T-9006.
+
+### 23.2 角色情绪库 runtime (REQ-EMO-***)
+
+[REQ-EMO-001] Priority=Must  Source=P-5  Verify=Unit
+EARS  : THE SYSTEM SHALL maintain at least 7 base emotions per locked character (joy, anger, sorrow, surprise, shy, cold, calm) loaded from `config/emotion-library.yaml`.
+AC    : Lead character has ≥ 7 emotion variants in `03_character_bibles/{char_id}/emotions/`; SHA recorded.
+Trace : Design §3 (EmotionLibrarySvc) → Task T-9011.
+
+[REQ-EMO-002] Priority=Must  Source=P-5  Verify=Integration
+EARS  : THE SYSTEM SHALL guarantee facial-identity preservation across emotion variants with intra-character ArcFace ≥ 0.94.
+AC    : `09_qa_reports/emotion_consistency.json.intra_arcface ≥ 0.94`. Anchor: `research/whitepaper/data/computed/consistency.json.lead_refresh_5.window5_mean_lower_ci ≥ 0.92`.
+Trace : Design §9 → Task T-9012.
+
+[REQ-EMO-003] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN building a Storyboard shot prompt THE SYSTEM SHALL inject the resolved emotion tag (chosen by `emotion_injection.py` per dialogue+context) into the prompt brief.
+AC    : Prompt linter confirms `[EMOTION:<tag>]` token present whenever the character speaks.
+Trace : Design §8.2 → Task T-9013.
+
+[REQ-EMO-004] Priority=Should  Source=P-1  Verify=Unit
+EARS  : WHERE the user adds a custom emotion tag THE SYSTEM SHALL extend the library, run a single ArcFace probe, and persist the SHA before re-using it downstream.
+AC    : Custom-emotion ArcFace ≥ 0.94 enforced; failure rejects insertion.
+Trace : Design §9 → Task T-9014.
+
+[REQ-EMO-005] Priority=Must  Source=P-4  Verify=QAAgent
+EARS  : THE SYSTEM SHALL run the auto-emotion-vs-context judge LLM and require ≥ 90% agreement with the script's annotated emotion across an episode before promotion.
+AC    : Below-threshold triggers re-injection with the next-best emotion candidate.
+Trace : Design §15 → Task T-9015.
+
+[REQ-EMO-006] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN an emotion variant is generated THE SYSTEM SHALL emit `manhuaju.event.emotion_variant.ready` with `(char_id, emotion_tag, sha, arcface)`.
+AC    : Event payload validated.
+Trace : Design §11 → Task T-9016.
+
+[REQ-EMO-007] Priority=Should  Source=P-9  Verify=Integration
+EARS  : IF emotion-variant generation fails after 2 retries THEN THE SYSTEM SHALL fall back to the `calm` baseline and tag the shot `emotion_degraded`.
+AC    : Degradation path tested.
+Trace : Design §10 → Task T-9017.
+
+### 23.3 角色动作库 runtime (REQ-ACT-***)
+
+[REQ-ACT-001] Priority=Must  Source=P-5  Verify=Unit
+EARS  : THE SYSTEM SHALL maintain a per-project action library populated from upstream pose detection (DWPose / OpenPose adapter) with at least 12 base poses (stand, walk, sit, look-back, hand-shake, salute, fight-stance, drink, point, kneel, hug, lying).
+AC    : `04_action_library/{action_id}.json` files ≥ 12; SHA recorded.
+Trace : Design §3 (ActionLibrarySvc) → Task T-9021.
+
+[REQ-ACT-002] Priority=Must  Source=P-5  Verify=Integration
+EARS  : WHEN a new shot's storyboard brief includes an action whose label matches a library entry within cosine similarity ≥ 0.90 THE SYSTEM SHALL reuse the cached pose tensor instead of regenerating.
+AC    : Cache hit ratio surfaced as `manhuaju_action_cache_hit_ratio`; on test corpus ≥ 50%.
+Trace : Design §11 → Task T-9022.
+
+[REQ-ACT-003] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL persist for every reused pose the originating shot, frame index, and detector version; the storyboard prompt embeds `[POSE_REF:<action_id>]`.
+AC    : Provenance file lists pose origin; missing → render aborts.
+Trace : Design §11 → Task T-9023.
+
+[REQ-ACT-004] Priority=Should  Source=P-1  Verify=Unit
+EARS  : WHERE the user uploads a custom pose reference THE SYSTEM SHALL detect, normalize, and add it to the library after passing the same identity-preservation gate as REQ-EMO-002.
+AC    : Custom pose with face-bbox preserved validates ≥ 0.94 ArcFace overlap.
+Trace : Design §9 → Task T-9024.
+
+[REQ-ACT-005] Priority=Must  Source=P-9  Verify=Integration
+EARS  : IF the pose detector fails (low confidence < 0.6) THEN THE SYSTEM SHALL fall back to text-only action description and tag `pose_degraded`.
+AC    : Degradation path tested.
+Trace : Design §10 → Task T-9025.
+
+[REQ-ACT-006] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN an action library entry is added THE SYSTEM SHALL emit `manhuaju.event.action_pose.ready` with `(action_id, char_id, source_shot_id, sha)`.
+AC    : Event validated.
+Trace : Design §11 → Task T-9026.
+
+### 23.4 角色换肤 (REQ-OUT-***)
+
+[REQ-OUT-001] Priority=Must  Source=P-5  Verify=Unit
+EARS  : THE SYSTEM SHALL allow per-shot outfit overrides drawn from the character's `outfit_library` and gated by the bible's state-machine.
+AC    : Illegal outfit transitions rejected with `outfit_state_violation`.
+Trace : Design §9 → Task T-9031.
+
+[REQ-OUT-002] Priority=Must  Source=P-5  Verify=Unit
+EARS  : THE SYSTEM SHALL automatically map season/dynasty fields from the scene's atmosphere to the recommended outfit subset.
+AC    : `season_dynasty_matcher.py` returns deterministic mapping; ≥ 95% coverage on test atmospheres.
+Trace : Design §9 → Task T-9032.
+
+[REQ-OUT-003] Priority=Must  Source=P-5  Verify=Integration
+EARS  : THE SYSTEM SHALL preserve facial identity across outfit changes with intra-character ArcFace ≥ 0.94 (same as emotion variants).
+AC    : Cross-outfit ArcFace recorded; below-threshold triggers regeneration up to 2 retries.
+Trace : Design §9 → Task T-9033.
+
+[REQ-OUT-004] Priority=Should  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL produce per-outfit reference images (`refs/{outfit_id}/{view}.png`) before the first shot uses that outfit.
+AC    : Missing reference triggers fail-fast.
+Trace : Design §9 → Task T-9034.
+
+[REQ-OUT-005] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL embed `[OUTFIT:<id>]` in the render prompt and persist `outfit_id` in shot metadata.
+AC    : Inspector confirms.
+Trace : Design §11 → Task T-9035.
+
+[REQ-OUT-006] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN an outfit transition is committed THE SYSTEM SHALL emit `manhuaju.event.outfit.changed`.
+AC    : Event validated.
+Trace : Design §11 → Task T-9036.
+
+### 23.5 场景库 embedding 复用 (REQ-SCN-***)
+
+[REQ-SCN-001] Priority=Must  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL build, per project, an in-memory scene index keyed by `(name, atmosphere, angle)` and back it with embeddings produced by the embedding adapter.
+AC    : `04_scene_library/index.faiss` (or pickled equivalent) exists; size ≥ scene count.
+Trace : Design §3 (SceneLibrarySvc) → Task T-9041.
+
+[REQ-SCN-002] Priority=Must  Source=P-6  Verify=Integration
+EARS  : WHEN a new scene is requested THE SYSTEM SHALL search the index and reuse the matched scene if cosine similarity ≥ 0.85; reuse never charges generation credits.
+AC    : Reuse hit-rate surfaced as `manhuaju_scene_reuse_hit_ratio`. Anchor: `research/whitepaper/data/computed/scene_reuse.json.curve` rate at library_size N matches the `1-exp(-0.026·N)` curve ± 0.05.
+Trace : Design §13 → Task T-9042.
+
+[REQ-SCN-003] Priority=Must  Source=P-5  Verify=Unit
+EARS  : THE SYSTEM SHALL distinguish near/medium/far framing variants of the same scene by emitting per-shot crop metadata, never re-rendering when the storyboard only changes framing.
+AC    : Re-frame test: 3 framings on same scene → 1 generation + 2 crops; cost saved.
+Trace : Design §9 → Task T-9043.
+
+[REQ-SCN-004] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL persist provenance for every reused scene, including original `scene_id` and reuse SHA.
+AC    : Sample audit: 100% reuses cite source.
+Trace : Design §11 → Task T-9044.
+
+[REQ-SCN-005] Priority=Should  Source=P-9  Verify=Integration
+EARS  : IF the index is unavailable (cold start) THEN THE SYSTEM SHALL fall back to fresh generation and continue, logging `scene_index_cold_start`.
+AC    : Cold-start integration test passes.
+Trace : Design §10 → Task T-9045.
+
+[REQ-SCN-006] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN a scene is reused THE SYSTEM SHALL emit `manhuaju.event.scene.reused` with `(target_scene_id, source_scene_id, similarity)`.
+AC    : Event validated.
+Trace : Design §11 → Task T-9046.
+
+[REQ-SCN-007] Priority=Should  Source=P-6  Verify=E2E
+EARS  : THE SYSTEM SHALL achieve project-level scene reuse rate ≥ 0.30 once the library has ≥ 50 scenes.
+AC    : E2E observability metric ≥ 0.30 at the end of a 60-episode run.
+Trace : Design §13 → Task T-9047.
+
+### 23.6 9-25 宫格分镜拼图 (REQ-GRID-***)
+
+[REQ-GRID-001] Priority=Must  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL pick the storyboard grid size in {9,12,16,20,25} based on per-scene shot count and aspect ratio (mapping table in `services/storyboard_grid.py`).
+AC    : Mapping unit tests pass for every (count, ratio) pair.
+Trace : Design §6.2 → Task T-9051.
+
+[REQ-GRID-002] Priority=Must  Source=P-5  Verify=Unit
+EARS  : THE SYSTEM SHALL render the grid with cell-number annotations and a project-level legend placed at fixed coordinates.
+AC    : Grid PNG inspection confirms numbering 1..N matches shot order.
+Trace : Design §15 → Task T-9052.
+
+[REQ-GRID-003] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHERE a scene exceeds 25 shots THE SYSTEM SHALL paginate the grid into multiple pages with header `Page X/Y`.
+AC    : Pagination unit test passes.
+Trace : Design §6.2 → Task T-9053.
+
+[REQ-GRID-004] Priority=Must  Source=P-1  Verify=Unit
+EARS  : THE SYSTEM SHALL allow per-cell regeneration commands (e.g. "regenerate cell 3 with mood sad") via a typed API surface.
+AC    : Per-cell mutation tested; mutation produces a fresh shot with stable seed schema.
+Trace : Design §3 → Task T-9054.
+
+[REQ-GRID-005] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL embed `grid_sha`, `grid_id`, and per-cell `shot_id` into the grid PNG's EXIF / sidecar JSON.
+AC    : Inspector confirms.
+Trace : Design §11 → Task T-9055.
+
+[REQ-GRID-006] Priority=Should  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL emit `manhuaju.event.grid.completed` per scene with cell counts and SHAs.
+AC    : Event validated.
+Trace : Design §11 → Task T-9056.
+
+### 23.7 画面纠错 (REQ-FRPR-***)
+
+[REQ-FRPR-001] Priority=Must  Source=P-5  Verify=QAAgent
+EARS  : THE SYSTEM SHALL run face / hand / limb landmark detectors on every produced shot and flag anomalies above per-organ thresholds documented in `config/system.yaml.frame_repair_thresholds`.
+AC    : Probe report saved.
+Trace : Design §15 → Task T-9061.
+
+[REQ-FRPR-002] Priority=Must  Source=P-9  Verify=Integration
+EARS  : IF an anomaly score exceeds the threshold THEN THE SYSTEM SHALL invoke local inpaint via SeedEdit (or fallback) on the bounding box.
+AC    : Inpaint integration test passes; post-inpaint score ≤ threshold.
+Trace : Design §10 → Task T-9062.
+
+[REQ-FRPR-003] Priority=Must  Source=P-3  Verify=Unit
+EARS  : THE SYSTEM SHALL pin the inpaint seed to `(shot_id, anomaly_id, retry_count)` for reproducibility.
+AC    : Two re-runs match.
+Trace : Design §11 → Task T-9063.
+
+[REQ-FRPR-004] Priority=Should  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL persist the pre/post inpaint frame diffs and the detected bounding boxes in `09_qa_reports/frame_repair/`.
+AC    : Files present; thumbnails ≤ 100 KB each.
+Trace : Design §11 → Task T-9064.
+
+[REQ-FRPR-005] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN a shot is repaired THE SYSTEM SHALL emit `manhuaju.event.frame_repair.completed`.
+AC    : Event validated.
+Trace : Design §11 → Task T-9065.
+
+[REQ-FRPR-006] Priority=Must  Source=P-9  Verify=Integration
+EARS  : IF inpaint fails to lower the anomaly score below threshold after 2 retries THEN THE SYSTEM SHALL escalate the shot to scene-level repair (IterationManager).
+AC    : Escalation chain asserted.
+Trace : Design §10 → Task T-9066.
+
+### 23.8 问题诊断热力图 (REQ-DIAG-***)
+
+[REQ-DIAG-001] Priority=Must  Source=P-4  Verify=Unit
+EARS  : THE SYSTEM SHALL produce a per-shot diagnosis heat-map PNG overlaying the 7-dim QA scores on the original frame, saved to `09_qa_reports/heatmaps/`.
+AC    : Heat-map saved; legend includes the 7 dim names.
+Trace : Design §15 → Task T-9071.
+
+[REQ-DIAG-002] Priority=Must  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL annotate the diagnosis with bounding boxes for face/hand/limb anomalies and palette deviation hot-spots.
+AC    : Annotation count matches detected anomalies.
+Trace : Design §15 → Task T-9072.
+
+[REQ-DIAG-003] Priority=Should  Source=P-1  Verify=Unit
+EARS  : THE SYSTEM SHALL surface the diagnosis via `GET /v1/projects/{id}/episodes/{ep}/shots/{shot}/diagnosis` returning the heat-map URL + structured findings.
+AC    : Endpoint contract test passes.
+Trace : Design §3 → Task T-9073.
+
+[REQ-DIAG-004] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN a diagnosis is finalised THE SYSTEM SHALL emit `manhuaju.event.diagnosis.ready` with the per-dim scores.
+AC    : Event validated.
+Trace : Design §11 → Task T-9074.
+
+[REQ-DIAG-005] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL embed `diagnosis_sha` in the heat-map PNG's metadata for tamper detection.
+AC    : Inspector confirms.
+Trace : Design §11 → Task T-9075.
+
+### 23.9 智能续写 (REQ-CONT-***)
+
+[REQ-CONT-001] Priority=Should  Source=P-5  Verify=Integration
+EARS  : THE SYSTEM SHALL accept a continuation request that re-uses the existing `StoryBlueprint` and produces additional chapters / episodes preserving foreshadowing graph integrity.
+AC    : `01_story_blueprint/continuation.json` validates; foreshadowing graph cycle-free.
+Trace : Design §3 (ContinuationAgent) → Task T-9081.
+
+[REQ-CONT-002] Priority=Must  Source=P-5  Verify=QAAgent
+EARS  : THE SYSTEM SHALL run an LLM judge to confirm style and logic continuity (≥ 8/10 in two rubrics) before promoting the new chapter.
+AC    : Judge result file saved; below threshold triggers re-author.
+Trace : Design §15 → Task T-9082.
+
+[REQ-CONT-003] Priority=Must  Source=P-1  Verify=Unit
+EARS  : THE SYSTEM SHALL allow rejection: a `cancel` token rolls the project back to the pre-continuation state.
+AC    : Rollback test passes.
+Trace : Design §10 → Task T-9083.
+
+[REQ-CONT-004] Priority=Should  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL keep the `continuation` chain provenance — every new chapter cites the latest stable chapter as parent.
+AC    : Lineage stored.
+Trace : Design §11 → Task T-9084.
+
+### 23.10 风格迁移 (REQ-STR-***)
+
+[REQ-STR-001] Priority=Should  Source=P-5  Verify=Integration
+EARS  : THE SYSTEM SHALL support one-click style transfer to one of {japanese_anime, chinese_donghua, photoreal, cel2d_anime} on demand.
+AC    : Adapter integration test passes for each style.
+Trace : Design §3 (StyleTransferSvc) → Task T-9091.
+
+[REQ-STR-002] Priority=Must  Source=P-5  Verify=QAAgent
+EARS  : THE SYSTEM SHALL preserve facial identity post-transfer with ArcFace ≥ 0.92 vs the pre-transfer reference.
+AC    : Below-threshold triggers regeneration; transfer aborts after 2 failures.
+Trace : Design §9 → Task T-9092.
+
+[REQ-STR-003] Priority=Must  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL synchronously update all asset SHAs (character refs, scene refs, shots) when style transfer is committed.
+AC    : Project-level SHA bump; orphan detection passes.
+Trace : Design §11 → Task T-9093.
+
+[REQ-STR-004] Priority=Must  Source=P-9  Verify=Integration
+EARS  : IF the style transfer adapter is unavailable THEN THE SYSTEM SHALL queue the operation, surface `style_transfer_pending`, and proceed with the original assets.
+AC    : Pending tag clearable when adapter recovers.
+Trace : Design §10 → Task T-9094.
+
+[REQ-STR-005] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL persist a `style_transfer.json` audit log including pre/post asset SHAs and transfer parameters.
+AC    : File complete; replay possible.
+Trace : Design §11 → Task T-9095.
+
+[REQ-STR-006] Priority=Should  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL emit `manhuaju.event.style_transfer.completed` with target style + delta count.
+AC    : Event validated.
+Trace : Design §11 → Task T-9096.
+
+### 23.11 同人衍生 (REQ-TM-***)
+
+[REQ-TM-001] Priority=Should  Source=P-5  Verify=Integration
+EARS  : THE SYSTEM SHALL ingest manga pages (PDF/CBZ/ZIP) and video frames (mp4) into the internal `TransmediaSource` schema, preserving page/frame ordering.
+AC    : Ingest test on a 20-page manga and 60s video produces validated output.
+Trace : Design §3 (TransmediaIngestSvc) → Task T-9101.
+
+[REQ-TM-002] Priority=Must  Source=P-5  Verify=Unit
+EARS  : THE SYSTEM SHALL extract keyframes from videos using a deterministic histogram-diff scheme; manga panels are auto-segmented via vision adapter.
+AC    : Keyframe count within 10% of human-labelled baseline on regression set.
+Trace : Design §3 → Task T-9102.
+
+[REQ-TM-003] Priority=Must  Source=P-1  Verify=Unit
+EARS  : THE SYSTEM SHALL run dual moderation on every ingested asset before adding it to any reusable index.
+AC    : Moderation hit blocks ingest.
+Trace : Design §12 → Task T-9103.
+
+[REQ-TM-004] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL persist source citation (uploader, hash, license declaration) in `99_provenance/transmedia/`.
+AC    : Audit sample 100% complete.
+Trace : Design §11 → Task T-9104.
+
+### 23.12 模板化制作 (REQ-TPL-***)
+
+[REQ-TPL-001] Priority=Should  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL provide ≥ 3 hit-show templates (`cdrama_classic.yaml`, `sweet_pet.yaml`, `xianxia_epic.yaml`) under `config/templates/`.
+AC    : Each template loads and produces a valid `ProjectInput` skeleton.
+Trace : Design §3 (TemplateEngine) → Task T-9111.
+
+[REQ-TPL-002] Priority=Must  Source=P-1  Verify=Unit
+EARS  : WHEN a template is selected THE SYSTEM SHALL apply its presets while exposing the override layer for the user (pro mode only).
+AC    : Override semantics tested.
+Trace : Design §3 → Task T-9112.
+
+[REQ-TPL-003] Priority=Should  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL allow saving the current project as a new template (`POST /v1/templates`).
+AC    : Round-trip save+load yields byte-identical config.
+Trace : Design §3 → Task T-9113.
+
+### 23.13 多平台分发 + 封面水印 + 文案 (REQ-DIST-***)
+
+[REQ-DIST-001] Priority=Must  Source=P-2  Verify=Integration
+EARS  : THE SYSTEM SHALL produce per-platform variant exports for at least {douyin, kuaishou, video_hao, bilibili, youtube} matching the spec sheets in `config/distribution-platforms.yaml`.
+AC    : Each variant validates aspect / duration / codec; file present.
+Trace : Design §3 (DistributionPackSvc) → Task T-9121.
+
+[REQ-DIST-002] Priority=Must  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL apply per-project watermark (logo + text) at configurable opacity / position; the watermarker is reproducible.
+AC    : Two consecutive runs produce identical PNG hashes.
+Trace : Design §3 → Task T-9122.
+
+[REQ-DIST-003] Priority=Must  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL generate per-platform copy (title / synopsis / hashtags / hook line) matching the platform's tonal preset (`copy_style_router.py`).
+AC    : 5 platforms × 3 episodes test produces non-identical, on-style copy with deterministic LLM seed.
+Trace : Design §3 → Task T-9123.
+
+[REQ-DIST-004] Priority=Should  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL embed per-platform metadata (poster_keyframe, cover_text) in a sidecar JSON deliverable.
+AC    : Sidecar validated.
+Trace : Design §11 → Task T-9124.
+
+### 23.14 定时出片 (REQ-CRON-***)
+
+[REQ-CRON-001] Priority=Should  Source=P-6  Verify=Integration
+EARS  : THE SYSTEM SHALL accept a CRON-style schedule per project (`config.cron`) and produce N episodes per day automatically.
+AC    : APScheduler integration test triggers 3 daily runs in 3 simulated seconds.
+Trace : Design §3 → Task T-9131.
+
+[REQ-CRON-002] Priority=Must  Source=P-6  Verify=Unit
+EARS  : THE SYSTEM SHALL surface the scheduled queue at `/v1/cron/queue` with ETA and resource consumption.
+AC    : Endpoint contract test passes.
+Trace : Design §3 → Task T-9132.
+
+[REQ-CRON-003] Priority=Must  Source=P-9  Verify=Integration
+EARS  : IF a scheduled run would breach the project budget THEN THE SYSTEM SHALL skip and emit `cron_budget_skip` instead of overspending.
+AC    : Budget guard tested.
+Trace : Design §13 → Task T-9133.
+
+[REQ-CRON-004] Priority=Must  Source=P-2  Verify=Unit
+EARS  : WHEN a scheduled run completes THE SYSTEM SHALL emit `manhuaju.event.cron.run_completed` with episode IDs and KPIs.
+AC    : Event validated.
+Trace : Design §11 → Task T-9134.
+
+### 23.15 部署模式 (REQ-DEPLOY-***)
+
+[REQ-DEPLOY-001] Priority=Must  Source=P-2  Verify=Integration
+EARS  : THE SYSTEM SHALL ship a serverless cloud build (VeFaaS image) and a private docker-compose bundle covering all 13 dependencies.
+AC    : Two GHA jobs (`vefaas-deploy`, `compose-bundle`) green; bundle pulls clean on a fresh VM.
+Trace : Design §14 → Task T-9141.
+
+[REQ-DEPLOY-002] Priority=Should  Source=P-2  Verify=Unit
+EARS  : THE SYSTEM SHALL expose `/health` and `/v1/version` returning the same SHA across both deployments.
+AC    : Contract test passes.
+Trace : Design §3 → Task T-9142.
+
+[REQ-DEPLOY-003] Priority=Must  Source=P-7  Verify=Unit
+EARS  : THE SYSTEM SHALL load all secrets via the Windows User-scope env adapter on dev workstations and via the deployment vault in cloud — no plaintext secrets on disk.
+AC    : Static scanner gate.
+Trace : Design §12 → Task T-9143.
+
+### 23.16 量化锚定附录
+
+> 每条 §23 EARS 中提到的数字均锚定 `research/whitepaper/data/computed/*.json`。当 `pytest research/whitepaper/tests/test_kpi_anchors.py` 全绿时，整章数字自洽。
+
+| 字段 | 锚定 JSON key |
+| --- | --- |
+| `cost ≤ ¥80` | `cost.json.tier_M.mc_p95` |
+| `episode P95 ≤ 60min` | `sla.json.episode.p95_s` |
+| `image P95 ≤ 15s` | `sla.json.image_generation.p95_s` |
+| `video 5s P95 ≤ 180s` | `sla.json.video_5s.p95_s` |
+| `first_token ≤ 5s` | `sla.json.first_token.p95_s` |
+| `ArcFace lead ≥ 0.92` | `consistency.json.lead_refresh_5.window5_mean_lower_ci` |
+| `ArcFace support ≥ 0.88` | `consistency.json.support_refresh_5.window5_mean_lower_ci` |
+| `7-dim mean ≥ 8.0` | `seven_dim_qa.json.threshold_8.0.mean_score` |
+| `eps/h ≥ 8` | `throughput.json.episodes_per_hour_at_default_c` |
+| `mod FNR ≤ 1e-3` | `moderation.json.doubao_pro.fnr_and_ci95_upper` |
+| `repair hard-fail ≤ 1%` | `repair.json.recommended_default.p_hard_fail` |
+| `scene reuse ≥ 30%` | `scene_reuse.json.curve[size=50].reuse_rate` |
+
+---
+
+> 至此 Phase 1 v2.0 完成（共 189 + 76 = 265 条 EARS）。下一阶段：[`design.md`](./design.md)。
 

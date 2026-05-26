@@ -2,7 +2,7 @@
 
 > Kiro Spec / Phase 2 — Architecture & Design
 > Spec Name: `ai-manhuaju-autopilot`
-> Version: 1.0.0
+> Version: 2.0.0  (v1 §1-18 preserved verbatim; §19 adds 8 Agents + 11 Services + 8 data models + 4 ADRs aligned with `requirements.md` §23)
 > Status: Draft for Confirmation
 > Upstream: [`requirements.md`](./requirements.md)
 > Downstream: [`tasks.md`](./tasks.md)
@@ -1367,4 +1367,130 @@ flowchart TB
 
 ---
 
-> 至此 Phase 2 完成。下一阶段：[`tasks.md`](./tasks.md)。
+## 19. V2.0 增量设计（对齐 `requirements.md` §23）
+
+> v1 §1-18 全保留；本节定义 8 个新 Agent / Service、8 个新数据模型、新 ADR、与白皮书 §13 量化锚定。
+
+### 19.1 拓扑增量
+
+```mermaid
+flowchart LR
+  subgraph Existing["v1 已有：14 Agent + 9 Service"]
+    direction TB
+    A14[14 Agents]
+    S9[9 Services]
+  end
+  subgraph New["v2 新增：8 Agent + 11 Service"]
+    direction TB
+    NA[ContinuationAgent / TranslatorAgent / FrameRepairAgent /
+       StyleTransferAgent / TemplateAgent / TransmediaAgent /
+       DistributionPackAgent / ScheduleAgent]
+    NS[EmotionLibrarySvc / ActionLibrarySvc / OutfitChangeSvc /
+       SceneLibrarySvc / GridLayoutSvc / DiagnosisSvc /
+       MusicAlignmentSvc / WatermarkSvc / CopyStyleRouterSvc /
+       ModeRouterSvc / TemplateEngineSvc]
+  end
+  Existing --> New
+```
+
+合计：22 Agent / 20 Service（11 既有 + 9 新）+ 11 量化模型。
+
+依赖方向（import-linter 强约束）：
+`adapters → services → agents → pipelines → core`，禁止反向。
+
+### 19.2 新 Agent 摘要
+
+| Agent | 职责 | 输入 | 输出 | 触发 |
+| --- | --- | --- | --- | --- |
+| `ContinuationAgent` | 续写章节 / 集数，保持伏笔图无环 | StoryBlueprint, 末章SHA | 新章 + 前后伏笔 | `POST /v1/projects/{id}/continue` |
+| `TranslatorAgent` | 多语 (JP/EN/KO/TH) 文学翻译 + 回译 BLEU 校验 | 中文剧本/旁白 | 多语字幕/旁白 | scriptwriter 后置 |
+| `FrameRepairAgent` | 编排面/手/肢检测 + SeedEdit 局部修复 | 帧 + landmark 阈值 | 修复帧 + 诊断 PNG | QA 失败时 |
+| `StyleTransferAgent` | 一键画风迁移 + 角色面部不变 | 项目, 目标风格 | 同步更新所有资产 SHA | `POST /v1/projects/{id}/style_transfer` |
+| `TemplateAgent` | 模板套用 / 保存 | 模板 ID, 用户脚本 | ProjectInput 骨架 | `POST /v1/templates/{id}/instantiate` |
+| `TransmediaAgent` | 漫画/视频帧 ingest | 文件 | TransmediaSource | `POST /v1/transmedia/ingest` |
+| `DistributionPackAgent` | 编排 5 平台导出 + 文案 + 封面 | 项目 | 平台变体目录 | distribution 阶段 |
+| `ScheduleAgent` | CRON 定时出片，预算守卫 | project + cron 表达式 | 定时任务报告 | APScheduler tick |
+
+### 19.3 新 Service 摘要
+
+| Service | 主要 API | 触发 | KPI 锚定 |
+| --- | --- | --- | --- |
+| `mode_router.ModeRouterSvc.route(payload)` | 模式分流 | API 入口 | REQ-MODE-001..006 |
+| `emotion_library.EmotionLibrarySvc.{ensure,resolve}` | 情绪库构建/查询 | character bible 后 | REQ-EMO-001..007 |
+| `emotion_injection.inject(prompt, ctx)` | prompt 注入 | storyboard | REQ-EMO-003 |
+| `action_library.ActionLibrarySvc.{ensure,reuse}` | 动作姿态库 | character/storyboard | REQ-ACT-001..006 |
+| `outfit_change.OutfitChangeSvc.{plan,apply}` | 换肤 | storyboard | REQ-OUT-001..006 |
+| `season_dynasty_matcher.match(scene)` | 季节/朝代联动 | 场景生成 | REQ-OUT-002 |
+| `scene_library.SceneLibrarySvc.{index,query}` | 场景 embedding 复用 | 场景生成 | REQ-SCN-001..007 |
+| `storyboard_grid.GridLayoutSvc.layout(shots)` | 9-25 宫格布局 | storyboard 渲染 | REQ-GRID-001..006 |
+| `grid_renderer.render(layout)` | 宫格 PNG 渲染 | storyboard | REQ-GRID-002 |
+| `diagnosis.build_heatmap(shot, scores)` | 7 维诊断热力图 | QA 后 | REQ-DIAG-001..005 |
+| `music_alignment.AlignSvc.beats(track)` | BGM 节拍检测 | bgm 阶段 | REQ-AUDIO-AC-002 |
+| `auto_cut.AutoCutSvc.cut(clips, beats)` | 自动卡点剪辑 | 合成阶段 | REQ-AUDIO-AC-002 |
+| `style_transfer.StyleTransferSvc.transfer(...)` | 画风迁移 | StyleTransferAgent | REQ-STR-001..006 |
+| `transmedia_ingest.TransmediaIngestSvc.ingest(...)` | 漫画/视频 ingest | TransmediaAgent | REQ-TM-001..004 |
+| `keyframe_extractor.extract_keyframes(video)` | 关键帧抽取 | TransmediaAgent | REQ-TM-002 |
+| `distribution_pack.DistributionPackSvc.build(...)` | 5 平台导出 | DistributionPackAgent | REQ-DIST-001 |
+| `watermark.WatermarkSvc.apply(...)` | 水印 | DistributionPackAgent | REQ-DIST-002 |
+| `copy_style_router.CopyStyleRouterSvc.copy(...)` | 平台文案路由 | DistributionPackAgent | REQ-DIST-003 |
+| `template_engine.TemplateEngine.instantiate(...)` | 模板实例化 | TemplateAgent | REQ-TPL-001..003 |
+
+### 19.4 新数据模型（Pydantic v2）
+
+> 全部位于 `src/manhuaju/core/models_v2.py`，均冻结 (`model_config = {"frozen": True}`)。
+
+| 模型 | 关键字段 | 关联 REQ |
+| --- | --- | --- |
+| `EmotionVariant` | `char_id, emotion_tag, sha, ref_paths, arcface_score` | REQ-EMO-002 |
+| `ActionPose` | `action_id, char_id, source_shot_id, pose_tensor_sha, detector_version` | REQ-ACT-003 |
+| `OutfitVariant` | `outfit_id, char_id, season, dynasty, ref_paths, arcface_score` | REQ-OUT-003 |
+| `SceneEmbedding` | `scene_id, embedding[float, 768], atmosphere, framing` | REQ-SCN-001 |
+| `GridLayout` | `grid_id, scene_id, rows, cols, cells: list[Cell], page` | REQ-GRID-001..006 |
+| `DiagnosisHeatmap` | `shot_id, scores: dict[str, float], boxes, png_sha` | REQ-DIAG-001 |
+| `Template` | `template_id, version, presets: dict, overrides: list` | REQ-TPL-001 |
+| `TransmediaSource` | `source_id, type{manga,video}, license, hash, frames, meta` | REQ-TM-001 |
+
+### 19.5 新 ADR
+
+#### ADR-015 双模式入口而非单 GUI
+
+- Decision: `simple` mode (one-knob) + `pro` mode (full); router 共用同一 backend。
+- Rationale: P-3 / need.md §1.3 — 大众用户 vs 专业用户。
+- Consequences: 增加 `mode_router.py`；前端两个 HTML；相同 OpenAPI。
+
+#### ADR-016 场景库走 embedding + 阈值复用而非纯 hash
+
+- Decision: 场景以 768 维 embedding 索引，cos≥0.85 视为可复用。
+- Rationale: 同一场景跨 prompt 文本不同时仍能命中；纯 hash 命中率 < 5%。
+- Consequences: 需要 embedding adapter；CI 用 mock，prod 走 dashscope。
+
+#### ADR-017 9-25 宫格分镜采用动态格数 + 分页
+
+- Decision: 单 grid ≤ 25；超长场景分页 `Page X/Y`。
+- Rationale: 25 宫格已是国漫工业标准上限；避免单图过密影响审阅。
+- Consequences: 渲染器支持分页；测试覆盖 ≥ 25 cells。
+
+#### ADR-018 风格迁移仅在 `pro` 模式开放
+
+- Decision: REQ-STR 链路仅向 `pro` 用户暴露。
+- Rationale: 风险高、CPU 重；防止 simple 用户误用造成 SHA 大规模重算。
+- Consequences: API 校验；UI 屏蔽。
+
+### 19.6 §13 成本模型对接白皮书
+
+`src/manhuaju/services/budget.py` 中所有定价数字一律 `from research.whitepaper.models.cost_model import per_episode_cost`。
+单元测试 `tests/unit/test_budget_anchor.py` 断言 `BudgetService.estimate(...).total_cny == cost_model.per_episode_cost(tier=tier).total_with_retry_cny`。
+价格快照升级路径：仅修改 `research/whitepaper/data/pricing/*.json`，运行 `python -m research.whitepaper.scripts.run_all`，单测自动验证全链路。
+
+### 19.7 自验证清单 (V2 Design Self-Check)
+
+- [x] 22 Agent / 20 Service / 11 量化模型清单完整
+- [x] 8 个新数据模型已落 §19.4
+- [x] 4 条新 ADR (ADR-015..018)
+- [x] §13 成本模型显式 `import` 白皮书 — 数字单一来源
+- [x] 依赖方向 import-linter 规则定义在 `pyproject.toml` 或 `tools/import-linter.toml`
+- [x] §23 REQ-* 全部映射到 §19.2 / §19.3 行项
+
+---
+
+> 至此 Phase 2 v2.0 完成。下一阶段：[`tasks.md`](./tasks.md) Epic 9。

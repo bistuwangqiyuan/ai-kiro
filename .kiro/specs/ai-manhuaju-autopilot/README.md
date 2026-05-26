@@ -1,7 +1,11 @@
 # Spec: ai-manhuaju-autopilot
 
 > Kiro Spec / 顶层索引（Phase 0 / Reading Map）
-> Version: 1.0.0  Status: Draft for Confirmation
+> Version: 2.0.0  Status: Implemented (need.md V3.0 Final)
+>
+> v2.0 增量请见各文档新加章节：`requirements.md §23` · `design.md §19` ·
+> `tasks.md Epic 9`，所有数字锚定 `research/whitepaper/data/computed/*.json`
+> （seed = 20260526，可在 `pytest research/whitepaper/tests/` 复现）。
 > Slogan: 一部小说 → N 集人物一致的漫剧视频，**全程无人**，由软件 + Agent 自治产出。
 
 本 Spec 通过 Kiro 三阶段（Requirements → Design → Tasks）锁定一个**世界顶级、完全自动化、可复现、可观测、可降级**的"小说 → 漫剧"工业化流水线。
