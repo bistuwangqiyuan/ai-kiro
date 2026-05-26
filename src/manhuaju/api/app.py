@@ -267,6 +267,39 @@ def create_app(
         sid = batch_scheduler.add_schedule(body.cron, body.action, body.params)
         return {"schedule_id": sid, "status": "active"}
 
+    # Internal worker tick — called by VeFaaS timer trigger (cron) to drain the
+    # batch queue without a separate worker function. Replaces manhuaju-worker
+    # (which we cannot afford on the current memory quota).
+    @app.post("/v1/internal/worker/tick")
+    def worker_tick(event: dict[str, Any] | None = None) -> dict[str, Any]:
+        import os
+        import time
+
+        started = time.time()
+        budget_s = float(os.getenv("MANHUAJU_BURST_BUDGET_S", "1500"))
+        burst = int(os.getenv("MANHUAJU_BURST_JOBS", "1"))
+        ran: list[str] = []
+        errors: list[str] = []
+        for _ in range(max(1, burst)):
+            if time.time() - started > budget_s:
+                break
+            try:
+                jid = batch_scheduler.run_next()
+                if jid is None:
+                    break
+                ran.append(jid)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{type(exc).__name__}: {exc}")
+                continue
+        return {
+            "ok": not errors,
+            "ran": ran,
+            "count": len(ran),
+            "errors": errors,
+            "elapsed_s": round(time.time() - started, 2),
+            "event": str(event)[:200] if event else None,
+        }
+
     # ---- v4 config endpoints (web 控制台读取) ----
     @app.get("/v1/genres")
     def list_genres() -> dict[str, Any]:

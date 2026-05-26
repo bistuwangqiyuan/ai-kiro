@@ -226,18 +226,11 @@ if (-not $SkipProvision) {
         if ($jsonText) {
             $fn = $jsonText | ConvertFrom-Json
             $apiFid = $fn.api_fid
-            $workerFid = $fn.worker_fid
-            OK ("API    fn id: {0}" -f $apiFid)
-            OK ("Worker fn id: {0}" -f $workerFid)
+            OK ("API fn id: {0} (worker is consolidated into the API, see POST /v1/internal/worker/tick)" -f $apiFid)
             if ($fn.api_summary) {
                 $rs = $fn.api_summary.release_status
                 $inst = ($fn.api_summary.instance_states -join ",")
-                OK ("API    release={0} instances=[{1}]" -f $rs, $inst)
-            }
-            if ($fn.worker_summary) {
-                $rs = $fn.worker_summary.release_status
-                $inst = ($fn.worker_summary.instance_states -join ",")
-                OK ("Worker release={0} instances=[{1}]" -f $rs, $inst)
+                OK ("API release={0} instances=[{1}]" -f $rs, $inst)
             }
             if ($fn.api_endpoint) {
                 OK ("API endpoint: {0}" -f $fn.api_endpoint)

@@ -1,44 +1,13 @@
 # =============================================================
-# VeFaaS Worker 函数定义 — 拉队列、执行 BatchScheduler 任务
+# DEPRECATED — worker is now consolidated into manhuaju-api.
 #
-# 设计：每分钟由定时触发器调一次；每次最多跑 1 个任务（最长 25min），跑完即退出。
-# 队列为空时立即返回，几乎 0 计费。
+# Reason: VeFaaS Micro tier gives ~4 GB total memory quota. The API alone uses
+# 4 GB, leaving no room for a dedicated worker function (every release attempt
+# failed with `available resources (0) < function MemoryMB`).
+#
+# Replacement: the API function exposes POST /v1/internal/worker/tick and the
+# VeFaaS timer trigger (every 1 minute) drives the queue via that endpoint.
+# See `deploy/vefaas/provision.py::ensure_timer(api_fid, ..., path=...)`.
+#
+# This file is kept (empty) only as a marker. It is not consumed by any tool.
 # =============================================================
-
-name: manhuaju-worker
-description: AI 漫剧 v4 — 后台 worker（定时拉队列，单次跑一个任务后退出）
-
-runtime: native-custom-container
-
-source:
-  type: image
-  image: cr-cn-beijing.volces.com/<你的命名空间>/manhuaju-autopilot:latest
-
-# 不监听 HTTP 端口，作为事件函数。覆盖容器默认 CMD：
-command: ["python", "-m", "scripts.run_worker_once"]
-args: []
-
-cpu: 2
-memory_mb: 4096
-
-trigger:
-  # 每 1 分钟拉一次（cron）；高峰期可改 30s 或加更多触发器
-  - type: timer
-    cron: "*/1 * * * *"
-  # （可选）API 提交项目时主动调一次：HTTP 触发器
-  - type: http
-    auth: SignatureAuth
-    qualifier: LATEST
-
-timeout_s: 1800     # 单次最长 30 min（视频生成）
-concurrency: 1      # 同一时刻只跑一个任务
-idle_keepalive_s: 60
-min_instances: 0
-max_instances: 5    # 多任务并行时可调
-
-env:
-  MANHUAJU_LIVE_MODE: live
-  MANHUAJU_API_DATA: /data
-  MANHUAJU_BURST_JOBS: "1"
-  MANHUAJU_BURST_BUDGET_S: "1500"
-  # 同 API 函数的 Secret 列表

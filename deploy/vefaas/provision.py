@@ -6,7 +6,7 @@
 行为：
   1) 用 volcenginesdkcr 自动发现已有 VCR 实例 / 命名空间 / 仓库（如缺则创建）
   2) 自动设置 VCR docker login 密码（API 调用），打印 username / password / image url
-  3) 用 volcenginesdkvefaas 创建/更新 manhuaju-api + manhuaju-worker 函数
+  3) 用 volcenginesdkvefaas 创建/更新 manhuaju-api 函数（worker 已合并为 API 的内部 endpoint）
   4) 给 worker 函数挂定时触发器（每分钟一次）
   5) 打印 API 函数的公网端点
 
@@ -304,8 +304,13 @@ def ensure_function(*, fn_name: str, image: str, command: str | None,
     return fid
 
 
-def ensure_timer(fn_id: str, cron: str = "*/1 * * * *") -> None:
-    """Crontab format on VeFaaS is the standard 5-field form (min hr day mon dow)."""
+def ensure_timer(fn_id: str, cron: str = "*/1 * * * *", path: str | None = None) -> None:
+    """Crontab format on VeFaaS is the standard 5-field form (min hr day mon dow).
+
+    When ``path`` is given (e.g. ``/v1/internal/worker/tick``) the timer will fire
+    an HTTP POST to that path on the function; otherwise it invokes the function's
+    default handler (useful for event-style functions).
+    """
     import volcenginesdkvefaas as vefaas
     api = vefaas.VEFAASApi()
     try:
@@ -319,12 +324,18 @@ def ensure_timer(fn_id: str, cron: str = "*/1 * * * *") -> None:
     except Exception as e:  # noqa: BLE001
         print(f"[vefaas] i list_triggers skipped: {e}")
 
-    print(f"[vefaas] adding timer (cron='{cron}') ...")
+    print(f"[vefaas] adding timer (cron='{cron}', path={path or '/'}) ...")
     # 火山 VeFaaS Timer crontab：标准 5 字段（分 时 日 月 周）
+    kwargs: dict[str, Any] = dict(
+        function_id=fn_id, name="every-minute", crontab=cron, enabled=True,
+    )
+    if path:
+        # When the function is an HTTP server (uvicorn), the timer should POST to a
+        # specific path. ``invocation_target`` is the SDK field used in recent VeFaaS
+        # versions; fall back gracefully if the SDK build is older.
+        kwargs["invocation_target"] = f"POST {path}"
     try:
-        api.create_timer(vefaas.CreateTimerRequest(
-            function_id=fn_id, name="every-minute", crontab=cron, enabled=True,
-        ))
+        api.create_timer(vefaas.CreateTimerRequest(**kwargs))
         print("[vefaas] OK timer added")
     except Exception as e:  # noqa: BLE001
         # Optional: if AK/SK lacks vefaas:CreateTimer scope (e.g. Visual-scoped key),
@@ -442,40 +453,17 @@ def functions_step(env: dict[str, str], full_image: str) -> dict[str, Any]:
         envs={**common_envs, "UVICORN_WORKERS": "2"},
         src_env=env,
     )
-    # Worker: VeFaaS native/v1 expects a long-running process. Wrap the burst-once script
-    # in an infinite loop so VeFaaS's startup probe sees a living process; an APIG timer
-    # triggers the underlying ``run_worker_once`` once per minute via in-process loop too.
-    worker_command = (
-        "/bin/sh -c "
-        "'while true; do "
-        "python -m scripts.run_worker_once || true; "
-        "sleep ${MANHUAJU_BURST_LOOP_S:-60}; "
-        "done'"
-    )
-    worker_fid = ensure_function(
-        fn_name="manhuaju-worker",
-        image=full_image,
-        command=worker_command,
-        port=None,
-        cpu_milli=2000, memory_mb=4096, request_timeout=1800, max_concurrency=1,
-        envs={
-            **common_envs,
-            "MANHUAJU_BURST_JOBS": "1",
-            "MANHUAJU_BURST_BUDGET_S": "1500",
-            "MANHUAJU_BURST_LOOP_S": "60",
-        },
-        src_env=env,
-        # max_concurrency<10 requires exclusive_mode=True
-        exclusive_mode=True,
-    )
-    ensure_timer(worker_fid, cron="*/1 * * * *")
+    # Worker functions used to be a separate VeFaaS function but VeFaaS Micro tier
+    # only gives ~4 GB total memory quota — leaving no room for both API (4 GB) and
+    # a dedicated worker. Instead the API itself exposes ``POST /v1/internal/worker/tick``;
+    # a VeFaaS timer trigger attached to the API function drives the queue.
+    ensure_timer(api_fid, cron="*/1 * * * *", path="/v1/internal/worker/tick")
+
     region = env.get("VEFAAS_REGION", os.environ.get("VEFAAS_REGION", "cn-beijing"))
     return {
         "api_fid": api_fid,
-        "worker_fid": worker_fid,
         "api_endpoint": get_api_endpoint(api_fid),
         "api_summary": get_release_summary(api_fid, "manhuaju-api", region),
-        "worker_summary": get_release_summary(worker_fid, "manhuaju-worker", region),
     }
 
 

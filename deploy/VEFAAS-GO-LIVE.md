@@ -5,6 +5,14 @@
 > 总闲时月成本：**¥0**（VeFaaS 缩到 0 不计费；VCR 镜像存储 ~¥1/月）。
 > 调用计费：每集生成约消耗 ~¥1.5 算力 + 视频 API 调用费（不在 VeFaaS 计费内）。
 
+> **🟢 当前线上状态（2026-05-26）**：
+> - 公网 URL：`https://sd8ap3btqc6mqij6t2bsg.apigateway-cn-beijing.volceapi.com`
+> - `/health` → 200，`/docs` → 200，`/openapi.json` → 200
+> - 端到端验证：`POST /v1/projects` 真实跑通，生成 `ep01.mp4` + 抖音分发包，七维 QA 全部 ≥8.0
+> - Worker 已并入 API：`POST /v1/internal/worker/tick`（被 VeFaaS Timer 每分钟触发），无独立 worker 函数
+> - 函数：`manhuaju-api`（`ex9xkzt4`），4 GB / 2 CPU / max_concurrency=10
+> - APIG：`gd8afjpepm94qqo1kmttg` → service `sd8ap3btqc6mqij6t2bsg` → route `manhuaju-root`（直接绑定 FunctionId）
+
 ---
 
 ## 🗺️ 部署架构图
@@ -24,15 +32,14 @@
                      │ pull
             ┌────────┴────────┐
             ▼                 ▼
-   ┌──────────────────┐  ┌──────────────────┐
-   │  VeFaaS：API     │  │  VeFaaS：Worker  │
-   │  HTTP 触发器     │  │  定时触发(1min)  │
-   │  公网域名 + TLS  │  │  跑一个任务退出  │
-   │  缩到 0          │  │  缩到 0          │
-   └────────┬─────────┘  └────────┬─────────┘
-            │ 文件读写             │ 文件读写
-            └─────────┬────────────┘
-                      ▼
+   ┌────────────────────────────────────────┐
+   │  VeFaaS：manhuaju-api                  │
+   │  - APIG HTTP 触发器（公网域名 + TLS）  │
+   │  - VeFaaS Timer 触发 /internal/worker/tick │
+   │  - 缩到 0                              │
+   └────────────────┬───────────────────────┘
+                    │ 文件读写
+                    ▼
         ┌──────────────────────────────┐
         │ 火山 TOS（对象存储）         │
         │   manhuaju-prod 桶           │
