@@ -53,7 +53,7 @@
         "label": "单集 ≤ 5 min + ≤ 0 ¥/集",
         "pass": true,
         "values": {
-          "runtime_s": 137.0745503666664,
+          "runtime_s": 15.721579700000197,
           "credits": 0
         }
       },
@@ -103,7 +103,7 @@
     "episodes": [
       {
         "episode_id": "ep01",
-        "final_mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep01.mp4",
+        "final_mp4": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep01.mp4",
         "promoted": true,
         "cycles": 0,
         "pass_rate": 1.0,
@@ -203,7 +203,7 @@
       },
       {
         "episode_id": "ep02",
-        "final_mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep02.mp4",
+        "final_mp4": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep02.mp4",
         "promoted": true,
         "cycles": 0,
         "pass_rate": 1.0,
@@ -303,7 +303,7 @@
       },
       {
         "episode_id": "ep03",
-        "final_mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep03.mp4",
+        "final_mp4": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\episodes\\ep03.mp4",
         "promoted": true,
         "cycles": 0,
         "pass_rate": 1.0,
@@ -385,24 +385,39 @@
     "exports": [
       {
         "episode_id": "ep01",
-        "platform": "douyin",
-        "mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_douyin.mp4",
-        "cover": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_cover.png",
-        "copy_pack": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_copy_pack.json"
+        "platforms": {
+          "douyin": {
+            "platform": "douyin",
+            "mp4": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_douyin.mp4",
+            "cover": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_douyin_cover.jpg",
+            "copy_pack": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep01_douyin_copy.json"
+          }
+        },
+        "multi_format": {}
       },
       {
         "episode_id": "ep02",
-        "platform": "douyin",
-        "mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_douyin.mp4",
-        "cover": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_cover.png",
-        "copy_pack": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_copy_pack.json"
+        "platforms": {
+          "douyin": {
+            "platform": "douyin",
+            "mp4": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_douyin.mp4",
+            "cover": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_douyin_cover.jpg",
+            "copy_pack": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep02_douyin_copy.json"
+          }
+        },
+        "multi_format": {}
       },
       {
         "episode_id": "ep03",
-        "platform": "douyin",
-        "mp4": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_douyin.mp4",
-        "cover": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_cover.png",
-        "copy_pack": "C:\\Users\\wangqiyuan\\project\\cursor\\商业计划书\\ai漫剧kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_copy_pack.json"
+        "platforms": {
+          "douyin": {
+            "platform": "douyin",
+            "mp4": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_douyin.mp4",
+            "cover": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_douyin_cover.jpg",
+            "copy_pack": "D:\\project\\cursor\\dev\\ai-kiro\\tests\\e2e_three_episodes\\output\\fs\\pilot_xiaoyunque_001\\export\\ep03_douyin_copy.json"
+          }
+        },
+        "multi_format": {}
       }
     ]
   }

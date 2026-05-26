@@ -57,12 +57,4 @@
 
 ## L1 (pipeline-internal) cycles
 
-- `pilot_xiaoyunque_001\10_iterations\ep01_cycle_01.json`
-- `pilot_xiaoyunque_001\10_iterations\ep01_cycle_02.json`
-- `pilot_xiaoyunque_001\10_iterations\ep01_cycle_03.json`
-- `pilot_xiaoyunque_001\10_iterations\ep02_cycle_01.json`
-- `pilot_xiaoyunque_001\10_iterations\ep02_cycle_02.json`
-- `pilot_xiaoyunque_001\10_iterations\ep02_cycle_03.json`
-- `pilot_xiaoyunque_001\10_iterations\ep03_cycle_01.json`
-- `pilot_xiaoyunque_001\10_iterations\ep03_cycle_02.json`
-- `pilot_xiaoyunque_001\10_iterations\ep03_cycle_03.json`
+_(本次运行 0 个 L1 cycle — 所有镜头 verdict 直接 pass)_
