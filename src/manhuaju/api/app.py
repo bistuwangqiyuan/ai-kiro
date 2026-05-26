@@ -30,6 +30,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from manhuaju.adapters.db.sqlite_repo import SQLiteRepo
+from manhuaju.api.project_payload import resolve_project_create
 from manhuaju.core.agent_base import AgentContext
 from manhuaju.core.asset_store import VersionStore
 from manhuaju.core.budget_service import BudgetService, make_budget
@@ -173,13 +174,24 @@ def create_app(
         }
 
     @app.post("/v1/projects")
-    def create_project(body: ProjectCreateRequest, bg: BackgroundTasks) -> dict[str, str]:
+    def create_project(body: dict[str, Any], bg: BackgroundTasks) -> dict[str, str]:
+        try:
+            req = ProjectCreateRequest.model_validate(resolve_project_create(body))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         project_id = f"proj_{uuid.uuid4().hex[:12]}"
         repo.set(
             f"project:{project_id}",
-            json.dumps({"status": "queued", "stage": WorkflowStage.ANALYZE.value}),
+            json.dumps(
+                {
+                    "status": "queued",
+                    "stage": WorkflowStage.ANALYZE.value,
+                    "mode": body.get("mode"),
+                    "title": body.get("title"),
+                }
+            ),
         )
-        bg.add_task(_run_project, project_id, body)
+        bg.add_task(_run_project, project_id, req)
         return {"project_id": project_id, "status": "queued"}
 
     @app.get("/v1/projects")
@@ -320,6 +332,34 @@ def create_app(
     @app.get("/v1/kpi")
     def get_kpi() -> dict[str, Any]:
         return _load_yaml("kpi.yaml")
+
+    @app.get("/v1/whitepaper/anchors")
+    def get_whitepaper_anchors() -> dict[str, Any]:
+        """KPI sidebar for Pro console — bundled anchors (no research/ dep in image)."""
+        path = config_dir() / "whitepaper-anchors.json"
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+        return {
+            "cost_p95": 80.0,
+            "episode_p95_s": 3600.0,
+            "arcface_lead": 0.92,
+            "seven_dim_pass": 0.55,
+            "episodes_per_hour": 8.0,
+        }
+
+    @app.get("/v1/modes")
+    def list_modes() -> dict[str, Any]:
+        from manhuaju.api.mode_router import ModeRouter
+
+        router = ModeRouter.load()
+        return {
+            name: {
+                "locked_params": list(p.locked_params),
+                "defaults": p.defaults,
+                "exposed_params": list(p.exposed_params),
+            }
+            for name, p in router.presets.items()
+        }
 
     @app.get("/v1/versions/{project_id}")
     def list_versions(project_id: str) -> dict[str, Any]:

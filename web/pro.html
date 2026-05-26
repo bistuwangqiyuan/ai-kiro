@@ -42,8 +42,9 @@
   <header>
     <h1>漫剧 Autopilot · Pro</h1>
     <nav class="mode-switch">
-      <a href="./simple.html">Simple</a>
-      <a href="./pro.html" class="active">Pro</a>
+      <a href="/">控制台</a>
+      <a href="/console/simple.html">Simple</a>
+      <a href="/console/pro.html" class="active">Pro</a>
     </nav>
   </header>
   <div class="container">
@@ -133,7 +134,22 @@
         cover_text_template: get('cover_text_template'),
       };
       const res = await fetch('/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      alert(res.ok ? 'Submitted: ' + (await res.json()).project_id : 'Failed');
+      const j = await res.json();
+      if (!res.ok) {
+        alert('提交失败：' + (j.detail || res.statusText));
+        return;
+      }
+      alert('已提交：' + j.project_id + '，正在制作…');
+      for (let i = 0; i < 60; i++) {
+        const pr = await fetch('/v1/projects/' + j.project_id);
+        if (!pr.ok) break;
+        const st = (await pr.json()).status;
+        if (['released', 'succeeded', 'completed', 'failed', 'error'].includes(st)) {
+          alert(st === 'failed' || st === 'error' ? '制作失败' : '制作完成：' + st);
+          break;
+        }
+        await new Promise((ok) => setTimeout(ok, 3000));
+      }
     });
   </script>
 </body>

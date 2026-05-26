@@ -1,0 +1,8 @@
+{
+  "cost_p95": 79.2,
+  "episode_p95_s": 3420,
+  "arcface_lead": 0.923,
+  "seven_dim_pass": 0.58,
+  "episodes_per_hour": 8.2,
+  "source": "research/whitepaper/data/computed tier_M seed=20260526"
+}

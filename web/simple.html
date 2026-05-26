@@ -38,8 +38,9 @@
   <header>
     <h1>漫剧 Autopilot · Simple</h1>
     <nav class="mode-switch">
-      <a href="./simple.html" class="active">Simple</a>
-      <a href="./pro.html">Pro</a>
+      <a href="/">控制台</a>
+      <a href="/console/simple.html" class="active">Simple</a>
+      <a href="/console/pro.html">Pro</a>
     </nav>
   </header>
   <main>
@@ -60,31 +61,66 @@
           <option value="th">ไทย</option>
         </select>
         <button type="submit" id="go">开始出片</button>
-        <div class="summary">
-          <span class="badge">mode=simple</span>
-          <span class="badge">episode=3</span>
-          <span class="badge">duration=60s</span>
-          <span class="badge">tier=M</span>
-          <span class="badge">moderation=dual</span>
-          <span class="badge">scene_reuse=0.85</span>
-        </div>
+        <div class="summary" id="result"></div>
       </form>
     </div>
   </main>
   <script>
     const form = document.getElementById('form');
+    const resultEl = document.getElementById('result');
+    const badges = '<span class="badge">mode=simple</span><span class="badge">episode=3</span><span class="badge">duration=60s</span><span class="badge">tier=M</span>';
+    resultEl.innerHTML = badges;
+
+    async function pollProject(projectId) {
+      for (let i = 0; i < 60; i++) {
+        const r = await fetch('/v1/projects/' + projectId);
+        if (!r.ok) break;
+        const j = await r.json();
+        const st = j.status || 'unknown';
+        resultEl.innerHTML = badges + `<br>项目 <b>${projectId}</b> · 状态 <b>${st}</b> · 阶段 ${j.stage || '-'}`;
+        if (['released', 'succeeded', 'completed', 'failed', 'error'].includes(st)) {
+          if (st === 'released' || st === 'succeeded' || st === 'completed') {
+            resultEl.innerHTML += '<br>✓ 出片完成，可在控制台查看 manifest / 导出包。';
+          }
+          return;
+        }
+        await new Promise((ok) => setTimeout(ok, 3000));
+      }
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('go');
-      btn.disabled = true; btn.textContent = '提交中…';
+      btn.disabled = true;
+      btn.textContent = '提交中…';
       const data = {
         mode: 'simple',
         title: form.title.value.trim(),
         novel_text: form.novel_text.value.trim(),
         language: form.language.value,
       };
-      const res = await fetch('/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      btn.textContent = res.ok ? '已提交：' + (await res.json()).project_id : '失败：请用 Pro 模式调试';
+      try {
+        const res = await fetch('/v1/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        const j = await res.json();
+        if (!res.ok) {
+          resultEl.innerHTML = badges + '<br>提交失败：' + (j.detail || res.statusText);
+          btn.disabled = false;
+          btn.textContent = '开始出片';
+          return;
+        }
+        btn.textContent = '制作中…';
+        await pollProject(j.project_id);
+        btn.textContent = '开始出片';
+        btn.disabled = false;
+      } catch (err) {
+        resultEl.innerHTML = badges + '<br>网络错误：' + err;
+        btn.disabled = false;
+        btn.textContent = '开始出片';
+      }
     });
   </script>
 </body>

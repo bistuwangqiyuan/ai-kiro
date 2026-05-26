@@ -81,7 +81,11 @@
 <body>
 <header>
   <h1>AI 漫剧 Autopilot · <span style="color:var(--accent);">v4</span></h1>
-  <span class="pill" id="mode-pill">loading…</span>
+  <div style="display:flex;gap:12px;align-items:center">
+    <a href="/console/simple.html" style="color:var(--accent2);font-size:13px;text-decoration:none">简易模式</a>
+    <a href="/console/pro.html" style="color:var(--accent2);font-size:13px;text-decoration:none">专业模式</a>
+    <span class="pill" id="mode-pill">loading…</span>
+  </div>
 </header>
 
 <div class="container grid grid-3">
@@ -262,8 +266,10 @@ async function loadProjects() {
     for (const p of j.projects) {
       const tr = document.createElement('tr');
       let pill = '<span class="pill-warn">running</span>';
-      if (p.status === 'succeeded') pill = '<span class="pill-ok">succeeded</span>';
-      if (p.status === 'failed') pill = '<span class="pill-bad">failed</span>';
+      if (p.status === 'succeeded' || p.status === 'released' || p.status === 'completed') {
+        pill = '<span class="pill-ok">' + p.status + '</span>';
+      }
+      if (p.status === 'failed' || p.status === 'error') pill = '<span class="pill-bad">failed</span>';
       tr.innerHTML =
         `<td><code>${p.project_id || '-'}</code></td>`
       + `<td>${pill}</td>`
