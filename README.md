@@ -1,7 +1,50 @@
-# AI 漫剧 Autopilot · v4 (小云雀 Agent 2.0 快路径)
+# AI 漫剧 Autopilot · v2.0 (need.md V3.0 全栈升级)
 
 > 输入一本小说 → 自动产出多集人物一致漫剧视频 + 抖音/快手/视频号导出包 + 封面 + 文案。
-> **v4 升级** = 小云雀 Agent 2.0「有参考」核心引擎 + 5 层外壳（Claude Opus 编剧 + Seedream/Jimeng 资产 + Doubao VLM 质检 + fal.ai 脸锁 + ElevenLabs 后期）+ 12 大需求落地 + 火山引擎云原生。
+> **v2.0 全栈升级** = 双模式入口（Simple/Pro）+ 11 大新服务（情绪库/动作库/换装/场景复用/9-25 宫格/风格迁移/同人衍生/BGM 卡点/多平台导出/模板化制作）+ Python 量化白皮书（10 模型 / seed=20260526 / byte-identical）+ 三集 mock 反向校准。
+> **v4 底层** = 小云雀 Agent 2.0「有参考」核心引擎 + 5 层外壳（Claude Opus 编剧 + Seedream/Jimeng 资产 + Doubao VLM 质检 + fal.ai 脸锁 + ElevenLabs 后期）+ 火山引擎云原生。
+
+## v2.0 关键能力
+
+| 模块 | 入口 | 单元测试 | 关键锚定 |
+| --- | --- | --- | --- |
+| 双模式路由 | `manhuaju.api.mode_router` + `web/{simple,pro}.html` | `tests/unit/test_mode_router.py` (9) | `config/modes.yaml` |
+| 9-25 宫格分镜 | `services.storyboard_grid` + `services.grid_renderer` | `tests/unit/test_grid.py` (14) | 动态格数 + 序号 + SHA |
+| 角色情绪库 runtime | `services.emotion_library` + `services.emotion_injection` | `tests/unit/test_emotion_lib.py` (13) | ArcFace ≥ 0.94 |
+| 角色动作库 runtime | `services.action_library` + `adapters.pose.{mock,real_dwpose}_adapter` | `tests/unit/test_action_lib.py` (13) | reuse cos ≥ 0.90 |
+| 角色换肤 | `services.outfit_change` + `services.season_dynasty_matcher` | `tests/unit/test_outfit_change.py` (12) | season×dynasty 100% |
+| 场景库 embedding 复用 | `services.scene_library` + `adapters.embedding.scene_index_adapter` | `tests/unit/test_scene_library.py` (12) | 相似度 ≥ 0.85 |
+| 风格迁移 | `services.style_transfer` + `adapters.styletransfer.{mock,real_seedream_styletx}_adapter` | `tests/unit/test_style_transfer.py` (10) | 4 styles + 面部锁 |
+| 同人衍生 ingest | `services.transmedia_ingest` + `services.keyframe_extractor` | `tests/unit/test_transmedia.py` (13) | license gate |
+| BGM 卡点剪辑 | `services.music_alignment` + `services.auto_cut` | `tests/unit/test_auto_cut.py` (11) | 节奏 ±0.5s |
+| 多平台导出 + 水印 + 文案 | `services.{distribution_pack,watermark,copy_style_router}` | `tests/unit/test_distribution_pack.py` (10) | 5 平台矩阵 |
+| 模板化制作 | `services.template_engine` + `config/templates/*.yaml` | `tests/unit/test_template_engine.py` (12) | 3 题材模板 |
+| Pipeline 集成 | `pipelines.v2_enrichment` (pre/postflight) | `tests/integration/test_v2_enrichment.py` (5) | import-linter green |
+| 三集回归校准 | `research.whitepaper.scripts.calibrate_from_pilot` | `tests/e2e_three_episodes/test_post_calibration.py` (7) | 95% CI 上界 |
+
+## v2.0 一键复现量化白皮书
+
+```bash
+# 所有数字（成本 ≤ ¥80 / 单集 P95 ≤ 60min / ArcFace ≥ 0.92 / 8 集/小时 / 7 维通过率）由模型反推
+SEED=20260526 python -m research.whitepaper.scripts.run_all
+pytest research/whitepaper/tests/ -q  # byte-identical 检查
+```
+
+输出：
+
+* `research/whitepaper/data/computed/*.json` — 锚定 KPI（被 `requirements.md §23` / `design.md §13` import）
+* `research/whitepaper/figures/*.png` — 10 张图
+* `research/whitepaper/notebooks/*.ipynb` — 10 个 notebook
+
+## v2.0 三集 mock 反向校准
+
+```bash
+pytest tests/e2e_three_episodes -q
+# 跑完后会写 tests/e2e_three_episodes/reports/{kpi_summary.json, final_report.md}
+# test_post_calibration.py 会自动：构造 telemetry → 调 calibrate_from_pilot.py → 断言 95% CI 上界
+```
+
+---
 
 | 项目 | 数值 |
 | --- | --- |
