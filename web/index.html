@@ -86,6 +86,7 @@
     <a href="/console/pro.html" style="color:var(--accent2);font-size:13px;text-decoration:none">专业模式</a>
     <a href="/gallery" style="color:var(--accent2);font-size:13px;text-decoration:none">视频广场</a>
     <a href="/console/guide.html" style="color:var(--accent);font-size:13px;text-decoration:none">使用说明</a>
+    <span id="auth-pill"></span>
     <span class="pill" id="mode-pill">loading…</span>
   </div>
 </header>
@@ -161,6 +162,13 @@
   <!-- 4. Projects -->
   <div class="card">
     <h2>④ 最近项目</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:0;cursor:pointer">
+        <input type="checkbox" id="mine-only" style="width:auto;margin:0" />
+        只看我的
+      </label>
+      <span id="mine-hint" class="small"></span>
+    </div>
     <div style="overflow-x:auto">
       <table>
         <thead>
@@ -169,11 +177,12 @@
             <th>状态</th>
             <th>题材</th>
             <th>阶段</th>
+            <th>归属</th>
             <th>视频</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="projects-tbody"><tr><td colspan="6" class="small">loading…</td></tr></tbody>
+        <tbody id="projects-tbody"><tr><td colspan="7" class="small">loading…</td></tr></tbody>
       </table>
     </div>
     <button class="ghost" onclick="loadProjects()">刷新</button>
@@ -192,20 +201,26 @@
   火山引擎 / Anthropic / ElevenLabs / fal.ai
 </div>
 
+<script src="/console/auth.js"></script>
 <script>
 const API = window.API_BASE || '';
+const _fetch = (typeof authedFetch === 'function') ? authedFetch : fetch;
 
 async function jget(url) {
-  const r = await fetch(API + url);
+  const r = await _fetch(API + url);
   if (!r.ok) throw new Error(r.statusText);
   return r.json();
 }
 async function jpost(url, body) {
-  const r = await fetch(API + url, {
+  const r = await _fetch(API + url, {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body),
   });
   return r.json();
+}
+
+if (window.ManhuajuAuth) {
+  window.ManhuajuAuth.renderAuthPill('auth-pill');
 }
 
 async function loadHealth() {
@@ -260,12 +275,29 @@ async function loadKpi() {
 }
 
 async function loadProjects() {
+  const mineCb = document.getElementById('mine-only');
+  const hintEl = document.getElementById('mine-hint');
+  const auth = window.ManhuajuAuth && window.ManhuajuAuth.getAuth();
+  let url = '/v1/projects?limit=20';
+  let mineEffective = false;
+  if (mineCb && mineCb.checked) {
+    if (!auth) {
+      if (hintEl) hintEl.textContent = '请先登录';
+      mineCb.checked = false;
+    } else {
+      url = '/v1/projects?limit=20&mine=1';
+      mineEffective = true;
+      if (hintEl) hintEl.textContent = '已筛选：' + auth.username;
+    }
+  } else if (hintEl) {
+    hintEl.textContent = '';
+  }
   try {
-    const j = await jget('/v1/projects?limit=20');
+    const j = await jget(url);
     const tb = document.getElementById('projects-tbody');
     tb.innerHTML = '';
     if (!j.projects.length) {
-      tb.innerHTML = '<tr><td colspan="6" class="small">暂无项目</td></tr>';
+      tb.innerHTML = '<tr><td colspan="7" class="small">' + (mineEffective ? '你还没有提交任何项目。' : '暂无项目') + '</td></tr>';
       return;
     }
     for (const p of j.projects) {
@@ -278,20 +310,28 @@ async function loadProjects() {
       const watch = (p.status === 'released' || p.status === 'succeeded' || p.status === 'completed')
         ? `<a href="/gallery?project=${p.project_id}" style="color:var(--accent2)">观看</a>`
         : '<span class="small">—</span>';
+      const owner = p.owner ? `<span class="small">${p.owner}</span>` : '<span class="small">匿名</span>';
       tr.innerHTML =
         `<td><code>${p.project_id || '-'}</code></td>`
       + `<td>${pill}</td>`
       + `<td>${p.genre || '-'}</td>`
       + `<td>${p.stage || '-'}</td>`
+      + `<td>${owner}</td>`
       + `<td>${watch}</td>`
       + `<td><a href="#" onclick="alert(JSON.stringify(${JSON.stringify(p).replace(/"/g, '&quot;')}, null, 2));return false">详情</a></td>`;
       tb.appendChild(tr);
     }
   } catch (e) {
     document.getElementById('projects-tbody').innerHTML =
-      '<tr><td colspan="6" class="small">列表暂不可用</td></tr>';
+      '<tr><td colspan="7" class="small">列表暂不可用</td></tr>';
   }
 }
+
+(function wireMineToggle() {
+  const cb = document.getElementById('mine-only');
+  if (cb) cb.addEventListener('change', loadProjects);
+  window.addEventListener('manhuaju-auth', loadProjects);
+})();
 
 async function createProject() {
   const body = {

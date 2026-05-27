@@ -55,6 +55,7 @@
       <a href="/console/pro.html">专业模式</a>
       <a href="/guide">使用说明</a>
       <a href="/gallery" class="active">视频广场</a>
+      <span id="auth-pill" style="margin-left:16px"></span>
     </nav>
   </header>
 
@@ -71,7 +72,10 @@
 
   <div class="grid" id="grid"><div class="loading">加载中…</div></div>
 
+  <script src="/console/auth.js"></script>
   <script>
+    if (window.ManhuajuAuth) window.ManhuajuAuth.renderAuthPill('auth-pill');
+    const _fetch = (typeof authedFetch === 'function') ? authedFetch : fetch;
     const params = new URLSearchParams(location.search);
     const projectFilter = params.get('project');
     let allVideos = [];
@@ -124,7 +128,7 @@
       });
     });
 
-    fetch('/v1/gallery?limit=200')
+    _fetch('/v1/gallery?limit=200')
       .then(r => r.json())
       .then(d => { allVideos = d.videos || []; render('all'); })
       .catch(() => {

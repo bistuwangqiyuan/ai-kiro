@@ -47,6 +47,7 @@
       <a href="/console/pro.html" class="active">Pro</a>
       <a href="/console/guide.html">使用说明</a>
       <a href="/gallery">视频广场</a>
+      <span id="auth-pill" style="margin-left:18px"></span>
     </nav>
   </header>
   <div class="container">
@@ -104,8 +105,11 @@
       </div>
     </aside>
   </div>
+  <script src="/console/auth.js"></script>
   <script>
-    fetch('/v1/whitepaper/anchors').then(r => r.json()).then(d => {
+    if (window.ManhuajuAuth) window.ManhuajuAuth.renderAuthPill('auth-pill');
+    const _fetch = (typeof authedFetch === 'function') ? authedFetch : fetch;
+    _fetch('/v1/whitepaper/anchors').then(r => r.json()).then(d => {
       if (!d) return;
       document.getElementById('kpi-cost').firstChild.nodeValue = `¥${d.cost_p95?.toFixed(1) ?? '—'} `;
       document.getElementById('kpi-latency').firstChild.nodeValue = `${(d.episode_p95_s/60).toFixed(1)}min `;
@@ -135,7 +139,7 @@
         distribution_platforms: (get('distribution_platforms') || '').split(',').map(s => s.trim()).filter(Boolean),
         cover_text_template: get('cover_text_template'),
       };
-      const res = await fetch('/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await _fetch('/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const j = await res.json();
       if (!res.ok) {
         alert('提交失败：' + (j.detail || res.statusText));
@@ -143,7 +147,7 @@
       }
       alert('已提交：' + j.project_id + '，正在制作…');
       for (let i = 0; i < 60; i++) {
-        const pr = await fetch('/v1/projects/' + j.project_id);
+        const pr = await _fetch('/v1/projects/' + j.project_id);
         if (!pr.ok) break;
         const st = (await pr.json()).status;
         if (['released', 'succeeded', 'completed', 'failed', 'error'].includes(st)) {

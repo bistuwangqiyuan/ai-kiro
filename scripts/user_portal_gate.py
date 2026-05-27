@@ -47,6 +47,9 @@ def gate_portal_pages(client: httpx.Client) -> GateResult:
         "/guide",
         "/gallery",
         "/console/gallery.html",
+        "/login",
+        "/console/login.html",
+        "/console/auth.js",
         "/docs",
     ]
     fails = []
@@ -56,6 +59,8 @@ def gate_portal_pages(client: httpx.Client) -> GateResult:
             fails.append(f"{p}→{r.status_code}")
         elif p.endswith(".html") and "<html" not in r.text.lower():
             fails.append(f"{p}→not html")
+        elif p.endswith(".js") and "ManhuajuAuth" not in r.text:
+            fails.append(f"{p}→missing ManhuajuAuth")
     if fails:
         return GateResult("portal_pages", False, "; ".join(fails))
     return GateResult("portal_pages", True, f"{len(pages)} pages OK")
@@ -127,10 +132,174 @@ def gate_gallery(client: httpx.Client) -> GateResult:
     )
 
 
+TEST_USER_1 = "test1@139.com"
+TEST_USER_2 = "test2@139.com"
+TEST_PASS = "123456"
+
+
+def _auth_login(client: httpx.Client, username: str, password: str) -> tuple[int, Any]:
+    return _post(
+        client,
+        "/v1/auth/login",
+        {"username": username, "password": password},
+    )
+
+
+def _bearer(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def gate_auth_login(client: httpx.Client) -> GateResult:
+    code, body = _auth_login(client, TEST_USER_1, TEST_PASS)
+    if code != 200 or not isinstance(body, dict) or not body.get("token"):
+        return GateResult("auth_login", False, f"login HTTP {code}", body)
+    token = body["token"]
+    r = client.get("/v1/auth/me", headers=_bearer(token))
+    try:
+        j = r.json()
+    except json.JSONDecodeError:
+        return GateResult("auth_login", False, f"me HTTP {r.status_code} non-json")
+    if r.status_code != 200 or not isinstance(j, dict):
+        return GateResult("auth_login", False, f"me HTTP {r.status_code}", j)
+    if j.get("username") != TEST_USER_1:
+        return GateResult(
+            "auth_login",
+            False,
+            f"me returned {j.get('username')!r}, expected {TEST_USER_1!r}",
+        )
+    return GateResult("auth_login", True, f"token len={len(token)} me=OK")
+
+
+def gate_auth_seed_t2(client: httpx.Client) -> GateResult:
+    code, body = _auth_login(client, TEST_USER_2, TEST_PASS)
+    if code != 200 or not isinstance(body, dict) or not body.get("token"):
+        return GateResult("auth_seed_t2", False, f"login HTTP {code}", body)
+    token = body["token"]
+    r = client.get("/v1/auth/me", headers=_bearer(token))
+    try:
+        j = r.json()
+    except json.JSONDecodeError:
+        return GateResult("auth_seed_t2", False, f"me HTTP {r.status_code} non-json")
+    if r.status_code != 200 or j.get("username") != TEST_USER_2:
+        return GateResult("auth_seed_t2", False, f"me returned {j!r}")
+    return GateResult("auth_seed_t2", True, "seed t2 OK")
+
+
+def gate_auth_negative(client: httpx.Client) -> GateResult:
+    # wrong password
+    code, body = _auth_login(client, TEST_USER_1, "wrong-pass")
+    if code != 401:
+        return GateResult("auth_negative", False, f"bad-pass expected 401, got {code}", body)
+    # me without bearer
+    r1 = client.get("/v1/auth/me")
+    if r1.status_code != 401:
+        return GateResult("auth_negative", False, f"me no-bearer expected 401, got {r1.status_code}")
+    # me with invalid bearer
+    r2 = client.get("/v1/auth/me", headers=_bearer("invalid-token-zzz"))
+    if r2.status_code != 401:
+        return GateResult(
+            "auth_negative",
+            False,
+            f"me bad-bearer expected 401, got {r2.status_code}",
+        )
+    return GateResult("auth_negative", True, "wrong-pass + missing/invalid bearer all 401")
+
+
+def gate_auth_my_projects(client: httpx.Client) -> GateResult:
+    code, body = _auth_login(client, TEST_USER_1, TEST_PASS)
+    if code != 200 or not isinstance(body, dict) or not body.get("token"):
+        return GateResult("auth_my_projects", False, f"login HTTP {code}", body)
+    token = body["token"]
+    headers = _bearer(token)
+    headers["Content-Type"] = "application/json"
+    payload = {
+        "mode": "simple",
+        "title": "我的项目-门户验收",
+        "novel_text": "她推开雕花木门，烛火轻摇，照见少年眉眼如旧。",
+        "language": "zh",
+    }
+    r = client.post("/v1/projects", json=payload, headers=headers)
+    try:
+        j = r.json()
+    except json.JSONDecodeError:
+        return GateResult("auth_my_projects", False, f"submit HTTP {r.status_code} non-json")
+    if r.status_code != 200 or not isinstance(j, dict) or not j.get("project_id"):
+        return GateResult("auth_my_projects", False, f"submit HTTP {r.status_code}", j)
+    pid = j["project_id"]
+    if (j.get("owner") or "") != TEST_USER_1:
+        return GateResult(
+            "auth_my_projects",
+            False,
+            f"submit owner={j.get('owner')!r}, expected {TEST_USER_1!r}",
+        )
+
+    # mine=1 must include the project with the right owner
+    r2 = client.get("/v1/projects?limit=200&mine=1", headers=_bearer(token))
+    try:
+        m = r2.json()
+    except json.JSONDecodeError:
+        return GateResult("auth_my_projects", False, f"mine HTTP {r2.status_code} non-json")
+    if r2.status_code != 200 or not isinstance(m, dict):
+        return GateResult("auth_my_projects", False, f"mine HTTP {r2.status_code}", m)
+    mine_items = m.get("projects") or []
+    mine_pids = {it.get("project_id") for it in mine_items if isinstance(it, dict)}
+    if pid not in mine_pids:
+        return GateResult(
+            "auth_my_projects",
+            False,
+            f"mine list missing {pid} (got {len(mine_pids)} items)",
+        )
+    bad_owner = [
+        it.get("project_id")
+        for it in mine_items
+        if isinstance(it, dict) and (it.get("owner") or "") != TEST_USER_1
+    ]
+    if bad_owner:
+        return GateResult(
+            "auth_my_projects",
+            False,
+            f"mine list leaked other-owner projects: {bad_owner[:3]}",
+        )
+
+    # mine=1 without bearer must be 401
+    r3 = client.get("/v1/projects?limit=10&mine=1")
+    if r3.status_code != 401:
+        return GateResult(
+            "auth_my_projects",
+            False,
+            f"mine no-bearer expected 401, got {r3.status_code}",
+        )
+
+    # public list (no bearer, no mine) should still surface the project
+    r4 = client.get("/v1/projects?limit=200")
+    try:
+        public = r4.json()
+    except json.JSONDecodeError:
+        return GateResult("auth_my_projects", False, f"public HTTP {r4.status_code} non-json")
+    public_pids = {
+        it.get("project_id")
+        for it in (public.get("projects") or [])
+        if isinstance(it, dict)
+    }
+    if pid not in public_pids:
+        return GateResult(
+            "auth_my_projects",
+            False,
+            f"public list missing {pid} (board should remain public)",
+        )
+
+    return GateResult(
+        "auth_my_projects",
+        True,
+        f"submitted+listed {pid} owner={TEST_USER_1}",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="User portal E2E gate")
     p.add_argument("--base", default=DEFAULT_BASE)
     p.add_argument("--skip-project", action="store_true")
+    p.add_argument("--skip-auth", action="store_true")
     args = p.parse_args(argv)
 
     results: list[GateResult] = []
@@ -143,8 +312,14 @@ def main(argv: list[str] | None = None) -> int:
         results.append(gate_portal_pages(client))
         results.append(gate_whitepaper_anchors(client))
         results.append(gate_gallery(client))
+        if not args.skip_auth:
+            results.append(gate_auth_login(client))
+            results.append(gate_auth_seed_t2(client))
+            results.append(gate_auth_negative(client))
         if not args.skip_project:
             results.append(gate_simple_submit(client))
+        if not args.skip_auth and not args.skip_project:
+            results.append(gate_auth_my_projects(client))
 
     for r in results:
         mark = "PASS" if r.ok else "FAIL"

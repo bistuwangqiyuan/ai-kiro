@@ -139,6 +139,7 @@
       <a href="/console/pro.html">专业模式</a>
       <a href="/console/guide.html" class="active">使用说明</a>
       <a href="/gallery">视频广场</a>
+      <span id="auth-pill" style="margin-left:16px"></span>
     </nav>
   </header>
 
@@ -299,7 +300,7 @@
       <section id="faq">
         <h3>九、常见问题</h3>
         <h4>Q：需要登录吗？</h4>
-        <p>不需要。打开网址即可使用，系统通过浏览器会话提交任务。</p>
+        <p>不强制。匿名即可使用全部出片功能；登录后可启用「<strong>只看我的</strong>」过滤并记录提交归属。已预置测试账号 <code>test1@139.com</code> / <code>test2@139.com</code>（密码均为 <code>123456</code>），打开顶部「登录 / 注册」即可体验。</p>
         <h4>Q：小说要写多长？</h4>
         <p>最少 10 个字符。建议单集对应 200～2000 字原文；过长章节建议拆分多集提交。</p>
         <h4>Q：制作要多久？</h4>
@@ -325,5 +326,9 @@
     <a href="/docs" style="color:var(--muted)">API 文档</a> ·
     <a href="/" style="color:var(--muted)">返回控制台</a>
   </footer>
+  <script src="/console/auth.js"></script>
+  <script>
+    if (window.ManhuajuAuth) window.ManhuajuAuth.renderAuthPill('auth-pill');
+  </script>
 </body>
 </html>

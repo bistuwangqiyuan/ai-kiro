@@ -26,10 +26,16 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from manhuaju.adapters.db.sqlite_repo import SQLiteRepo
+from manhuaju.api.auth import (
+    UserStore,
+    make_current_user_optional,
+    make_current_user_required,
+    seed_default_users,
+)
 from manhuaju.api.project_payload import resolve_project_create
 from manhuaju.core.agent_base import AgentContext
 from manhuaju.core.asset_store import VersionStore
@@ -52,6 +58,11 @@ from manhuaju.services.video_gallery import (
     video_to_dict,
 )
 from manhuaju.utils.paths import config_dir
+
+
+class AuthCredentials(BaseModel):
+    username: str = Field(min_length=5, max_length=128)
+    password: str = Field(min_length=6, max_length=128)
 
 
 class ProjectCreateRequest(BaseModel):
@@ -121,6 +132,16 @@ def create_app(
         executor=_project_executor,
     )
     gallery = VideoGallery(root / "gallery.sqlite")
+    users = UserStore(root / "users.sqlite")
+    current_user_optional = make_current_user_optional(users)
+    current_user_required = make_current_user_required(users)
+    # Seed deterministic test accounts eagerly so anonymous TestClient calls and
+    # cold container starts both have them available without waiting for the
+    # asynchronous startup hook.
+    try:
+        seed_default_users(users)
+    except Exception:  # noqa: BLE001
+        pass
 
     def _get_tos() -> Any:
         from manhuaju.adapters.storage.tos_storage import TOSStorage
@@ -189,6 +210,7 @@ def create_app(
         meta_raw = repo.get(f"project:{project_id}")
         meta = json.loads(meta_raw) if meta_raw else {}
         title = str(meta.get("title") or project_id)
+        owner = meta.get("owner")
         repo.set(
             f"project:{project_id}",
             json.dumps({"status": "running", "stage": WorkflowStage.ANALYZE.value, **meta}),
@@ -223,6 +245,7 @@ def create_app(
                     "genre": body.genre,
                     "platforms": body.platforms,
                     "title": title,
+                    "owner": owner,
                     "gallery_videos": gallery_videos,
                 },
                 ensure_ascii=False,
@@ -248,12 +271,17 @@ def create_app(
         }
 
     @app.post("/v1/projects")
-    def create_project(body: dict[str, Any], bg: BackgroundTasks) -> dict[str, str]:
+    def create_project(
+        body: dict[str, Any],
+        bg: BackgroundTasks,
+        current_user: dict[str, Any] | None = Depends(current_user_optional),
+    ) -> dict[str, str]:
         try:
             req = ProjectCreateRequest.model_validate(resolve_project_create(body))
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         project_id = f"proj_{uuid.uuid4().hex[:12]}"
+        owner = current_user.get("username") if current_user else None
         repo.set(
             f"project:{project_id}",
             json.dumps(
@@ -262,17 +290,21 @@ def create_app(
                     "stage": WorkflowStage.ANALYZE.value,
                     "mode": body.get("mode"),
                     "title": body.get("title"),
+                    "owner": owner,
                 }
             ),
         )
         bg.add_task(_run_project, project_id, req)
-        return {"project_id": project_id, "status": "queued"}
+        return {"project_id": project_id, "status": "queued", "owner": owner or ""}
 
     @app.get("/v1/projects")
-    def list_projects(limit: int = 100) -> dict[str, Any]:
-        items = []
+    def list_projects(
+        limit: int = 100,
+        mine: bool = False,
+        current_user: dict[str, Any] | None = Depends(current_user_optional),
+    ) -> dict[str, Any]:
+        items: list[dict[str, Any]] = []
         try:
-            # SQLiteRepo has `.scan` if implemented; else iterate file
             keys = getattr(repo, "scan", lambda *_: [])("project:")
             for k in list(keys)[:limit]:
                 raw = repo.get(k)
@@ -280,6 +312,11 @@ def create_app(
                     items.append({"project_id": k.replace("project:", ""), **json.loads(raw)})
         except Exception:  # noqa: BLE001
             pass
+        if mine:
+            if not current_user:
+                raise HTTPException(status_code=401, detail="login_required")
+            uname = current_user.get("username")
+            items = [it for it in items if it.get("owner") == uname]
         return {"projects": items, "count": len(items)}
 
     @app.get("/v1/projects/{project_id}")
@@ -384,6 +421,53 @@ def create_app(
             "errors": errors,
             "elapsed_s": round(time.time() - started, 2),
             "event": str(event)[:200] if event else None,
+        }
+
+    # ---- auth endpoints ----
+    @app.post("/v1/auth/register")
+    def auth_register(body: AuthCredentials) -> dict[str, Any]:
+        try:
+            user = users.register(body.username, body.password)
+        except ValueError as exc:
+            code = str(exc)
+            if code == "user_exists":
+                raise HTTPException(status_code=409, detail="user_exists") from exc
+            raise HTTPException(status_code=400, detail=code) from exc
+        sess = users.create_session(user.username)
+        return {
+            "user": user.to_public(),
+            "token": sess.token,
+            "expires_at": sess.expires_at,
+        }
+
+    @app.post("/v1/auth/login")
+    def auth_login(body: AuthCredentials) -> dict[str, Any]:
+        try:
+            user = users.verify_credentials(body.username, body.password)
+        except ValueError as exc:
+            raise HTTPException(status_code=401, detail="invalid_credentials") from exc
+        sess = users.create_session(user.username)
+        return {
+            "user": user.to_public(),
+            "token": sess.token,
+            "expires_at": sess.expires_at,
+        }
+
+    @app.post("/v1/auth/logout")
+    def auth_logout(
+        current_user: dict[str, Any] = Depends(current_user_required),
+    ) -> dict[str, str]:
+        token = str(current_user.get("token") or "")
+        users.delete_session(token)
+        return {"status": "ok"}
+
+    @app.get("/v1/auth/me")
+    def auth_me(
+        current_user: dict[str, Any] = Depends(current_user_required),
+    ) -> dict[str, Any]:
+        return {
+            "username": current_user.get("username"),
+            "created_at": current_user.get("created_at"),
         }
 
     # ---- v4 config endpoints (web 控制台读取) ----
@@ -496,6 +580,17 @@ def create_app(
         normalize_gallery_play_urls(gallery=gallery)
         _backfill_gallery()
 
+    @app.on_event("startup")
+    def _startup_auth() -> None:
+        try:
+            seed_default_users(users)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            users.purge_expired()
+        except Exception:  # noqa: BLE001
+            pass
+
     # ---- console (静态文件) ----
     from manhuaju.utils.paths import project_root
 
@@ -518,6 +613,10 @@ def create_app(
         def video_gallery_page() -> Any:
             return FileResponse(web_dir / "gallery.html")
 
+        @app.get("/login")
+        def login_page() -> Any:
+            return FileResponse(web_dir / "login.html")
+
     # ---- shutdown ----
     @app.on_event("shutdown")
     def _shutdown() -> None:  # noqa: D401
@@ -531,6 +630,7 @@ def create_app(
     app.state.batch_scheduler = batch_scheduler
     app.state.version_store = version_store
     app.state.gallery = gallery
+    app.state.users = users
     return app
 
 

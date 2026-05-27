@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 漫剧 Autopilot — 登录 / 注册</title>
+  <style>
+    :root {
+      --bg: #0e1218; --panel: #161c25; --line: #2a313d;
+      --fg: #f5f5f7; --muted: #8a93a1;
+      --accent: #ffd47a; --accent2: #7fb3ff; --accent3: #ff5c8a;
+      --success: #5fdc7f; --danger: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      background: radial-gradient(1200px 800px at 20% -10%, #1a2230, transparent 60%),
+                  radial-gradient(1000px 700px at 110% 110%, #251a23, transparent 60%),
+                  var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+    header {
+      padding: 18px 28px; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 17px; letter-spacing: 0.5px; }
+    header nav a { color: var(--muted); text-decoration: none; font-size: 13px; margin-left: 16px; }
+    header nav a:hover { color: var(--accent2); }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+    .card {
+      width: 100%; max-width: 420px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+      padding: 28px; box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .card h2 { margin: 0 0 6px; font-size: 22px; color: var(--accent); }
+    .card p.hint { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+    .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+    .tabs button {
+      flex: 1; background: transparent; color: var(--muted);
+      border: none; border-bottom: 2px solid transparent;
+      padding: 10px 14px; font-size: 14px; cursor: pointer;
+    }
+    .tabs button.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
+    input {
+      width: 100%; background: #0c0d12; color: var(--fg);
+      border: 1px solid var(--line); border-radius: 10px;
+      padding: 11px 14px; font-size: 14px; font-family: inherit;
+    }
+    input:focus { outline: none; border-color: var(--accent2); }
+    button.primary {
+      width: 100%; background: linear-gradient(135deg, var(--accent3), var(--accent2));
+      color: #fff; border: none; padding: 12px 18px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; margin-top: 18px; cursor: pointer;
+    }
+    button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .msg { margin-top: 14px; min-height: 18px; font-size: 13px; }
+    .msg.ok { color: var(--success); }
+    .msg.err { color: var(--danger); }
+    .demo {
+      margin-top: 16px; padding: 12px; border-radius: 10px;
+      background: rgba(127,179,255,0.08); border: 1px dashed var(--line);
+      font-size: 12px; color: var(--muted);
+    }
+    .demo code { color: var(--accent); font-family: 'JetBrains Mono', Consolas, monospace; }
+    .footer { padding: 16px; text-align: center; color: var(--muted); font-size: 11px; }
+    a { color: var(--accent2); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>漫剧 Autopilot · <span style="color:var(--accent)">登录</span></h1>
+    <nav>
+      <a href="/">控制台</a>
+      <a href="/console/simple.html">简易模式</a>
+      <a href="/console/pro.html">专业模式</a>
+      <a href="/guide">使用说明</a>
+      <a href="/gallery">视频广场</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>欢迎回来</h2>
+      <p class="hint">登录后可启用「我的项目」过滤、记录提交归属。匿名也可以正常使用全部功能。</p>
+
+      <div class="tabs">
+        <button id="tab-login" class="active" data-mode="login">登录</button>
+        <button id="tab-register" data-mode="register">注册</button>
+      </div>
+
+      <form id="auth-form" autocomplete="on">
+        <label for="username">邮箱账号</label>
+        <input id="username" name="username" type="email" placeholder="test1@139.com" required autocomplete="username" />
+        <label for="password">密码</label>
+        <input id="password" name="password" type="password" placeholder="≥ 6 位" required minlength="6" autocomplete="current-password" />
+        <button type="submit" class="primary" id="submit-btn">登录</button>
+      </form>
+
+      <div id="msg" class="msg"></div>
+
+      <div class="demo">
+        测试账号已预置：<code>test1@139.com</code> / <code>test2@139.com</code>，密码均为 <code>123456</code>。
+      </div>
+    </div>
+  </main>
+
+  <div class="footer">
+    Manhuaju Autopilot · v4 ·
+    <a href="/guide">使用说明</a> ·
+    <a href="/gallery">视频广场</a>
+  </div>
+
+  <script src="/console/auth.js"></script>
+  <script>
+    let mode = 'login';
+    const form = document.getElementById('auth-form');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const submitBtn = document.getElementById('submit-btn');
+    const msg = document.getElementById('msg');
+    const password = document.getElementById('password');
+
+    function setMode(next) {
+      mode = next;
+      tabLogin.classList.toggle('active', mode === 'login');
+      tabRegister.classList.toggle('active', mode === 'register');
+      submitBtn.textContent = mode === 'login' ? '登录' : '注册并登录';
+      password.setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
+      msg.textContent = '';
+      msg.className = 'msg';
+    }
+    tabLogin.addEventListener('click', () => setMode('login'));
+    tabRegister.addEventListener('click', () => setMode('register'));
+
+    if (window.ManhuajuAuth && window.ManhuajuAuth.getUsername()) {
+      msg.textContent = '当前已以 ' + window.ManhuajuAuth.getUsername() + ' 登录。前往控制台 →';
+      msg.className = 'msg ok';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      msg.className = 'msg';
+      const username = document.getElementById('username').value.trim();
+      const pwd = password.value;
+      submitBtn.disabled = true;
+      submitBtn.textContent = mode === 'login' ? '登录中…' : '注册中…';
+      try {
+        const url = mode === 'login' ? '/v1/auth/login' : '/v1/auth/register';
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username, password: pwd }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          let detail = j.detail || ('HTTP ' + r.status);
+          if (detail === 'invalid_credentials') detail = '账号或密码不正确';
+          if (detail === 'user_exists') detail = '账号已存在，请直接登录';
+          if (detail === 'invalid_username') detail = '账号需为邮箱格式（5–128 位）';
+          if (detail === 'invalid_password') detail = '密码长度需为 6–128 位';
+          msg.textContent = detail;
+          msg.className = 'msg err';
+          submitBtn.disabled = false;
+          submitBtn.textContent = mode === 'login' ? '登录' : '注册并登录';
+          return;
+        }
+        window.ManhuajuAuth.setAuth({
+          token: j.token,
+          username: (j.user && j.user.username) || username,
+          expires_at: j.expires_at,
+        });
+        msg.textContent = '✓ 已' + (mode === 'login' ? '登录' : '注册并登录') + '，跳转控制台…';
+        msg.className = 'msg ok';
+        setTimeout(() => { location.href = '/'; }, 600);
+      } catch (err) {
+        msg.textContent = '网络错误：' + err;
+        msg.className = 'msg err';
+        submitBtn.disabled = false;
+        submitBtn.textContent = mode === 'login' ? '登录' : '注册并登录';
+      }
+    });
+  </script>
+</body>
+</html>
