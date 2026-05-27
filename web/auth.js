@@ -85,14 +85,22 @@
   function renderAuthPill(elementId) {
     const el = (typeof elementId === 'string') ? document.getElementById(elementId) : elementId;
     if (!el) return;
+    // Make sure the host span itself is laid out horizontally and never wraps
+    // its inline text content character-by-character (which can happen when
+    // the parent is a flex container that shrinks children below their
+    // intrinsic min content width).
+    el.style.display = 'inline-flex';
+    el.style.alignItems = 'center';
+    el.style.whiteSpace = 'nowrap';
+    el.style.flex = '0 0 auto';
     function paint() {
       const a = getAuth();
       if (a && a.username) {
         el.innerHTML =
-          '<span class="auth-user" style="font-size:13px;color:var(--accent2,#7fb3ff)">' +
+          '<span class="auth-user" style="font-size:13px;color:var(--accent2,#7fb3ff);white-space:nowrap">' +
             '👤 ' + escapeHtml(a.username) +
-          '</span> ' +
-          '<a href="#" id="manhuaju-logout-btn" style="font-size:13px;color:var(--muted,#8a93a1);margin-left:10px;text-decoration:none">退出</a>';
+          '</span>' +
+          '<a href="#" id="manhuaju-logout-btn" style="font-size:13px;color:var(--muted,#8a93a1);margin-left:10px;text-decoration:none;white-space:nowrap">退出</a>';
         const btn = el.querySelector('#manhuaju-logout-btn');
         if (btn) {
           btn.addEventListener('click', async function (e) {
@@ -104,7 +112,7 @@
         }
       } else {
         el.innerHTML =
-          '<a href="/login" style="font-size:13px;color:var(--accent2,#7fb3ff);text-decoration:none">登录 / 注册</a>';
+          '<a href="/login" style="font-size:13px;color:var(--accent2,#7fb3ff);text-decoration:none;white-space:nowrap;display:inline-block;padding:2px 6px">登录 / 注册</a>';
       }
     }
     paint();
