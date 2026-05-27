@@ -383,6 +383,10 @@ def create_app(
         def root_redirect() -> Any:
             return FileResponse(web_dir / "index.html")
 
+        @app.get("/guide")
+        def user_guide() -> Any:
+            return FileResponse(web_dir / "guide.html")
+
     # ---- shutdown ----
     @app.on_event("shutdown")
     def _shutdown() -> None:  # noqa: D401

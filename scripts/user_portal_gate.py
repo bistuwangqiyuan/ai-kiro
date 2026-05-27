@@ -39,7 +39,7 @@ def _post(client: httpx.Client, path: str, body: dict) -> tuple[int, Any]:
 
 
 def gate_portal_pages(client: httpx.Client) -> GateResult:
-    pages = ["/", "/console/simple.html", "/console/pro.html", "/docs"]
+    pages = ["/", "/console/simple.html", "/console/pro.html", "/console/guide.html", "/guide", "/docs"]
     fails = []
     for p in pages:
         r = client.get(p)

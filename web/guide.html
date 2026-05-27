@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 漫剧 Autopilot — 使用说明</title>
+  <style>
+    :root {
+      --bg: #0e1218;
+      --panel: #161c25;
+      --line: #2a313d;
+      --fg: #f5f5f7;
+      --muted: #8a93a1;
+      --accent: #ffd47a;
+      --accent2: #7fb3ff;
+      --accent3: #ff5c8a;
+      --success: #5fdc7f;
+      --warn: #ffb74d;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.75;
+      font-size: 15px;
+    }
+    header {
+      position: sticky; top: 0; z-index: 20;
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(14, 18, 24, 0.92);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 17px; letter-spacing: 0.5px; }
+    header nav a {
+      color: var(--muted); text-decoration: none; font-size: 13px; margin-left: 16px;
+    }
+    header nav a:hover, header nav a.active { color: var(--accent2); }
+    .layout {
+      max-width: 1080px; margin: 0 auto;
+      display: grid; grid-template-columns: 220px 1fr; gap: 32px;
+      padding: 32px 28px 64px;
+    }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      .toc { display: none; }
+    }
+    .toc {
+      position: sticky; top: 72px; align-self: start;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .toc h2 { margin: 0 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+    .toc a {
+      display: block; color: var(--muted); text-decoration: none;
+      font-size: 13px; padding: 5px 0; border-bottom: 1px dashed transparent;
+    }
+    .toc a:hover { color: var(--accent2); }
+    .hero {
+      background: linear-gradient(135deg, #1a2230, #161c25);
+      border: 1px solid var(--line); border-radius: 14px;
+      padding: 28px 32px; margin-bottom: 28px;
+    }
+    .hero h2 { margin: 0 0 8px; font-size: 26px; color: var(--accent); }
+    .hero p { margin: 0; color: var(--muted); }
+    .hero .cta { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .hero .cta a {
+      display: inline-block; padding: 10px 18px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; text-decoration: none;
+    }
+    .btn-primary { background: var(--accent); color: #1a1a1a; }
+    .btn-secondary { background: transparent; color: var(--accent2); border: 1px solid var(--accent2); }
+    section {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; padding: 24px 28px; margin-bottom: 20px;
+    }
+    section h3 {
+      margin: 0 0 14px; font-size: 18px; color: var(--accent2);
+      padding-bottom: 10px; border-bottom: 1px solid var(--line);
+    }
+    section h4 { margin: 18px 0 8px; font-size: 14px; color: var(--accent); }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 0 0 14px; padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;
+    }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; }
+    th { background: #1a2230; color: var(--muted); font-weight: 500; }
+    code {
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 12px; color: var(--accent2);
+      background: #0e1218; padding: 2px 6px; border-radius: 4px;
+    }
+    .tip {
+      background: rgba(127, 179, 255, 0.08); border-left: 3px solid var(--accent2);
+      padding: 12px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14px;
+    }
+    .warn {
+      background: rgba(255, 183, 77, 0.08); border-left: 3px solid var(--warn);
+      padding: 12px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; font-size: 14px;
+    }
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step; position: relative; padding-left: 36px; margin-bottom: 14px;
+    }
+    .steps li::before {
+      content: counter(step); position: absolute; left: 0; top: 2px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent2); color: #0e1218;
+      font-size: 12px; font-weight: 700; text-align: center; line-height: 24px;
+    }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .status-card {
+      background: #0e1218; border: 1px solid var(--line); border-radius: 8px;
+      padding: 10px 12px; font-size: 13px;
+    }
+    .status-card strong { display: block; color: var(--accent); font-size: 12px; margin-bottom: 4px; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; font-weight: 600;
+    }
+    .pill-ok { background: rgba(95,220,127,0.15); color: var(--success); }
+    .pill-run { background: rgba(255,183,77,0.15); color: var(--warn); }
+    .pill-bad { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI 漫剧 Autopilot · <span style="color:var(--accent)">使用说明</span></h1>
+    <nav>
+      <a href="/">控制台</a>
+      <a href="/console/simple.html">简易模式</a>
+      <a href="/console/pro.html">专业模式</a>
+      <a href="/console/guide.html" class="active">使用说明</a>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="toc">
+      <h2>目录</h2>
+      <a href="#intro">产品简介</a>
+      <a href="#start">快速开始</a>
+      <a href="#modes">三种入口</a>
+      <a href="#simple">简易模式教程</a>
+      <a href="#pro">专业模式教程</a>
+      <a href="#console">控制台首页</a>
+      <a href="#flow">制作流程</a>
+      <a href="#status">状态说明</a>
+      <a href="#faq">常见问题</a>
+    </aside>
+
+    <main>
+      <div class="hero">
+        <h2>把小说变成漫剧短视频</h2>
+        <p>无需注册登录，打开网页即可使用。粘贴小说或故事梗概，系统自动完成分镜、配音、渲染与多平台导出。</p>
+        <div class="cta">
+          <a class="btn-primary" href="/console/simple.html">立即开始（推荐新手）</a>
+          <a class="btn-secondary" href="/console/pro.html">专业模式</a>
+        </div>
+      </div>
+
+      <section id="intro">
+        <h3>一、产品简介</h3>
+        <p><strong>AI 漫剧 Autopilot</strong> 是一款面向内容创作者的自动化漫剧制作工具。您只需提供文字素材（小说章节、故事梗概或创意描述），系统会依次完成：</p>
+        <ul>
+          <li><strong>剧本分析</strong> — 提取人物、场景与情节结构</li>
+          <li><strong>分镜规划</strong> — 自动生成镜头脚本与画面描述</li>
+          <li><strong>AI 渲染</strong> — 生成画面、配音与字幕</li>
+          <li><strong>质量检测</strong> — 七维 QA、角色一致性（ArcFace）等自动把关</li>
+          <li><strong>多平台导出</strong> — 适配抖音、快手、视频号等平台规格</li>
+        </ul>
+        <div class="tip">本应用为<strong>网页即用</strong>服务，不需要安装软件，也不需要账号密码。用浏览器打开网址即可。</div>
+      </section>
+
+      <section id="start">
+        <h3>二、快速开始（3 步出片）</h3>
+        <ol class="steps">
+          <li>用电脑或手机浏览器打开本站首页（控制台），点击顶部导航中的 <strong>「简易模式」</strong>。</li>
+          <li>填写<strong>作品标题</strong>，在文本框中粘贴<strong>至少 10 个字</strong>的小说正文或故事梗概；选择语种（默认中文）。</li>
+          <li>点击 <strong>「一键出片」</strong>，等待页面提示「制作完成」。通常单集约需 20 秒～2 分钟（视集数与系统负载而定）。</li>
+        </ol>
+        <div class="warn">首次使用建议先用 <strong>1 集、60 秒</strong> 的短文本试跑，确认效果后再提交长篇章节。</div>
+      </section>
+
+      <section id="modes">
+        <h3>三、三种入口怎么选？</h3>
+        <table>
+          <thead>
+            <tr><th>入口</th><th>适合谁</th><th>特点</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="/console/simple.html" style="color:var(--accent2)">简易模式</a></td>
+              <td>新手、快速试片</td>
+              <td>最少选项：标题 + 正文 + 语种，其余参数系统自动优化</td>
+            </tr>
+            <tr>
+              <td><a href="/console/pro.html" style="color:var(--accent2)">专业模式</a></td>
+              <td>资深创作者、批量生产</td>
+              <td>可调整集数、时长、渲染等级、分发平台、水印、ArcFace 阈值等</td>
+            </tr>
+            <tr>
+              <td><a href="/" style="color:var(--accent2)">控制台首页</a></td>
+              <td>运营 / 技术用户</td>
+              <td>一键开剧、小说生成、项目列表、Provider 状态与 KPI 面板</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="simple">
+        <h3>四、简易模式详细教程</h3>
+        <h4>页面字段说明</h4>
+        <table>
+          <thead><tr><th>字段</th><th>是否必填</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>作品标题</td><td>建议填写</td><td>用于项目识别与封面文案，如「重生之凤还朝」</td></tr>
+            <tr><td>小说正文</td><td>必填（≥10 字）</td><td>可直接粘贴章节原文，或写一段故事梗概</td></tr>
+            <tr><td>语种</td><td>选填</td><td>支持中文、English、日本語、한국어、ไทย</td></tr>
+          </tbody>
+        </table>
+        <h4>系统默认参数（无需手动设置）</h4>
+        <ul>
+          <li>单集时长约 60 秒 · 古装题材 · M 级渲染 · 双层内容风控</li>
+          <li>默认分发：抖音、快手、微信视频号</li>
+        </ul>
+        <h4>提交后会发生什么？</h4>
+        <p>页面会自动轮询制作进度。请勿关闭浏览器标签页，直到出现「制作完成」或明确失败提示。完成后可在控制台首页的「最近项目」中查看详情。</p>
+      </section>
+
+      <section id="pro">
+        <h3>五、专业模式详细教程</h3>
+        <p>专业模式在简易模式基础上开放更多参数，适合需要精细控制的创作者。</p>
+        <h4>① 文本输入</h4>
+        <ul>
+          <li><strong>题材</strong>：可选 cdrama_classic（国剧经典）、sweet_pet（甜宠）、xianxia_epic（仙侠史诗）等模板</li>
+          <li><strong>受众</strong>：general / female_youth / male_youth，影响叙事风格倾向</li>
+        </ul>
+        <h4>② 制作参数</h4>
+        <ul>
+          <li><strong>集数</strong>：1～120 集，建议分批提交长篇内容</li>
+          <li><strong>单集时长</strong>：60～180 秒，短剧平台常用 60～90 秒</li>
+          <li><strong>渲染 tier</strong>：L（轻量）/ M（标准）/ H（高质），越高画质越好、耗时与成本越高</li>
+          <li><strong>并发渲染槽</strong>：同时渲染的镜头数，默认 16</li>
+          <li><strong>ArcFace 阈值</strong>：角色面部一致性要求，默认 ≥0.94，不达标会自动重试修复</li>
+        </ul>
+        <h4>③ 高阶选项</h4>
+        <ul>
+          <li><strong>分发平台</strong>：逗号分隔，如 <code>douyin,kuaishou,bilibili,video_hao,youtube</code></li>
+          <li><strong>水印</strong>：可自定义文字与位置（右下角等）</li>
+          <li><strong>定时任务</strong>：填写 cron 表达式可预约自动制作（如 <code>0 8 * * *</code> 每天 8 点）</li>
+        </ul>
+        <p>右侧「白皮书锚定 KPI」面板展示系统质量基准（单集成本、时延、ArcFace、七维通过率等），供您参考预期水平。</p>
+      </section>
+
+      <section id="console">
+        <h3>六、控制台首页功能</h3>
+        <h4>① 一键开剧</h4>
+        <p>在首页直接选择题材、集数、时长与平台，粘贴小说后提交。适合熟悉 API 字段的用户。</p>
+        <h4>② 小说一键生成</h4>
+        <p>若您还没有成稿，可在此生成新小说、续写已有章节，或做风格迁移（如古风→现代）。生成后可复制正文到简易/专业模式继续出片。</p>
+        <h4>③ 最近项目</h4>
+        <p>展示最近 20 个任务的状态、题材与当前阶段。点击「详情」可查看 JSON 摘要（含 QA 分数、导出路径等）。</p>
+        <h4>④ Provider 能力图</h4>
+        <p>显示 LLM、渲染、存储等后端服务是否就绪。若显示 <span class="pill pill-run">degraded</span>，制作可能变慢或使用备用路径。</p>
+      </section>
+
+      <section id="flow">
+        <h3>七、制作流程（幕后步骤）</h3>
+        <p>提交任务后，系统按以下阶段自动推进（您无需手动操作）：</p>
+        <ol>
+          <li><strong>analyze</strong> — 分析文本，提取角色与场景</li>
+          <li><strong>plan / blueprint</strong> — 生成分集大纲与分镜脚本</li>
+          <li><strong>render</strong> — AI 渲染画面与配音</li>
+          <li><strong>qa</strong> — 七维质量检测与自动修复循环</li>
+          <li><strong>distribution</strong> — 按各平台规格导出 MP4、封面与文案包</li>
+        </ol>
+        <div class="tip">全部阶段完成后，项目状态变为 <span class="pill pill-ok">released</span>，表示可下载/使用的成片已就绪。</div>
+      </section>
+
+      <section id="status">
+        <h3>八、任务状态说明</h3>
+        <div class="status-grid">
+          <div class="status-card"><strong>queued</strong>已排队，等待系统调度</div>
+          <div class="status-card"><strong>running</strong>制作中，请耐心等待</div>
+          <div class="status-card"><strong>released</strong><span class="pill pill-ok">成功</span> 成片已发布</div>
+          <div class="status-card"><strong>succeeded</strong><span class="pill pill-ok">成功</span> 与 released 同义</div>
+          <div class="status-card"><strong>failed / error</strong><span class="pill pill-bad">失败</span> 请缩短文本或稍后重试</div>
+        </div>
+      </section>
+
+      <section id="faq">
+        <h3>九、常见问题</h3>
+        <h4>Q：需要登录吗？</h4>
+        <p>不需要。打开网址即可使用，系统通过浏览器会话提交任务。</p>
+        <h4>Q：小说要写多长？</h4>
+        <p>最少 10 个字符。建议单集对应 200～2000 字原文；过长章节建议拆分多集提交。</p>
+        <h4>Q：制作要多久？</h4>
+        <p>单集 hybrid 模式下通常 20 秒～2 分钟；多集或高 tier 渲染会更久。页面会自动刷新状态。</p>
+        <h4>Q：成片在哪里下载？</h4>
+        <p>任务完成后，在控制台「最近项目」详情中可看到各平台导出路径。完整下载能力取决于部署环境的存储/CDN 配置；如需直链下载请联系运营方开通。</p>
+        <h4>Q：提示提交失败怎么办？</h4>
+        <ul>
+          <li>检查正文是否少于 10 字</li>
+          <li>刷新页面后重试</li>
+          <li>若长时间 <span class="pill pill-run">running</span> 不变，可能是系统繁忙，请等待或稍后再试</li>
+        </ul>
+        <h4>Q：简易模式和专业模式可以同时开多个任务吗？</h4>
+        <p>可以。每次提交会生成独立的 <code>project_id</code>，互不影响。</p>
+        <h4>Q：内容合规吗？</h4>
+        <p>系统内置双层风控（敏感词 + 高敏语义），违规内容会被拦截或降级处理。请勿提交违法、侵权或未授权素材。</p>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    AI 漫剧 Autopilot v4 · 小云雀 Agent 2.0 ·
+    <a href="/docs" style="color:var(--muted)">API 文档</a> ·
+    <a href="/" style="color:var(--muted)">返回控制台</a>
+  </footer>
+</body>
+</html>
