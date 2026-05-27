@@ -114,21 +114,64 @@ def gate_gallery(client: httpx.Client) -> GateResult:
     vid = sample.get("video_id")
     if not vid:
         return GateResult("gallery_api", False, "missing video_id")
-    r2 = client.head(f"/media/videos/{vid}")
-    if r2.status_code not in (200, 307, 308):
-        r2 = client.get(f"/media/videos/{vid}")
-    if r2.status_code not in (200, 307, 308):
-        return GateResult("gallery_api", False, f"stream HTTP {r2.status_code}")
-    size = int(r2.headers.get("content-length", 0) or 0)
-    if r2.status_code == 200 and size > 0 and size < 1_000_000:
-        return GateResult("gallery_api", False, f"video too small ({size} bytes)")
-    ct = r2.headers.get("content-type", "")
-    if r2.status_code == 200 and "video" not in ct and "octet" not in ct:
-        return GateResult("gallery_api", False, f"bad content-type {ct}")
+
+    # Try HEAD first (gateway may rewrite to 405 / 200).
+    head = client.head(f"/media/videos/{vid}")
+    head_size = int(head.headers.get("content-length", 0) or 0)
+    head_ok = head.status_code in (200, 307, 308)
+
+    if head_ok and head_size and head_size >= 1_000_000:
+        ct = head.headers.get("content-type", "")
+        if head.status_code == 200 and ct and "video" not in ct and "octet" not in ct:
+            return GateResult("gallery_api", False, f"bad content-type {ct}")
+        return GateResult(
+            "gallery_api",
+            True,
+            f"{len(videos)} videos, HEAD content-length={head_size}",
+        )
+
+    # HEAD didn't give us a definitive answer — fall back to a streamed GET so
+    # the live VeFaaS gateway doesn't silently truncate the full download.
+    try:
+        with client.stream(
+            "GET",
+            f"/media/videos/{vid}",
+            headers={"Range": "bytes=0-65535"},
+        ) as resp:
+            status = resp.status_code
+            ct = resp.headers.get("content-type", "")
+            cl = int(resp.headers.get("content-length", 0) or 0)
+            cr = resp.headers.get("content-range", "")
+            if status not in (200, 206, 307, 308):
+                return GateResult("gallery_api", False, f"stream HTTP {status}")
+            # Parse total size from Content-Range when 206 is returned.
+            total = head_size
+            if status == 206 and "/" in cr:
+                try:
+                    total = int(cr.rsplit("/", 1)[-1])
+                except ValueError:
+                    pass
+            if status == 200 and cl:
+                total = cl
+            if total and total < 1_000_000:
+                return GateResult("gallery_api", False, f"video too small ({total} bytes)")
+            if ct and "video" not in ct and "octet" not in ct:
+                return GateResult("gallery_api", False, f"bad content-type {ct}")
+            # Read just a small chunk to confirm bytes flow without pulling MBs.
+            sniff = b""
+            for chunk in resp.iter_bytes():
+                sniff += chunk
+                if len(sniff) >= 512:
+                    break
+            if not sniff:
+                return GateResult("gallery_api", False, "stream returned empty body")
+    except httpx.HTTPError as exc:
+        return GateResult("gallery_api", False, f"stream error: {exc}")
+
     return GateResult(
         "gallery_api",
         True,
-        f"{len(videos)} videos, sample stream OK",
+        f"{len(videos)} videos, ranged GET OK ({total or '?'} bytes total)",
     )
 
 
