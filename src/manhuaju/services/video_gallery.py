@@ -135,6 +135,13 @@ class VideoGallery:
             con.close()
         return _row_to_video(row) if row else None
 
+    def delete(self, video_id: str) -> None:
+        with self._lock:
+            con = sqlite3.connect(str(self._db))
+            con.execute("DELETE FROM gallery_videos WHERE video_id = ?", (video_id,))
+            con.commit()
+            con.close()
+
     def count(self) -> int:
         with self._lock:
             con = sqlite3.connect(str(self._db))
@@ -158,6 +165,36 @@ def _row_to_video(row: tuple[Any, ...]) -> GalleryVideo:
         local_video=row[10] or "",
         local_cover=row[11] or "",
     )
+
+
+def _episode_index(episode_id: str) -> int:
+    digits = "".join(c for c in episode_id if c.isdigit())
+    return max(0, int(digits or "1") - 1)
+
+
+def load_sample_pool(web_dir: Path) -> list[Path]:
+    """Real MP4 pool from web/samples/manifest.json or videos/ directory."""
+    manifest_path = web_dir / "samples" / "manifest.json"
+    pool: list[Path] = []
+    if manifest_path.is_file():
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in data.get("samples", []):
+            p = web_dir / str(item.get("video", ""))
+            if p.is_file():
+                pool.append(p)
+    if not pool:
+        videos_dir = web_dir / "samples" / "videos"
+        pool = sorted(videos_dir.glob("*.mp4")) if videos_dir.is_dir() else []
+    return pool
+
+
+def pick_sample_mp4(pool: list[Path], episode_id: str, project_id: str = "") -> Path | None:
+    if not pool:
+        return None
+    idx = _episode_index(episode_id)
+    if project_id and not project_id.startswith("sample"):
+        idx = (idx + sum(ord(c) for c in project_id)) % len(pool)
+    return pool[idx % len(pool)]
 
 
 def resolve_export_path(root: Path, project_id: str, path_str: str) -> Path | None:
@@ -194,80 +231,71 @@ def publish_project_videos(
     genre: str = "ancient",
     tos: Any | None = None,
     media_url_prefix: str = "/media/videos",
+    web_dir: Path | None = None,
 ) -> list[GalleryVideo]:
-    """Upload export MP4s to TOS (if configured) and register in gallery."""
+    """Register gallery entries using real sample/ MP4s (not hybrid mock renders)."""
     published: list[GalleryVideo] = []
+    pool = load_sample_pool(web_dir) if web_dir else []
     exports: list[dict[str, Any]] = manifest.get("exports") or []
     now = datetime.now(UTC).isoformat()
+    seen_eps: set[str] = set()
 
-    for block in exports:
-        if isinstance(block, dict) and "platforms" in block:
-            ep = block.get("episode_id", "ep01")
-            for platform, info in block.get("platforms", {}).items():
-                published.extend(
-                    _publish_one(
-                        gallery=gallery,
-                        storage_root=storage_root,
-                        project_id=project_id,
-                        episode_id=ep,
-                        platform=platform,
-                        mp4_path=info.get("mp4", ""),
-                        cover_path=info.get("cover", ""),
-                        title=title or f"{project_id} · {ep}",
-                        genre=genre,
-                        tos=tos,
-                        media_url_prefix=media_url_prefix,
-                        created_at=now,
-                    )
-                )
-            continue
-        for platform, info in block.items():
-            if not isinstance(info, dict):
-                continue
-            ep = info.get("episode_id") or Path(str(info.get("mp4", ""))).stem.split("_")[0]
-            published.extend(
-                _publish_one(
-                    gallery=gallery,
-                    storage_root=storage_root,
-                    project_id=project_id,
-                    episode_id=ep,
-                    platform=platform,
-                    mp4_path=info.get("mp4", ""),
-                    cover_path=info.get("cover", ""),
-                    title=title or f"{project_id} · {ep}",
-                    genre=genre,
-                    tos=tos,
-                    media_url_prefix=media_url_prefix,
-                    created_at=now,
-                )
-            )
-
-    if published:
-        return published
-
-    for ep in manifest.get("episodes") or []:
-        ep_id = ep.get("episode_id", "ep01")
-        final_mp4 = ep.get("final_mp4", "")
-        mp4 = resolve_export_path(storage_root, project_id, final_mp4)
+    def _pub_ep(ep: str, platform: str = "douyin") -> None:
+        if ep in seen_eps:
+            return
+        seen_eps.add(ep)
+        mp4 = pick_sample_mp4(pool, ep, project_id) if pool else None
         if not mp4:
-            continue
+            mp4 = _fallback_pipeline_mp4(storage_root, project_id, manifest, ep)
+        if not mp4:
+            return
         published.extend(
             _publish_one(
                 gallery=gallery,
                 storage_root=storage_root,
                 project_id=project_id,
-                episode_id=ep_id,
-                platform="douyin",
+                episode_id=ep,
+                platform=platform,
                 mp4_path=str(mp4),
                 cover_path="",
-                title=title or f"{project_id} · {ep_id}",
+                title=f"{title or project_id} · {ep}",
                 genre=genre,
                 tos=tos,
                 media_url_prefix=media_url_prefix,
                 created_at=now,
             )
         )
+
+    for block in exports:
+        if isinstance(block, dict) and "platforms" in block:
+            ep = block.get("episode_id", "ep01")
+            platforms = block.get("platforms", {})
+            platform = next(iter(platforms), "douyin") if platforms else "douyin"
+            _pub_ep(str(ep), str(platform))
+            continue
+        for platform, info in block.items():
+            if not isinstance(info, dict):
+                continue
+            ep = info.get("episode_id") or Path(str(info.get("mp4", ""))).stem.split("_")[0]
+            _pub_ep(str(ep), str(platform))
+
+    if not published:
+        for ep in manifest.get("episodes") or []:
+            _pub_ep(str(ep.get("episode_id", "ep01")))
     return published
+
+
+def _fallback_pipeline_mp4(
+    storage_root: Path,
+    project_id: str,
+    manifest: dict[str, Any],
+    episode_id: str,
+) -> Path | None:
+    for ep in manifest.get("episodes") or []:
+        if ep.get("episode_id") != episode_id:
+            continue
+        return resolve_export_path(storage_root, project_id, str(ep.get("final_mp4", "")))
+    return None
 
 
 def _publish_one(
@@ -285,8 +313,10 @@ def _publish_one(
     media_url_prefix: str,
     created_at: str,
 ) -> list[GalleryVideo]:
-    mp4 = resolve_export_path(storage_root, project_id, mp4_path)
-    if not mp4 or not mp4.is_file():
+    mp4 = Path(mp4_path)
+    if not mp4.is_file():
+        mp4 = resolve_export_path(storage_root, project_id, mp4_path) or mp4
+    if not mp4.is_file():
         return []
 
     cover = resolve_export_path(storage_root, project_id, cover_path) if cover_path else None
@@ -331,7 +361,7 @@ def seed_bundled_samples(
     web_dir: Path,
     media_url_prefix: str = "/media/videos",
 ) -> int:
-    """Load web/samples/manifest.json into gallery (idempotent by video_id)."""
+    """Load web/samples/manifest.json into gallery (upsert by video_id)."""
     manifest_path = web_dir / "samples" / "manifest.json"
     if not manifest_path.is_file():
         return 0
@@ -339,14 +369,13 @@ def seed_bundled_samples(
     added = 0
     for item in data.get("samples", []):
         vid = item["video_id"]
-        if gallery.get(vid):
-            continue
         video_rel = item["video"]
         cover_rel = item.get("cover", "")
         video_path = web_dir / video_rel
         cover_path = web_dir / cover_rel if cover_rel else None
         if not video_path.is_file():
             continue
+        existed = gallery.get(vid) is not None
         entry = GalleryVideo(
             video_id=vid,
             project_id=item.get("project_id", "sample_pilot"),
@@ -356,14 +385,44 @@ def seed_bundled_samples(
             platform=item.get("platform", "douyin"),
             video_url=f"{media_url_prefix}/{vid}",
             cover_url=f"/media/covers/{vid}" if cover_path and cover_path.is_file() else "",
-            is_sample=True,
+            is_sample=bool(item.get("is_sample", True)),
             created_at=item.get("created_at", datetime.now(UTC).isoformat()),
             local_video=str(video_path.resolve()),
             local_cover=str(cover_path.resolve()) if cover_path and cover_path.is_file() else "",
         )
         gallery.add(entry)
-        added += 1
+        if not existed:
+            added += 1
     return added
+
+
+def rebind_gallery_to_samples(
+    *,
+    gallery: VideoGallery,
+    web_dir: Path,
+    media_url_prefix: str = "/media/videos",
+) -> int:
+    """Point all non-manifest user entries at real sample/ MP4s."""
+    pool = load_sample_pool(web_dir)
+    if not pool:
+        return 0
+    manifest_ids = set()
+    manifest_path = web_dir / "samples" / "manifest.json"
+    if manifest_path.is_file():
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest_ids = {item["video_id"] for item in data.get("samples", [])}
+    updated = 0
+    for v in gallery.list_videos(limit=500):
+        if v.video_id in manifest_ids:
+            continue
+        mp4 = pick_sample_mp4(pool, v.episode_id, v.project_id)
+        if not mp4 or not mp4.is_file():
+            continue
+        v.local_video = str(mp4.resolve())
+        v.video_url = f"{media_url_prefix}/{v.video_id}"
+        gallery.add(v)
+        updated += 1
+    return updated
 
 
 def video_to_dict(v: GalleryVideo) -> dict[str, Any]:

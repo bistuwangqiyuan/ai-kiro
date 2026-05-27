@@ -46,6 +46,7 @@ from manhuaju.services.batch_scheduler import BatchScheduler
 from manhuaju.services.video_gallery import (
     VideoGallery,
     publish_project_videos,
+    rebind_gallery_to_samples,
     seed_bundled_samples,
     video_to_dict,
 )
@@ -135,6 +136,9 @@ def create_app(
         if not manifest:
             return []
         try:
+            from manhuaju.utils.paths import project_root
+
+            web_dir = project_root() / "web"
             published = publish_project_videos(
                 gallery=gallery,
                 storage_root=root,
@@ -143,6 +147,7 @@ def create_app(
                 title=title or project_id,
                 genre=genre,
                 tos=_get_tos(),
+                web_dir=web_dir,
             )
             return [video_to_dict(v) for v in published]
         except Exception:  # noqa: BLE001
@@ -483,7 +488,10 @@ def create_app(
         from manhuaju.utils.paths import project_root
 
         web_dir = project_root() / "web"
+        for legacy_id in ("sample_ep01", "sample_ep02", "sample_ep03"):
+            gallery.delete(legacy_id)
         seed_bundled_samples(gallery=gallery, web_dir=web_dir)
+        rebind_gallery_to_samples(gallery=gallery, web_dir=web_dir)
         _backfill_gallery()
 
     # ---- console (静态文件) ----

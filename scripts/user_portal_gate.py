@@ -103,15 +103,20 @@ def gate_gallery(client: httpx.Client) -> GateResult:
     if code != 200 or not isinstance(body, dict):
         return GateResult("gallery_api", False, f"HTTP {code}")
     videos = body.get("videos") or []
-    if len(videos) < 1:
-        return GateResult("gallery_api", False, "no videos")
+    if len(videos) < 6:
+        return GateResult("gallery_api", False, f"expected 6+ videos, got {len(videos)}")
     sample = next((v for v in videos if v.get("is_sample")), videos[0])
     vid = sample.get("video_id")
     if not vid:
         return GateResult("gallery_api", False, "missing video_id")
-    r2 = client.get(f"/media/videos/{vid}")
+    r2 = client.head(f"/media/videos/{vid}")
+    if r2.status_code not in (200, 307, 308):
+        r2 = client.get(f"/media/videos/{vid}")
     if r2.status_code not in (200, 307, 308):
         return GateResult("gallery_api", False, f"stream HTTP {r2.status_code}")
+    size = int(r2.headers.get("content-length", 0) or 0)
+    if r2.status_code == 200 and size > 0 and size < 1_000_000:
+        return GateResult("gallery_api", False, f"video too small ({size} bytes)")
     ct = r2.headers.get("content-type", "")
     if r2.status_code == 200 and "video" not in ct and "octet" not in ct:
         return GateResult("gallery_api", False, f"bad content-type {ct}")

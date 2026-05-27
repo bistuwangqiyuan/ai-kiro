@@ -1,37 +1,70 @@
 {
   "samples": [
     {
-      "video_id": "sample_ep01",
+      "video_id": "sample_official_01",
       "project_id": "sample_pilot_001",
       "episode_id": "ep01",
       "title": "重生之凤还朝 · 第1集（官方示例）",
       "genre": "ancient",
       "platform": "douyin",
-      "video": "samples/ep01_douyin.mp4",
-      "cover": "samples/ep01_douyin_cover.jpg",
+      "is_sample": true,
+      "video": "samples/videos/9e9a0d458e1862c6602a1444b6cc0d14.mp4",
       "created_at": "2026-05-16T08:00:00+00:00"
     },
     {
-      "video_id": "sample_ep02",
+      "video_id": "sample_official_02",
       "project_id": "sample_pilot_001",
       "episode_id": "ep02",
       "title": "重生之凤还朝 · 第2集（官方示例）",
       "genre": "ancient",
       "platform": "douyin",
-      "video": "samples/ep02_douyin.mp4",
-      "cover": "samples/ep02_douyin_cover.jpg",
+      "is_sample": true,
+      "video": "samples/videos/8a3f6ed6ddecb8279a684c1ef6373f34.mp4",
       "created_at": "2026-05-16T08:01:00+00:00"
     },
     {
-      "video_id": "sample_ep03",
+      "video_id": "sample_official_03",
       "project_id": "sample_pilot_001",
       "episode_id": "ep03",
       "title": "重生之凤还朝 · 第3集（官方示例）",
       "genre": "ancient",
       "platform": "douyin",
-      "video": "samples/ep03_douyin.mp4",
-      "cover": "samples/ep03_douyin_cover.jpg",
+      "is_sample": true,
+      "video": "samples/videos/c523311b66e661939a077ef2168a4bd2.mp4",
       "created_at": "2026-05-16T08:02:00+00:00"
+    },
+    {
+      "video_id": "sample_user_01",
+      "project_id": "user_demo_001",
+      "episode_id": "ep01",
+      "title": "竹林剑影 · 用户作品示例",
+      "genre": "xianxia",
+      "platform": "douyin",
+      "is_sample": false,
+      "video": "samples/videos/c873a4184b76b5a511e5cc1d693f7955.mp4",
+      "created_at": "2026-05-20T10:00:00+00:00"
+    },
+    {
+      "video_id": "sample_user_02",
+      "project_id": "user_demo_002",
+      "episode_id": "ep01",
+      "title": "都市甜宠 · 用户作品示例",
+      "genre": "sweet_pet",
+      "platform": "kuaishou",
+      "is_sample": false,
+      "video": "samples/videos/e032d10b247b10b98249d26e0e69a2ee.mp4",
+      "created_at": "2026-05-21T14:30:00+00:00"
+    },
+    {
+      "video_id": "sample_user_03",
+      "project_id": "user_demo_003",
+      "episode_id": "ep01",
+      "title": "悬疑夜话 · 用户作品示例",
+      "genre": "suspense",
+      "platform": "douyin",
+      "is_sample": false,
+      "video": "samples/videos/59092566dbcd8ed6c372a6a375cf9010.mp4",
+      "created_at": "2026-05-22T18:00:00+00:00"
     }
   ]
 }
