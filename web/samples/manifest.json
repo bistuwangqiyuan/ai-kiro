@@ -1,0 +1,37 @@
+{
+  "samples": [
+    {
+      "video_id": "sample_ep01",
+      "project_id": "sample_pilot_001",
+      "episode_id": "ep01",
+      "title": "重生之凤还朝 · 第1集（官方示例）",
+      "genre": "ancient",
+      "platform": "douyin",
+      "video": "samples/ep01_douyin.mp4",
+      "cover": "samples/ep01_douyin_cover.jpg",
+      "created_at": "2026-05-16T08:00:00+00:00"
+    },
+    {
+      "video_id": "sample_ep02",
+      "project_id": "sample_pilot_001",
+      "episode_id": "ep02",
+      "title": "重生之凤还朝 · 第2集（官方示例）",
+      "genre": "ancient",
+      "platform": "douyin",
+      "video": "samples/ep02_douyin.mp4",
+      "cover": "samples/ep02_douyin_cover.jpg",
+      "created_at": "2026-05-16T08:01:00+00:00"
+    },
+    {
+      "video_id": "sample_ep03",
+      "project_id": "sample_pilot_001",
+      "episode_id": "ep03",
+      "title": "重生之凤还朝 · 第3集（官方示例）",
+      "genre": "ancient",
+      "platform": "douyin",
+      "video": "samples/ep03_douyin.mp4",
+      "cover": "samples/ep03_douyin_cover.jpg",
+      "created_at": "2026-05-16T08:02:00+00:00"
+    }
+  ]
+}

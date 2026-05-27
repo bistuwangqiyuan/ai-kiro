@@ -39,7 +39,16 @@ def _post(client: httpx.Client, path: str, body: dict) -> tuple[int, Any]:
 
 
 def gate_portal_pages(client: httpx.Client) -> GateResult:
-    pages = ["/", "/console/simple.html", "/console/pro.html", "/console/guide.html", "/guide", "/docs"]
+    pages = [
+        "/",
+        "/console/simple.html",
+        "/console/pro.html",
+        "/console/guide.html",
+        "/guide",
+        "/gallery",
+        "/console/gallery.html",
+        "/docs",
+    ]
     fails = []
     for p in pages:
         r = client.get(p)
@@ -86,11 +95,30 @@ def gate_simple_submit(client: httpx.Client, *, wait_s: int = 180) -> GateResult
                 break
         time.sleep(3)
     ok = last.get("status") in ("released", "succeeded", "completed")
+    return GateResult("simple_submit", ok, f"project_id={pid} status={last.get('status')}", last)
+
+
+def gate_gallery(client: httpx.Client) -> GateResult:
+    code, body = _get(client, "/v1/gallery")
+    if code != 200 or not isinstance(body, dict):
+        return GateResult("gallery_api", False, f"HTTP {code}")
+    videos = body.get("videos") or []
+    if len(videos) < 1:
+        return GateResult("gallery_api", False, "no videos")
+    sample = next((v for v in videos if v.get("is_sample")), videos[0])
+    vid = sample.get("video_id")
+    if not vid:
+        return GateResult("gallery_api", False, "missing video_id")
+    r2 = client.get(f"/media/videos/{vid}")
+    if r2.status_code not in (200, 307, 308):
+        return GateResult("gallery_api", False, f"stream HTTP {r2.status_code}")
+    ct = r2.headers.get("content-type", "")
+    if r2.status_code == 200 and "video" not in ct and "octet" not in ct:
+        return GateResult("gallery_api", False, f"bad content-type {ct}")
     return GateResult(
-        "simple_submit",
-        ok,
-        f"project_id={pid} status={last.get('status')}",
-        last,
+        "gallery_api",
+        True,
+        f"{len(videos)} videos, sample stream OK",
     )
 
 
@@ -109,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         results.append(gate_portal_pages(client))
         results.append(gate_whitepaper_anchors(client))
+        results.append(gate_gallery(client))
         if not args.skip_project:
             results.append(gate_simple_submit(client))
 

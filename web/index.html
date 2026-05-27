@@ -84,6 +84,7 @@
   <div style="display:flex;gap:12px;align-items:center">
     <a href="/console/simple.html" style="color:var(--accent2);font-size:13px;text-decoration:none">简易模式</a>
     <a href="/console/pro.html" style="color:var(--accent2);font-size:13px;text-decoration:none">专业模式</a>
+    <a href="/gallery" style="color:var(--accent2);font-size:13px;text-decoration:none">视频广场</a>
     <a href="/console/guide.html" style="color:var(--accent);font-size:13px;text-decoration:none">使用说明</a>
     <span class="pill" id="mode-pill">loading…</span>
   </div>
@@ -168,10 +169,11 @@
             <th>状态</th>
             <th>题材</th>
             <th>阶段</th>
+            <th>视频</th>
             <th></th>
           </tr>
         </thead>
-        <tbody id="projects-tbody"><tr><td colspan="5" class="small">loading…</td></tr></tbody>
+        <tbody id="projects-tbody"><tr><td colspan="6" class="small">loading…</td></tr></tbody>
       </table>
     </div>
     <button class="ghost" onclick="loadProjects()">刷新</button>
@@ -263,7 +265,7 @@ async function loadProjects() {
     const tb = document.getElementById('projects-tbody');
     tb.innerHTML = '';
     if (!j.projects.length) {
-      tb.innerHTML = '<tr><td colspan="5" class="small">暂无项目</td></tr>';
+      tb.innerHTML = '<tr><td colspan="6" class="small">暂无项目</td></tr>';
       return;
     }
     for (const p of j.projects) {
@@ -273,17 +275,21 @@ async function loadProjects() {
         pill = '<span class="pill-ok">' + p.status + '</span>';
       }
       if (p.status === 'failed' || p.status === 'error') pill = '<span class="pill-bad">failed</span>';
+      const watch = (p.status === 'released' || p.status === 'succeeded' || p.status === 'completed')
+        ? `<a href="/gallery?project=${p.project_id}" style="color:var(--accent2)">观看</a>`
+        : '<span class="small">—</span>';
       tr.innerHTML =
         `<td><code>${p.project_id || '-'}</code></td>`
       + `<td>${pill}</td>`
       + `<td>${p.genre || '-'}</td>`
       + `<td>${p.stage || '-'}</td>`
+      + `<td>${watch}</td>`
       + `<td><a href="#" onclick="alert(JSON.stringify(${JSON.stringify(p).replace(/"/g, '&quot;')}, null, 2));return false">详情</a></td>`;
       tb.appendChild(tr);
     }
   } catch (e) {
     document.getElementById('projects-tbody').innerHTML =
-      '<tr><td colspan="5" class="small">列表暂不可用</td></tr>';
+      '<tr><td colspan="6" class="small">列表暂不可用</td></tr>';
   }
 }
 
@@ -299,7 +305,7 @@ async function createProject() {
   };
   const r = await jpost('/v1/projects', body);
   document.getElementById('create-result').innerHTML =
-    `<br>项目 <code>${r.project_id}</code> 已 ${r.status}.`;
+    `<br>项目 <code>${r.project_id}</code> 已 ${r.status}。完成后可在 <a href="/gallery?project=${r.project_id}" style="color:var(--accent2)">视频广场</a> 观看。`;
   loadProjects();
 }
 

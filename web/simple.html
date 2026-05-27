@@ -42,6 +42,7 @@
       <a href="/console/simple.html" class="active">Simple</a>
       <a href="/console/pro.html">Pro</a>
       <a href="/console/guide.html">使用说明</a>
+      <a href="/gallery">视频广场</a>
     </nav>
   </header>
   <main>
@@ -81,7 +82,7 @@
         resultEl.innerHTML = badges + `<br>项目 <b>${projectId}</b> · 状态 <b>${st}</b> · 阶段 ${j.stage || '-'}`;
         if (['released', 'succeeded', 'completed', 'failed', 'error'].includes(st)) {
           if (st === 'released' || st === 'succeeded' || st === 'completed') {
-            resultEl.innerHTML += '<br>✓ 出片完成，可在控制台查看 manifest / 导出包。';
+            resultEl.innerHTML += `<br>✓ 出片完成！<a href="/gallery?project=${projectId}" style="color:var(--accent2)">前往视频广场观看 →</a>`;
           }
           return;
         }

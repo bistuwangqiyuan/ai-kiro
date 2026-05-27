@@ -43,6 +43,12 @@ from manhuaju.core.workflow_config import load_distribution_config, load_workflo
 from manhuaju.core.workflow_stage import WorkflowStage, emit_workflow_stage
 from manhuaju.pipelines.project_flow import ProjectFlowConfig, ProjectPipeline
 from manhuaju.services.batch_scheduler import BatchScheduler
+from manhuaju.services.video_gallery import (
+    VideoGallery,
+    publish_project_videos,
+    seed_bundled_samples,
+    video_to_dict,
+)
 from manhuaju.utils.paths import config_dir
 
 
@@ -112,6 +118,56 @@ def create_app(
         db_path=root / "batch.sqlite",
         executor=_project_executor,
     )
+    gallery = VideoGallery(root / "gallery.sqlite")
+
+    def _get_tos() -> Any:
+        from manhuaju.adapters.storage.tos_storage import TOSStorage
+
+        return TOSStorage(settings=settings, local_fallback_root=root / "_tos")
+
+    def _publish_to_gallery(
+        project_id: str,
+        manifest: dict[str, Any] | None,
+        *,
+        title: str = "",
+        genre: str = "ancient",
+    ) -> list[dict[str, Any]]:
+        if not manifest:
+            return []
+        try:
+            published = publish_project_videos(
+                gallery=gallery,
+                storage_root=root,
+                project_id=project_id,
+                manifest=manifest,
+                title=title or project_id,
+                genre=genre,
+                tos=_get_tos(),
+            )
+            return [video_to_dict(v) for v in published]
+        except Exception:  # noqa: BLE001
+            return []
+
+    def _backfill_gallery() -> None:
+        try:
+            for key in repo.scan("project:"):
+                pid = key.replace("project:", "")
+                if gallery.list_videos(project_id=pid):
+                    continue
+                raw = repo.get(key)
+                if not raw:
+                    continue
+                data = json.loads(raw)
+                if data.get("status") not in ("released", "succeeded", "completed"):
+                    continue
+                _publish_to_gallery(
+                    pid,
+                    data.get("manifest"),
+                    title=str(data.get("title") or pid),
+                    genre=str(data.get("genre") or "ancient"),
+                )
+        except Exception:  # noqa: BLE001
+            pass
 
     def _ctx(project_id: str) -> AgentContext:
         base = root / project_id
@@ -124,9 +180,12 @@ def create_app(
         )
 
     def _run_project(project_id: str, body: ProjectCreateRequest) -> None:
+        meta_raw = repo.get(f"project:{project_id}")
+        meta = json.loads(meta_raw) if meta_raw else {}
+        title = str(meta.get("title") or project_id)
         repo.set(
             f"project:{project_id}",
-            json.dumps({"status": "running", "stage": WorkflowStage.ANALYZE.value}),
+            json.dumps({"status": "running", "stage": WorkflowStage.ANALYZE.value, **meta}),
         )
         ctx = _ctx(project_id)
         emit_workflow_stage(ctx.bus, project_id=project_id, stage=WorkflowStage.ANALYZE)
@@ -141,15 +200,24 @@ def create_app(
                 out_dir=root / project_id / "output",
             )
         )
+        manifest = result.get("manifest")
+        status = result.get("status", "failed")
+        gallery_videos: list[dict[str, Any]] = []
+        if status in ("released", "succeeded", "completed") and manifest:
+            gallery_videos = _publish_to_gallery(
+                project_id, manifest, title=title, genre=body.genre
+            )
         repo.set(
             f"project:{project_id}",
             json.dumps(
                 {
-                    "status": result.get("status", "failed"),
+                    "status": status,
                     "stage": WorkflowStage.DISTRIBUTION.value,
-                    "manifest": result.get("manifest"),
+                    "manifest": manifest,
                     "genre": body.genre,
                     "platforms": body.platforms,
+                    "title": title,
+                    "gallery_videos": gallery_videos,
                 },
                 ensure_ascii=False,
             ),
@@ -369,6 +437,55 @@ def create_app(
     def render_webhook(payload: dict[str, Any]) -> dict[str, str]:
         return {"status": "accepted", "task_id": str(payload.get("task_id", ""))}
 
+    # ---- video gallery ----
+    @app.get("/v1/gallery")
+    def list_gallery(limit: int = 100, project_id: str | None = None) -> dict[str, Any]:
+        videos = gallery.list_videos(limit=limit, project_id=project_id)
+        return {"videos": [video_to_dict(v) for v in videos], "count": len(videos)}
+
+    @app.get("/v1/gallery/{video_id}")
+    def get_gallery_video(video_id: str) -> dict[str, Any]:
+        v = gallery.get(video_id)
+        if not v:
+            raise HTTPException(status_code=404, detail="video not found")
+        return video_to_dict(v)
+
+    @app.get("/media/videos/{video_id}")
+    def stream_gallery_video(video_id: str) -> Any:
+        from fastapi.responses import FileResponse
+
+        v = gallery.get(video_id)
+        if not v:
+            raise HTTPException(status_code=404, detail="video not found")
+        if v.video_url.startswith("http"):
+            from fastapi.responses import RedirectResponse
+
+            return RedirectResponse(v.video_url)
+        path = Path(v.local_video)
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="video file missing")
+        return FileResponse(path, media_type="video/mp4", filename=f"{v.episode_id}.mp4")
+
+    @app.get("/media/covers/{video_id}")
+    def stream_gallery_cover(video_id: str) -> Any:
+        from fastapi.responses import FileResponse
+
+        v = gallery.get(video_id)
+        if not v or not v.local_cover:
+            raise HTTPException(status_code=404, detail="cover not found")
+        path = Path(v.local_cover)
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="cover file missing")
+        return FileResponse(path, media_type="image/jpeg")
+
+    @app.on_event("startup")
+    def _startup_gallery() -> None:
+        from manhuaju.utils.paths import project_root
+
+        web_dir = project_root() / "web"
+        seed_bundled_samples(gallery=gallery, web_dir=web_dir)
+        _backfill_gallery()
+
     # ---- console (静态文件) ----
     from manhuaju.utils.paths import project_root
 
@@ -387,6 +504,10 @@ def create_app(
         def user_guide() -> Any:
             return FileResponse(web_dir / "guide.html")
 
+        @app.get("/gallery")
+        def video_gallery_page() -> Any:
+            return FileResponse(web_dir / "gallery.html")
+
     # ---- shutdown ----
     @app.on_event("shutdown")
     def _shutdown() -> None:  # noqa: D401
@@ -399,6 +520,7 @@ def create_app(
     app.state.review_gate = review_gate
     app.state.batch_scheduler = batch_scheduler
     app.state.version_store = version_store
+    app.state.gallery = gallery
     return app
 
 

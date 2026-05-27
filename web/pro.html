@@ -46,6 +46,7 @@
       <a href="/console/simple.html">Simple</a>
       <a href="/console/pro.html" class="active">Pro</a>
       <a href="/console/guide.html">使用说明</a>
+      <a href="/gallery">视频广场</a>
     </nav>
   </header>
   <div class="container">
@@ -146,7 +147,10 @@
         if (!pr.ok) break;
         const st = (await pr.json()).status;
         if (['released', 'succeeded', 'completed', 'failed', 'error'].includes(st)) {
-          alert(st === 'failed' || st === 'error' ? '制作失败' : '制作完成：' + st);
+          alert(st === 'failed' || st === 'error' ? '制作失败' : '制作完成！可在视频广场观看：' + j.project_id);
+          if (st === 'released' || st === 'succeeded' || st === 'completed') {
+            location.href = '/gallery?project=' + j.project_id;
+          }
           break;
         }
         await new Promise((ok) => setTimeout(ok, 3000));
