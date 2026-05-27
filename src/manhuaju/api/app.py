@@ -48,6 +48,7 @@ from manhuaju.services.video_gallery import (
     publish_project_videos,
     rebind_gallery_to_samples,
     seed_bundled_samples,
+    normalize_gallery_play_urls,
     video_to_dict,
 )
 from manhuaju.utils.paths import config_dir
@@ -462,14 +463,14 @@ def create_app(
         v = gallery.get(video_id)
         if not v:
             raise HTTPException(status_code=404, detail="video not found")
+        path = Path(v.local_video)
+        if path.is_file():
+            return FileResponse(path, media_type="video/mp4", filename=f"{v.episode_id}.mp4")
         if v.video_url.startswith("http"):
             from fastapi.responses import RedirectResponse
 
             return RedirectResponse(v.video_url)
-        path = Path(v.local_video)
-        if not path.is_file():
-            raise HTTPException(status_code=404, detail="video file missing")
-        return FileResponse(path, media_type="video/mp4", filename=f"{v.episode_id}.mp4")
+        raise HTTPException(status_code=404, detail="video file missing")
 
     @app.get("/media/covers/{video_id}")
     def stream_gallery_cover(video_id: str) -> Any:
@@ -492,6 +493,7 @@ def create_app(
             gallery.delete(legacy_id)
         seed_bundled_samples(gallery=gallery, web_dir=web_dir)
         rebind_gallery_to_samples(gallery=gallery, web_dir=web_dir)
+        normalize_gallery_play_urls(gallery=gallery)
         _backfill_gallery()
 
     # ---- console (静态文件) ----

@@ -329,8 +329,7 @@ def _publish_one(
 
     if tos is not None and getattr(tos, "configured", False):
         try:
-            up = tos.upload_file(mp4, key=tos_key, content_type="video/mp4")
-            video_url = up.public_url
+            tos.upload_file(mp4, key=tos_key, content_type="video/mp4")
             if cover and cover.is_file():
                 cup = tos.upload_file(cover, key=cover_key, content_type="image/jpeg")
                 cover_url = cup.public_url
@@ -423,6 +422,21 @@ def rebind_gallery_to_samples(
         gallery.add(v)
         updated += 1
     return updated
+
+
+def normalize_gallery_play_urls(
+    *,
+    gallery: VideoGallery,
+    media_url_prefix: str = "/media/videos",
+) -> int:
+    """Ensure video_url points at /media/videos/{id} when local sample exists."""
+    fixed = 0
+    for v in gallery.list_videos(limit=500):
+        if Path(v.local_video).is_file() and not v.video_url.startswith(media_url_prefix):
+            v.video_url = f"{media_url_prefix}/{v.video_id}"
+            gallery.add(v)
+            fixed += 1
+    return fixed
 
 
 def video_to_dict(v: GalleryVideo) -> dict[str, Any]:

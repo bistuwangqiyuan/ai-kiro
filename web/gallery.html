@@ -77,7 +77,6 @@
     let allVideos = [];
 
     function playUrl(v) {
-      if (v.video_url && v.video_url.startsWith('http')) return v.video_url;
       return '/media/videos/' + v.video_id;
     }
     function coverUrl(v) {
