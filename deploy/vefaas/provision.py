@@ -230,7 +230,17 @@ def _build_source_access_update(env: dict[str, str]) -> Any | None:
 
 
 def _release(fid: str, fn_name: str) -> None:
-    """Publish the function's Latest code as a new revision (revision_number=0 ⇒ Latest)."""
+    """Publish the function's Latest code as a new revision (revision_number=0 ⇒ Latest).
+
+    We submit the release call up to three times with a short backoff. If a
+    previous release is still ``inprogress`` the API briefly returns 403; in
+    that case we wait for it to settle and retry. We then poll
+    ``get_release_status`` until ``done`` so the caller knows the new image is
+    actually serving traffic (otherwise ``update_function`` only changes the
+    Latest snapshot and production keeps the old revision).
+    """
+    import time as _time
+
     import volcenginesdkvefaas as vefaas
 
     api = vefaas.VEFAASApi()
@@ -240,16 +250,56 @@ def _release(fid: str, fn_name: str) -> None:
         target_traffic_weight=100,
         description=f"auto-publish {fn_name}",
     )
-    for attempt in (1, 2):
+
+    submitted = False
+    for attempt in range(1, 4):
         try:
             api.release(req)
-            print(f"[vefaas] OK {fn_name} release submitted (revision_number=0)")
-            return
+            print(
+                f"[vefaas] OK {fn_name} release submitted (rev=0, weight=100, attempt={attempt})"
+            )
+            submitted = True
+            break
         except Exception as e:  # noqa: BLE001
-            if attempt == 1:
-                print(f"[vefaas] i release attempt {attempt} failed, retrying: {type(e).__name__}")
+            msg = str(e)[:200]
+            transient = "403" in msg or "in progress" in msg.lower() or "inprogress" in msg.lower()
+            if attempt < 3 and transient:
+                print(
+                    f"[vefaas] i release attempt {attempt} transient ({type(e).__name__}); "
+                    "waiting 8s and retrying"
+                )
+                _time.sleep(8)
                 continue
-            print(f"[vefaas] i release skipped: {type(e).__name__}: {str(e)[:200]}")
+            print(f"[vefaas] i release skipped: {type(e).__name__}: {msg}")
+            return
+
+    if not submitted:
+        return
+
+    # Poll until the new revision becomes the stable one (timeout 5 min).
+    start = _time.time()
+    last = ""
+    while _time.time() - start < 300:
+        try:
+            rs = api.get_release_status(vefaas.GetReleaseStatusRequest(function_id=fid))
+            st = getattr(rs, "status", None)
+            stable = getattr(rs, "stable_revision_number", None)
+            line = f"status={st} stable={stable}"
+            if line != last:
+                print(f"[vefaas] release poll {line}")
+                last = line
+            if st in ("done", "succeed", "succeeded"):
+                return
+            if st == "failed":
+                print(
+                    f"[vefaas] release FAILED code={getattr(rs,'error_code',None)} "
+                    f"msg={getattr(rs,'status_message',None)}"
+                )
+                return
+        except Exception as e:  # noqa: BLE001
+            print(f"[vefaas] poll err: {type(e).__name__}: {str(e)[:160]}")
+        _time.sleep(5)
+    print(f"[vefaas] release polling timed out after 300s")
 
 
 def ensure_function(*, fn_name: str, image: str, command: str | None,

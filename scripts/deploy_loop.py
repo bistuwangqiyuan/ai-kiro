@@ -38,20 +38,31 @@ import sys
 import time
 from pathlib import Path
 
+# Force UTF-8 for our own console output so Chinese / em-dash characters from
+# the gate don't blow up Windows GBK consoles.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 GATE_SCRIPT = REPO_ROOT / "scripts" / "user_portal_gate.py"
 PROVISION_SCRIPT = REPO_ROOT / "deploy" / "vefaas" / "provision.py"
 
 DEFAULT_BASE = "https://sd8ap3btqc6mqij6t2bsg.apigateway-cn-beijing.volceapi.com"
 
-PASS_RE = re.compile(r"^\[(PASS|FAIL)\]\s+(\S+)\s+—\s*(.*)$")
+PASS_RE = re.compile(r"^\[(PASS|FAIL)\]\s+(\S+)\s+[\u2014\-\uFFFD]\s*(.*)$")
 
 
 def _run(cmd: list[str], *, env: dict[str, str] | None = None) -> tuple[int, str]:
+    # Force the child to write UTF-8 to its stdout/stderr so we can decode it
+    # cleanly on Windows (where the default console code page is GBK).
+    base_env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
     proc = subprocess.run(
         cmd,
         cwd=str(REPO_ROOT),
-        env={**os.environ, **(env or {})},
+        env={**base_env, **(env or {})},
         capture_output=True,
         text=True,
         encoding="utf-8",
