@@ -154,6 +154,7 @@ def create_app(
         *,
         title: str = "",
         genre: str = "ancient",
+        run_mode: str = "",
     ) -> list[dict[str, Any]]:
         if not manifest:
             return []
@@ -161,6 +162,13 @@ def create_app(
             from manhuaju.utils.paths import project_root
 
             web_dir = project_root() / "web"
+            # ``run_mode`` is the bundle mode that produced the manifest.
+            # Mock runs have tiny synthetic MP4s so we still want the curated
+            # sample fallback to give visitors a watchable preview. Live /
+            # hybrid runs must surface the real ``final_mp4`` from the
+            # manifest, even if it's smaller than a sample.
+            mode = (run_mode or str(cfg.get("mode", "mock"))).lower()
+            prefer_real = not mode.startswith("mock")
             published = publish_project_videos(
                 gallery=gallery,
                 storage_root=root,
@@ -170,6 +178,7 @@ def create_app(
                 genre=genre,
                 tos=_get_tos(),
                 web_dir=web_dir,
+                prefer_real_render=prefer_real,
             )
             return [video_to_dict(v) for v in published]
         except Exception:  # noqa: BLE001
@@ -206,6 +215,34 @@ def create_app(
             config=cfg,
         )
 
+    def _build_run_bundle(project_id: str) -> tuple[Any, str]:
+        """Try to build a real adapter bundle. Returns (bundle, mode_label).
+
+        ``mode_label`` is one of ``mock``, ``live``, ``hybrid``,
+        ``hybrid-degraded`` or ``mock-fallback`` (the last meaning we tried to
+        build a real bundle but it failed, so we fell back to mock).
+        """
+        try:
+            from manhuaju.core.adapter_factory import build_bundle
+
+            bundle = build_bundle(storage_root=root / project_id / "output")
+            mode_label = str(getattr(bundle, "mode", "mock"))
+            engine = str(getattr(bundle, "video_engine", "auto"))
+            print(
+                f"[run] {project_id} bundle.mode={mode_label} engine={engine} "
+                f"render_primary={type(bundle.render_primary).__name__} "
+                f"llm={type(bundle.llm).__name__}",
+                flush=True,
+            )
+            return bundle, mode_label
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f"[run] {project_id} build_bundle failed: "
+                f"{type(exc).__name__}: {exc}",
+                flush=True,
+            )
+            return None, "mock-fallback"
+
     def _run_project(project_id: str, body: ProjectCreateRequest) -> None:
         meta_raw = repo.get(f"project:{project_id}")
         meta = json.loads(meta_raw) if meta_raw else {}
@@ -217,7 +254,8 @@ def create_app(
         )
         ctx = _ctx(project_id)
         emit_workflow_stage(ctx.bus, project_id=project_id, stage=WorkflowStage.ANALYZE)
-        pipe = ProjectPipeline(ctx, redlines=[])
+        bundle, run_mode = _build_run_bundle(project_id)
+        pipe = ProjectPipeline(ctx, redlines=[], bundle=bundle)
         result = pipe.run(
             ProjectFlowConfig(
                 project_id=project_id,
@@ -233,7 +271,11 @@ def create_app(
         gallery_videos: list[dict[str, Any]] = []
         if status in ("released", "succeeded", "completed") and manifest:
             gallery_videos = _publish_to_gallery(
-                project_id, manifest, title=title, genre=body.genre
+                project_id,
+                manifest,
+                title=title,
+                genre=body.genre,
+                run_mode=run_mode,
             )
         repo.set(
             f"project:{project_id}",

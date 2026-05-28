@@ -232,8 +232,21 @@ def publish_project_videos(
     tos: Any | None = None,
     media_url_prefix: str = "/media/videos",
     web_dir: Path | None = None,
+    prefer_real_render: bool = False,
+    real_min_bytes: int = 200_000,
 ) -> list[GalleryVideo]:
-    """Register gallery entries using real sample/ MP4s (not hybrid mock renders)."""
+    """Register gallery entries from a project manifest.
+
+    ``prefer_real_render`` controls the priority:
+
+    *   ``True`` (live / hybrid bundle produced the manifest) — use the real
+        ``final_mp4`` from the manifest first; only fall back to a curated
+        sample MP4 if the render is missing or smaller than ``real_min_bytes``
+        (which heuristically catches mock-style 30 KB stub outputs).
+    *   ``False`` (default, mock pipeline) — keep the legacy behavior of
+        substituting a curated sample MP4 so visitors still see a watchable
+        preview rather than a 1 s synthetic stub.
+    """
     published: list[GalleryVideo] = []
     pool = load_sample_pool(web_dir) if web_dir else []
     exports: list[dict[str, Any]] = manifest.get("exports") or []
@@ -244,9 +257,21 @@ def publish_project_videos(
         if ep in seen_eps:
             return
         seen_eps.add(ep)
-        mp4 = pick_sample_mp4(pool, ep, project_id) if pool else None
-        if not mp4:
-            mp4 = _fallback_pipeline_mp4(storage_root, project_id, manifest, ep)
+        real_mp4 = _fallback_pipeline_mp4(storage_root, project_id, manifest, ep)
+        sample_mp4 = pick_sample_mp4(pool, ep, project_id) if pool else None
+
+        if prefer_real_render:
+            mp4 = real_mp4
+            if not (mp4 and mp4.is_file() and mp4.stat().st_size >= real_min_bytes):
+                # Real render missing or suspiciously tiny → only show the
+                # sample fallback if no real render at all (we never want to
+                # silently mask a real but failed render with a sample).
+                if real_mp4 and real_mp4.is_file():
+                    mp4 = real_mp4  # use the real one even if small — user asked for real
+                else:
+                    mp4 = sample_mp4
+        else:
+            mp4 = sample_mp4 or real_mp4
         if not mp4:
             return
         published.extend(
@@ -263,6 +288,7 @@ def publish_project_videos(
                 tos=tos,
                 media_url_prefix=media_url_prefix,
                 created_at=now,
+                is_sample=(mp4 == sample_mp4 and sample_mp4 is not None),
             )
         )
 
@@ -312,6 +338,7 @@ def _publish_one(
     tos: Any | None,
     media_url_prefix: str,
     created_at: str,
+    is_sample: bool = False,
 ) -> list[GalleryVideo]:
     mp4 = Path(mp4_path)
     if not mp4.is_file():
@@ -345,7 +372,7 @@ def _publish_one(
         platform=platform,
         video_url=video_url,
         cover_url=cover_url,
-        is_sample=False,
+        is_sample=bool(is_sample),
         created_at=created_at,
         local_video=str(mp4),
         local_cover=str(cover) if cover else "",
