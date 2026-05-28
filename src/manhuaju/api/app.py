@@ -125,8 +125,12 @@ def create_app(
     settings = get_provider_settings(refresh=True)
 
     def _project_executor(job: Any) -> dict[str, Any]:
-        body = ProjectCreateRequest.model_validate(job.project_spec)
-        project_id = f"proj_{uuid.uuid4().hex[:12]}"
+        spec = dict(job.project_spec or {})
+        # `_project_id` (when present) lets the API enqueue a job that is
+        # tracked under a project_id we already returned to the client, so
+        # polling /v1/projects/{pid} keeps working across the queue boundary.
+        project_id = str(spec.pop("_project_id", "") or "") or f"proj_{uuid.uuid4().hex[:12]}"
+        body = ProjectCreateRequest.model_validate(spec)
         _run_project(project_id, body)
         return {"project_id": project_id, "status": "completed"}
 
@@ -315,6 +319,51 @@ def create_app(
             ),
         }
 
+    @app.get("/v1/diagnostics/bundle")
+    def diagnostics_bundle() -> dict[str, Any]:
+        """Inspect what the runtime adapter bundle looks like for new projects.
+
+        Useful when a project completes suspiciously fast (mock-style) on a
+        hybrid deployment — this endpoint reveals which class is actually
+        wired into ``render_primary`` etc., so you can tell whether silent
+        ``mock_fallback`` is being injected.
+        """
+        bundle, mode_label = _build_run_bundle("__diag__")
+        if bundle is None:
+            return {"ok": False, "mode": mode_label, "error": "build_bundle failed"}
+
+        def _cls(obj: Any) -> str:
+            return type(obj).__name__ if obj is not None else ""
+
+        return {
+            "ok": True,
+            "mode": mode_label,
+            "video_engine": str(getattr(bundle, "video_engine", "")),
+            "adapters": {
+                "llm": _cls(bundle.llm),
+                "llm_native": _cls(bundle.llm_native),
+                "render_primary": _cls(bundle.render_primary),
+                "render_fallback": _cls(bundle.render_fallback),
+                "image": _cls(bundle.image),
+                "image_variant": _cls(bundle.image_variant),
+                "tts": _cls(bundle.tts),
+                "music": _cls(bundle.music),
+                "sfx": _cls(bundle.sfx),
+                "qa": _cls(bundle.qa),
+                "vlm": _cls(bundle.vlm),
+                "moderation": _cls(bundle.moderation),
+                "embedding": _cls(bundle.embedding),
+                "storage_tos": _cls(bundle.storage_tos),
+                "manhuaju_video_generator": _cls(bundle.manhuaju_video_generator),
+            },
+            "settings": {
+                "has_any_llm": settings.has_any_llm,
+                "has_anthropic": settings.has_anthropic,
+                "has_xiaoyunque": settings.has_xiaoyunque,
+                "has_tos": settings.has_tos,
+            },
+        }
+
     @app.post("/v1/projects")
     def create_project(
         body: dict[str, Any],
@@ -322,7 +371,8 @@ def create_app(
         current_user: dict[str, Any] | None = Depends(current_user_optional),
     ) -> dict[str, str]:
         try:
-            req = ProjectCreateRequest.model_validate(resolve_project_create(body))
+            resolved = resolve_project_create(body)
+            req = ProjectCreateRequest.model_validate(resolved)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         project_id = f"proj_{uuid.uuid4().hex[:12]}"
@@ -339,8 +389,50 @@ def create_app(
                 }
             ),
         )
+        # When the deployment has a real adapter bundle (live / hybrid +
+        # provider keys present), real Xiaoyunque rendering takes 5-15 min
+        # per episode. FastAPI BackgroundTasks live inside the FaaS request
+        # context and may be killed when the function instance is recycled,
+        # so we instead enqueue a batch job and let the cron-driven
+        # ``worker_tick`` (1 min cadence, 1500 s budget per tick) drain it.
+        # In mock mode the job finishes in ~1 s so bg.add_task is fine and
+        # avoids the 1 min cron lag.
+        sysmode = str(cfg.get("mode", "mock")).lower()
+        use_queue = sysmode in ("live", "hybrid") and (
+            settings.has_xiaoyunque or settings.has_any_llm
+        )
+        spec = req.model_dump()
+        spec["_project_id"] = project_id
+        if use_queue:
+            try:
+                job_id = batch_scheduler.enqueue(
+                    template_id=str(resolved.get("template_id") or "default"),
+                    project_spec=spec,
+                )
+                # Best-effort kick: if the worker_tick is idle this drains
+                # the new job immediately instead of waiting up to 60 s for
+                # the next cron beat.
+                bg.add_task(batch_scheduler.run_next)
+                return {
+                    "project_id": project_id,
+                    "status": "queued",
+                    "owner": owner or "",
+                    "job_id": job_id,
+                    "executor": "batch",
+                }
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"[create_project] batch enqueue failed for {project_id}: "
+                    f"{type(exc).__name__}: {exc}; falling back to bg.add_task",
+                    flush=True,
+                )
         bg.add_task(_run_project, project_id, req)
-        return {"project_id": project_id, "status": "queued", "owner": owner or ""}
+        return {
+            "project_id": project_id,
+            "status": "queued",
+            "owner": owner or "",
+            "executor": "background_task",
+        }
 
     @app.get("/v1/projects")
     def list_projects(

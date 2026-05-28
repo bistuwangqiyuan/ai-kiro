@@ -8,7 +8,7 @@ display_name_zh: "都市经典短剧"
 display_name_en: "Urban Classic Drama"
 
 defaults:
-  episode_count: 3
+  episode_count: 1
   episode_duration_s: 60
   genre: cdrama_classic
   style_preset_id: cinematic_2d_v1
