@@ -107,11 +107,11 @@
       <option value="urban">都市</option>
     </select>
 
-    <label>集数</label>
-    <input id="episode-count" type="number" value="3" min="1" max="120" />
+    <label>集数 <span class="small">（默认 1 集，最短体验真实接口）</span></label>
+    <input id="episode-count" type="number" value="1" min="1" max="120" />
 
-    <label>每集时长 (秒)</label>
-    <input id="episode-duration" type="number" value="75" min="30" max="180" />
+    <label>每集时长 (秒) <span class="small">（默认 30s，跑通真实流水线最快）</span></label>
+    <input id="episode-duration" type="number" value="30" min="30" max="180" />
 
     <label>分发平台 (逗号分隔)</label>
     <input id="platforms" value="douyin,kuaishou,weixin" />

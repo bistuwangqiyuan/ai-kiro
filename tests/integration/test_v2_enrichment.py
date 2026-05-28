@@ -33,7 +33,9 @@ def test_preflight_simple_mode_with_template() -> None:
     assert isinstance(res, PreflightResult)
     assert res.rendered_template is not None
     assert res.rendered_template.template_id == "cdrama_classic"
-    assert res.resolved_payload["episode_count"] == 3
+    # Simple-mode default is now "1 shortest episode" so the deploy-loop
+    # gate can finish a real render inside the FaaS timeout.
+    assert res.resolved_payload["episode_count"] == 1
 
 
 def test_preflight_pro_mode_no_template() -> None:

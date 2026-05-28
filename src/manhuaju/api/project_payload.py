@@ -58,11 +58,15 @@ def resolve_project_create(
     return {
         "novel_text": novel_text[:50_000],
         "seed": int(data.get("seed", 20260516)),
-        "episode_count": int(data.get("episode_count", 3)),
+        # Default to 1 shortest episode so anonymous users + the deploy-loop
+        # gates can finish a real generation inside the FaaS request budget
+        # (~30 min) without burning multiple episodes' worth of credits per
+        # smoke run. Pro mode lets users override.
+        "episode_count": int(data.get("episode_count", 1)),
         "style_preset_id": str(data.get("style_preset_id", "cinematic_2d_v1")),
         "genre": genre,
         "target_audience": str(data.get("target_audience", "general")),
-        "episode_duration_s": int(data.get("episode_duration_s", 75)),
+        "episode_duration_s": int(data.get("episode_duration_s", 30)),
         "template_id": str(template_id) if template_id else None,
         "platforms": list(platforms),
     }

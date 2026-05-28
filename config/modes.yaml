@@ -18,11 +18,11 @@ modes:
       - outfit_arcface_min
       - frame_repair_thresholds
     defaults:
-      episode_count: 3
+      episode_count: 1
       style_preset_id: cinematic_2d_v1
       genre: cdrama_classic
       target_audience: general
-      episode_duration_s: 60
+      episode_duration_s: 30
       render_tier: M
       parallel_render_slots: 8
       repair_max_attempts: 4

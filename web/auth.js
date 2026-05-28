@@ -112,7 +112,8 @@
         }
       } else {
         el.innerHTML =
-          '<a href="/login" style="font-size:13px;color:var(--accent2,#7fb3ff);text-decoration:none;white-space:nowrap;display:inline-block;padding:2px 6px">登录 / 注册</a>';
+          '<span class="auth-anon" style="font-size:12px;color:var(--muted,#8a93a1);white-space:nowrap">匿名访客 · 全部功能可用</span>' +
+          '<a href="/login" style="font-size:13px;color:var(--accent2,#7fb3ff);text-decoration:none;white-space:nowrap;display:inline-block;padding:2px 6px;margin-left:8px">登录 / 注册（可选）</a>';
       }
     }
     paint();

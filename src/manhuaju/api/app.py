@@ -68,11 +68,14 @@ class AuthCredentials(BaseModel):
 class ProjectCreateRequest(BaseModel):
     novel_text: str = Field(min_length=10)
     seed: int = 20260516
-    episode_count: int = 3
+    # Default = 1 shortest episode → real generation completes within the
+    # 30 min FaaS request_timeout and limits cost per smoke run. Pro users
+    # can override either field via the form.
+    episode_count: int = 1
     style_preset_id: str = "cinematic_2d_v1"
     genre: str = "ancient"
     target_audience: str = "general"
-    episode_duration_s: int = 75
+    episode_duration_s: int = 30
     template_id: str | None = None
     platforms: list[str] = Field(default_factory=lambda: ["douyin", "kuaishou", "weixin"])
 

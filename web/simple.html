@@ -49,7 +49,7 @@
   <main>
     <div class="panel">
       <h2>一键出片</h2>
-      <p class="hint">输入小说文本，剩下交给我们。预设：60s 短剧 / 古装 / M-tier 渲染 / 双层风控。</p>
+      <p class="hint">输入小说文本，剩下交给我们。预设：1 集 30s 短剧 / 古装 / M-tier 渲染 / 双层风控（免登录可用）。</p>
       <form id="form">
         <label for="title">作品标题</label>
         <input id="title" name="title" placeholder="《奶茶街的姐姐》" required />
@@ -74,7 +74,7 @@
     const _fetch = (typeof authedFetch === 'function') ? authedFetch : fetch;
     const form = document.getElementById('form');
     const resultEl = document.getElementById('result');
-    const badges = '<span class="badge">mode=simple</span><span class="badge">episode=3</span><span class="badge">duration=60s</span><span class="badge">tier=M</span>';
+    const badges = '<span class="badge">mode=simple</span><span class="badge">episode=1</span><span class="badge">duration=30s</span><span class="badge">tier=M</span>';
     resultEl.innerHTML = badges;
 
     async function pollProject(projectId) {

@@ -21,8 +21,11 @@ def test_simple_mode_payload(router: ModeRouter) -> None:
         "language": "zh",
     }
     out = resolve_project_create(raw, router=router)
-    assert out["episode_count"] == 3
-    assert out["episode_duration_s"] == 60
+    # Simple-mode defaults are now "1 shortest episode" so anonymous users
+    # and the deploy-loop smoke gate can finish a real render inside the
+    # 30 min FaaS request budget.
+    assert out["episode_count"] == 1
+    assert out["episode_duration_s"] == 30
     assert out["genre"] == "modern"
     assert out["template_id"] == "cdrama_classic"
     assert len(out["novel_text"]) >= 10

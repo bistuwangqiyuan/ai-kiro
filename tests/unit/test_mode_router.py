@@ -42,7 +42,9 @@ def test_simple_preset_byte_identical(router: ModeRouter) -> None:
     b = router.route("simple", {"title": "x", "novel_text": "y"})
     assert a == b
     assert a["render_tier"] == "M"
-    assert a["episode_count"] == 3
+    # Default = 1 shortest episode (so anonymous + smoke runs finish a real
+    # render inside the 30 min FaaS timeout). Pro mode lets users override.
+    assert a["episode_count"] == 1
 
 
 def test_locked_param_returns_409(router: ModeRouter) -> None:
