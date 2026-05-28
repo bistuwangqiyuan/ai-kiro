@@ -121,11 +121,12 @@ class BatchScheduler:
 
     def list_jobs(self, *, limit: int = 200) -> list[dict[str, Any]]:
         with sqlite3.connect(self._db) as c:
-            rows = c.execute(
+            cur = c.execute(
                 "SELECT * FROM manhuaju_batch_jobs ORDER BY created_at DESC LIMIT ?",
                 (limit,),
-            ).fetchall()
-            cols = [d[0] for d in c.description]
+            )
+            rows = cur.fetchall()
+            cols = [d[0] for d in cur.description]
         out = []
         for r in rows:
             rec = dict(zip(cols, r, strict=False))
@@ -136,12 +137,13 @@ class BatchScheduler:
 
     def get_job(self, job_id: str) -> dict[str, Any] | None:
         with sqlite3.connect(self._db) as c:
-            row = c.execute(
+            cur = c.execute(
                 "SELECT * FROM manhuaju_batch_jobs WHERE job_id = ?", (job_id,)
-            ).fetchone()
+            )
+            row = cur.fetchone()
             if not row:
                 return None
-            cols = [d[0] for d in c.description]
+            cols = [d[0] for d in cur.description]
         rec = dict(zip(cols, row, strict=False))
         rec["project_spec"] = json.loads(rec["project_spec"])
         rec["result"] = json.loads(rec["result"])
