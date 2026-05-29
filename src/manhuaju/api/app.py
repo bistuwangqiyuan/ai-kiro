@@ -76,6 +76,9 @@ class ProjectCreateRequest(BaseModel):
     genre: str = "ancient"
     target_audience: str = "general"
     episode_duration_s: int = 30
+    resolution: str = "720p"
+    aspect_ratio: str = "16:9"
+    visual_style: str = ""
     template_id: str | None = None
     platforms: list[str] = Field(default_factory=lambda: ["douyin", "kuaishou", "weixin"])
 
@@ -270,6 +273,11 @@ def create_app(
                 seed=body.seed,
                 episode_count=body.episode_count,
                 style_preset_id=body.style_preset_id,
+                genre=body.genre,
+                aspect_ratio=body.aspect_ratio,
+                resolution=body.resolution,
+                episode_duration_s=body.episode_duration_s,
+                visual_style=body.visual_style,
                 out_dir=root / project_id / "output",
             )
         )

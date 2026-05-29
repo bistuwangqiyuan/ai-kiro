@@ -17,8 +17,14 @@ class EpisodePlannerAgent(BaseAgent):
     def run(self, req: AgentRunRequest) -> AgentRunResponse:
         bp = req.inputs["blueprint"]
         episode_count: int = req.inputs.get("episode_count", 3)
+        episode_duration_s: int = int(req.inputs.get("episode_duration_s", 75))
         seed: int = req.seed or 1
-        plan = self.llm.episode_plan(blueprint=bp, episode_count=episode_count, seed=seed)
+        plan = self.llm.episode_plan(
+            blueprint=bp,
+            episode_count=episode_count,
+            seed=seed,
+            episode_duration_s=episode_duration_s,
+        )
         body = to_canonical(plan)
         key = f"{req.context.project_id}/02_plan/episode_plan.json"
         path = self.ctx.storage.write_text(key, body)

@@ -60,7 +60,11 @@ class RenderOrchestratorAgent(BaseAgent):
     ) -> dict[str, Any]:
         shot_id = shot["shot_id"]
         seed = shot_seed(episode_seed, shot_id, retry_counts.get(shot_id, 0) + candidate_idx)
-        prompt = " | ".join(shot["prompt_brief"]["clauses"])
+        clauses = list(shot["prompt_brief"]["clauses"])
+        visual_style = str(req.inputs.get("visual_style") or "").strip()
+        if visual_style:
+            clauses.insert(0, visual_style)
+        prompt = " | ".join(clauses)
         if reference_images:
             prompt = f"{prompt} | ref_images:{len(reference_images)}"
         prompt_sha = hashlib.sha256(prompt.encode("utf-8")).hexdigest()

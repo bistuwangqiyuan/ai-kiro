@@ -75,3 +75,14 @@ cyberpunk_neon_v1:
   resolution: "1080p"
   duration_units: [5, 10, 15]
   subtitle_font: "Arial"
+
+photoreal_historical_v1:
+  name: "历史真人写实"
+  genre: "ancient"
+  base_palette: ["#1a1208", "#4a3728", "#8b6914", "#c9a227", "#2c1810"]
+  fps: 24
+  aspect_ratio: "16:9"
+  resolution: "720p"
+  duration_units: [5, 10, 15]
+  subtitle_font: "思源宋体"
+  visual_style: "真人写实, 电影质感, 三国历史, 烛光暖色, 汉服甲胄细节"

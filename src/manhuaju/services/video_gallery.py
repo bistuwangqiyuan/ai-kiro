@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import shutil
 import sqlite3
 import threading
 import uuid
@@ -379,6 +381,73 @@ def _publish_one(
     )
     gallery.add(entry)
     return [entry]
+
+
+def promote_real_video_to_samples(
+    *,
+    gallery: VideoGallery,
+    web_dir: Path,
+    mp4_path: Path,
+    project_id: str,
+    episode_id: str,
+    title: str,
+    genre: str = "ancient",
+    platform: str = "douyin",
+    media_url_prefix: str = "/media/videos",
+    real_min_bytes: int = 200_000,
+) -> GalleryVideo | None:
+    """Copy a successful real render into web/samples and register as official example."""
+    mp4 = Path(mp4_path)
+    if not mp4.is_file() or mp4.stat().st_size < real_min_bytes:
+        return None
+    samples_dir = web_dir / "samples" / "videos"
+    samples_dir.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(mp4.read_bytes()).hexdigest()[:32]
+    dest = samples_dir / f"{digest}.mp4"
+    if not dest.is_file():
+        shutil.copy2(mp4, dest)
+    video_id = f"sample_real_{digest[:16]}"
+    rel_video = f"samples/videos/{dest.name}"
+    manifest_path = web_dir / "samples" / "manifest.json"
+    manifest: dict[str, Any] = {"samples": []}
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    samples: list[dict[str, Any]] = list(manifest.get("samples") or [])
+    if not any(s.get("video_id") == video_id for s in samples):
+        samples.append(
+            {
+                "video_id": video_id,
+                "project_id": project_id,
+                "episode_id": episode_id,
+                "title": title,
+                "genre": genre,
+                "platform": platform,
+                "is_sample": True,
+                "video": rel_video,
+                "created_at": datetime.now(UTC).isoformat(),
+            }
+        )
+        manifest["samples"] = samples
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    entry = GalleryVideo(
+        video_id=video_id,
+        project_id=project_id,
+        episode_id=episode_id,
+        title=title,
+        genre=genre,
+        platform=platform,
+        video_url=f"{media_url_prefix}/{video_id}",
+        cover_url="",
+        is_sample=True,
+        created_at=datetime.now(UTC).isoformat(),
+        local_video=str(dest.resolve()),
+        local_cover="",
+    )
+    gallery.add(entry)
+    return entry
 
 
 def seed_bundled_samples(

@@ -138,7 +138,14 @@ class MockLLMAdapter:
         return out
 
     # ----------------- EpisodePlanner -----------------
-    def episode_plan(self, *, blueprint: dict[str, Any], episode_count: int, seed: int) -> dict[str, Any]:
+    def episode_plan(
+        self,
+        *,
+        blueprint: dict[str, Any],
+        episode_count: int,
+        seed: int,
+        episode_duration_s: int = 75,
+    ) -> dict[str, Any]:
         # Use deep slice of timeline per episode
         episodes = []
         beats_per_ep = max(3, len(blueprint["timeline"]) // max(1, episode_count))
@@ -158,6 +165,11 @@ class MockLLMAdapter:
                 for j, _ in enumerate(tl)
             ]
             target_seconds = sum(b["seconds"] for b in beats)
+            if target_seconds > 0 and episode_duration_s > 0:
+                scale = episode_duration_s / target_seconds
+                for b in beats:
+                    b["seconds"] = max(3, int(b["seconds"] * scale))
+                target_seconds = sum(b["seconds"] for b in beats)
             episodes.append(
                 {
                     "episode_id": ep_id,
@@ -278,11 +290,15 @@ class MockLLMAdapter:
         )[:8]
         while len(project_palette) < 8:
             project_palette.append(f"#{((_seeded(project_id, len(project_palette))) % 0xFFFFFF):06x}")
+        visual_style = str(config.get("visual_style") or "").strip()
+        if not visual_style:
+            visual_style = "真人写实, 电影质感, 历史剧"
         out = {
             "preset_id": config.get("style_preset_id", "cinematic_2d_v1"),
             "aspect_ratio": config.get("aspect_ratio", "9:16"),
             "resolution": config.get("resolution", "1080p"),
             "fps": int(config.get("fps", 24)),
+            "visual_style": visual_style,
             "duration_units": [5, 10, 15],
             "project_palette_hex": project_palette,
             "location_palette": {loc["location_id"]: loc["palette_hex"] for loc in blueprint["locations"]},

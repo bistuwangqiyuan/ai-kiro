@@ -68,10 +68,18 @@ class RealLLMAdapter:
         return scaffold
 
     def episode_plan(
-        self, *, blueprint: dict[str, Any], episode_count: int, seed: int
+        self,
+        *,
+        blueprint: dict[str, Any],
+        episode_count: int,
+        seed: int,
+        episode_duration_s: int = 75,
     ) -> dict[str, Any]:
         scaffold = self._mock_scaffold.episode_plan(
-            blueprint=blueprint, episode_count=episode_count, seed=seed
+            blueprint=blueprint,
+            episode_count=episode_count,
+            seed=seed,
+            episode_duration_s=episode_duration_s,
         )
         prompt = self._prompt_episode_plan(blueprint, episode_count)
         enriched = self._call_json(prompt, op="llm.episode_plan", max_tokens=1200)

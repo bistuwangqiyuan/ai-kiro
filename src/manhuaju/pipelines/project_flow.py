@@ -58,8 +58,11 @@ class ProjectFlowConfig:
     seed: int
     episode_count: int = 3
     style_preset_id: str = "cinematic_2d_v1"
-    aspect_ratio: str = "9:16"
+    genre: str = "ancient"
+    aspect_ratio: str = "16:9"
     resolution: str = "720p"
+    episode_duration_s: int = 30
+    visual_style: str = ""
     fps: int = 12
     max_repairs: int = 3
     out_dir: Path = Path("output")
@@ -169,7 +172,11 @@ class ProjectPipeline:
             ep_planner = EpisodePlannerAgent(self.ctx, llm=self.llm)
             plan = ep_planner.run(
                 AgentRunRequest(
-                    inputs={"blueprint": bp, "episode_count": cfg.episode_count},
+                    inputs={
+                        "blueprint": bp,
+                        "episode_count": cfg.episode_count,
+                        "episode_duration_s": cfg.episode_duration_s,
+                    },
                     context=trace,
                     seed=cfg.seed,
                 )
@@ -224,6 +231,8 @@ class ProjectPipeline:
                             "aspect_ratio": cfg.aspect_ratio,
                             "resolution": cfg.resolution,
                             "fps": cfg.fps,
+                            "visual_style": cfg.visual_style,
+                            "genre": cfg.genre,
                         },
                     },
                     context=trace,

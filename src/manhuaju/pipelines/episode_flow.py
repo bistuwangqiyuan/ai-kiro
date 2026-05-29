@@ -145,6 +145,7 @@ class EpisodePipeline:
                     inputs={
                         "storyboard": storyboard,
                         "style_sha": style["style_sha"],
+                        "visual_style": style.get("visual_style", ""),
                         "episode_seed": seed,
                         "resolution": self.resolution,
                         "fps": self.fps,

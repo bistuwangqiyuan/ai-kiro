@@ -9,6 +9,9 @@ modes:
       - genre
       - target_audience
       - episode_duration_s
+      - resolution
+      - aspect_ratio
+      - visual_style
       - render_tier
       - parallel_render_slots
       - repair_max_attempts
@@ -51,6 +54,9 @@ modes:
       - genre
       - target_audience
       - episode_duration_s
+      - resolution
+      - aspect_ratio
+      - visual_style
       - render_tier
       - parallel_render_slots
       - repair_max_attempts
