@@ -75,6 +75,37 @@ class LocalMusicLibraryAdapter:
     # public
     # --------------------------------------------------------------
 
+    def render_bgm(
+        self,
+        *,
+        episode_id: str,
+        seconds: float,
+        mood: str = "tense",
+        seed: int = 0,
+        genre: str | None = None,
+    ) -> dict[str, Any]:
+        """Same contract as ``MockMusicAdapter.render_bgm`` for MusicDirectorAgent."""
+        mood_to_genre = {
+            "tense": "suspense",
+            "warm": "sweet_pet",
+            "epic": "xuanhuan",
+            "calm": "ancient",
+            "neutral": "modern",
+        }
+        pick_genre = genre or mood_to_genre.get(mood, "ancient")
+        out_path = Path(f"/tmp/manhuaju_bgm_{episode_id}_{int(seconds)}.mp3")
+        result = self.synthesize(
+            duration_s=seconds,
+            genre=pick_genre,
+            out_path=out_path,
+            seed=seed,
+        )
+        return {
+            "bgm_uri": result.local_path,
+            "duration_s": result.duration_s,
+            "mood": mood,
+        }
+
     def synthesize(
         self,
         emotion_arc: list[dict[str, Any]] | None = None,
