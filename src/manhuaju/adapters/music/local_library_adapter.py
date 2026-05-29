@@ -259,13 +259,20 @@ class LocalMusicLibraryAdapter:
     def _book_cost(self, duration_s: float) -> None:
         if self.cost is None:
             return
-        # 本地曲库零成本，仅记录调用次数
-        self.cost.add(
-            CostEntry(
-                ts=now_s(),
+        # 本地曲库零成本，仅记录调用次数。CostTracker 的接口在不同版本间
+        # 略有差异（record(CostEntry) vs add(...)），这里全部兜底吞掉，
+        # 绝不因为「记账」让出片流水线中断。
+        try:
+            entry = CostEntry(
+                timestamp_s=now_s(),
                 provider=self.provider,
-                kind="music",
-                amount_rmb=0.0,
-                detail=f"local library {duration_s:.0f}s",
+                operation="music",
+                model="local_library",
+                duration_s=float(duration_s),
+                rmb=0.0,
             )
-        )
+            recorder = getattr(self.cost, "record", None) or getattr(self.cost, "add", None)
+            if recorder is not None:
+                recorder(entry)
+        except Exception:  # noqa: BLE001 — 记账失败绝不影响出片
+            pass

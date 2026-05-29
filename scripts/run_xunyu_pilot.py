@@ -33,6 +33,7 @@ def main() -> int:
     ap.add_argument("--base", default=DEFAULT_BASE)
     ap.add_argument("--timeout-min", type=int, default=35)
     ap.add_argument("--poll-s", type=int, default=25)
+    ap.add_argument("--duration-s", type=int, default=15)
     ap.add_argument("--promote", action="store_true", default=True)
     ap.add_argument("--no-promote", action="store_false", dest="promote")
     args = ap.parse_args()
@@ -40,11 +41,11 @@ def main() -> int:
 
     payload = {
         "mode": "pro",
-        "title": "荀彧劝曹操迎献帝 · 720p真人测试",
+        "title": f"荀彧劝曹操迎献帝 · {args.duration_s}s 720p真人测试",
         "novel_text": XUNYU_NOVEL,
         "language": "zh",
         "episode_count": 1,
-        "episode_duration_s": 30,
+        "episode_duration_s": args.duration_s,
         "style_preset_id": "photoreal_historical_v1",
         "genre": "ancient",
         "resolution": "720p",
