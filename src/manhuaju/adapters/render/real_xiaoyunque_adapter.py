@@ -682,17 +682,53 @@ class RealXiaoyunqueAdapter:
                 return urls
         return []
 
+    # Real Jimeng/小云雀 clips are multi-MB; anything tiny is an error page
+    # (e.g. a CDN redirect/JSON/HTML body returned with HTTP 200). Treat such
+    # downloads as failures so we don't pass a 16KB placeholder downstream.
+    _MIN_REAL_VIDEO_BYTES = 200_000
+
     def _download(self, url: str, dest: Path) -> bool:
-        try:
-            with httpx.Client(timeout=180) as client:
-                r = client.get(url)
-            if r.status_code != 200:
-                return False
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(r.content)
-            return dest.stat().st_size > 0
-        except (httpx.HTTPError, OSError):
-            return False
+        last_size = -1
+        for attempt in range(3):
+            try:
+                # follow_redirects is False by default in httpx — the aigc-cloud
+                # CDN can 302 to the real asset, so we MUST opt in or we'd save
+                # the redirect body. A browser-like UA avoids some 403/empty
+                # responses on certain egress paths (e.g. FaaS).
+                with httpx.Client(
+                    timeout=300,
+                    follow_redirects=True,
+                    headers={
+                        "User-Agent": (
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                            "Chrome/124.0 Safari/537.36"
+                        ),
+                        "Accept": "*/*",
+                    },
+                ) as client:
+                    r = client.get(url)
+                if r.status_code != 200:
+                    continue
+                content = r.content
+                last_size = len(content)
+                ctype = r.headers.get("content-type", "")
+                # Reject obvious non-video error bodies.
+                if "text" in ctype or "json" in ctype:
+                    continue
+                if last_size < self._MIN_REAL_VIDEO_BYTES:
+                    continue
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(content)
+                return dest.stat().st_size >= self._MIN_REAL_VIDEO_BYTES
+            except (httpx.HTTPError, OSError):
+                continue
+        self._maybe_dump(
+            "download_failed",
+            dest.stem,
+            {"url": url, "last_size": last_size},
+        )
+        return False
 
     def _download_shot_videos(self, urls: list[str], base_id: str) -> list[str]:
         out: list[str] = []

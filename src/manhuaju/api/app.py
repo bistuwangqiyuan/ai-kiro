@@ -390,45 +390,61 @@ def create_app(
         info: dict[str, Any] = {"mode": mode_label, "adapter": type(rp).__name__}
         with contextlib.suppress(Exception):
             info["effective_req_key"] = rp._pick_req_key("pro")  # type: ignore[attr-defined]
-        try:
-            task_id = rp.submit(
-                idem_key=f"probe-{int(time.time())}",
-                shot_id="probe_sh001",
-                scene_id="probe",
-                prompt="真人写实, 电影质感, 三国历史。荀彧拱手向曹操进言，烛火摇曳。",
-                prompt_sha="probe",
-                seed=20260516,
-                duration_s=5,
-                fps=24,
-                resolution="720p",
-                characters=[],
-                location_id="hall",
-                mood="tense",
-                key_action="进言",
-                style_sha="probe",
-                model_tier="pro",
-            )
-            snap = rp.poll(task_id)
-            out_uri = snap.get("output_uri") if isinstance(snap, dict) else None
-            size = 0
-            with contextlib.suppress(Exception):
-                if out_uri and Path(out_uri).is_file():
-                    size = Path(out_uri).stat().st_size
-            info.update(
+
+        # Raw submit→poll→download diagnostic: bypass the adapter's internal
+        # download so we can see the CDN URL and exactly how the FaaS egress
+        # responds (status, content-type, size, redirected URL).
+        with contextlib.suppress(Exception):
+            import httpx as _httpx
+
+            svc = rp._svc  # type: ignore[attr-defined]
+            req_key = rp._pick_req_key("pro")  # type: ignore[attr-defined]
+            sub = svc.cv_sync2async_submit_task(
                 {
-                    "ok": True,
-                    "status": snap.get("status") if isinstance(snap, dict) else None,
-                    "fallback_used": bool(
-                        isinstance(snap, dict)
-                        and (snap.get("metadata") or {}).get("fallback_used")
-                    ),
-                    "output_uri": out_uri,
-                    "output_bytes": size,
-                    "real_render": size > 200_000,
+                    "req_key": req_key,
+                    "prompt": "真人写实, 电影质感, 三国历史。荀彧拱手向曹操进言，烛火摇曳。",
+                    "aspect_ratio": "16:9",
+                    "frames": 121,
+                    "seed": 20260516,
                 }
             )
-        except Exception as e:  # noqa: BLE001
-            info.update({"ok": False, "error": f"{type(e).__name__}: {e}"[:400]})
+            rid = ((sub or {}).get("data") or {}).get("task_id")
+            info["raw_submit_task_id"] = rid
+            video_url = None
+            for _ in range(40):
+                res = svc.cv_sync2async_get_result({"req_key": req_key, "task_id": rid})
+                data = (res or {}).get("data") or {}
+                st = str(data.get("status", "")).lower()
+                if data.get("video_url"):
+                    video_url = data["video_url"]
+                    info["raw_status"] = st
+                    break
+                if st in ("failed", "error", "not_found"):
+                    info["raw_status"] = st
+                    info["raw_resp"] = json.dumps(res, ensure_ascii=False)[:300]
+                    break
+                time.sleep(5)
+            info["video_url_prefix"] = (video_url or "")[:80]
+            if video_url:
+                for fr in (True, False):
+                    try:
+                        with _httpx.Client(
+                            timeout=120,
+                            follow_redirects=fr,
+                            headers={"User-Agent": "Mozilla/5.0", "Accept": "*/*"},
+                        ) as c:
+                            dr = c.get(video_url)
+                        info[f"dl_followredir_{fr}"] = {
+                            "status": dr.status_code,
+                            "ctype": dr.headers.get("content-type", ""),
+                            "clen": dr.headers.get("content-length", ""),
+                            "bytes": len(dr.content),
+                            "final_url": str(dr.url)[:80],
+                        }
+                    except Exception as e:  # noqa: BLE001
+                        info[f"dl_followredir_{fr}"] = f"{type(e).__name__}: {e}"[:200]
+
+        info["ok"] = True
         return info
 
     @app.post("/v1/projects")
