@@ -20,7 +20,9 @@ v4 新增端点（docx 十节「web 控制台」铺垫）:
 
 from __future__ import annotations
 
+import contextlib
 import json
+import time
 import uuid
 from pathlib import Path
 from typing import Any
@@ -371,6 +373,63 @@ def create_app(
                 "has_tos": settings.has_tos,
             },
         }
+
+    @app.get("/v1/diagnostics/render_probe")
+    def diagnostics_render_probe() -> dict[str, Any]:
+        """Submit ONE real video shot and report the raw outcome.
+
+        This is the definitive way to tell whether real video generation works
+        on this deployment or whether every shot silently degrades to the mock
+        fallback (e.g. because the configured req_key is not activated on the
+        Volcengine account → 50200, or concurrency limit → 50430).
+        """
+        bundle, mode_label = _build_run_bundle("__probe__")
+        if bundle is None or bundle.render_primary is None:
+            return {"ok": False, "mode": mode_label, "error": "no render_primary"}
+        rp = bundle.render_primary
+        info: dict[str, Any] = {"mode": mode_label, "adapter": type(rp).__name__}
+        with contextlib.suppress(Exception):
+            info["effective_req_key"] = rp._pick_req_key("pro")  # type: ignore[attr-defined]
+        try:
+            task_id = rp.submit(
+                idem_key=f"probe-{int(time.time())}",
+                shot_id="probe_sh001",
+                scene_id="probe",
+                prompt="真人写实, 电影质感, 三国历史。荀彧拱手向曹操进言，烛火摇曳。",
+                prompt_sha="probe",
+                seed=20260516,
+                duration_s=5,
+                fps=24,
+                resolution="720p",
+                characters=[],
+                location_id="hall",
+                mood="tense",
+                key_action="进言",
+                style_sha="probe",
+                model_tier="pro",
+            )
+            snap = rp.poll(task_id)
+            out_uri = snap.get("output_uri") if isinstance(snap, dict) else None
+            size = 0
+            with contextlib.suppress(Exception):
+                if out_uri and Path(out_uri).is_file():
+                    size = Path(out_uri).stat().st_size
+            info.update(
+                {
+                    "ok": True,
+                    "status": snap.get("status") if isinstance(snap, dict) else None,
+                    "fallback_used": bool(
+                        isinstance(snap, dict)
+                        and (snap.get("metadata") or {}).get("fallback_used")
+                    ),
+                    "output_uri": out_uri,
+                    "output_bytes": size,
+                    "real_render": size > 200_000,
+                }
+            )
+        except Exception as e:  # noqa: BLE001
+            info.update({"ok": False, "error": f"{type(e).__name__}: {e}"[:400]})
+        return info
 
     @app.post("/v1/projects")
     def create_project(
