@@ -394,10 +394,11 @@ def create_app(
         # Raw submit→poll→download diagnostic: bypass the adapter's internal
         # download so we can see the CDN URL and exactly how the FaaS egress
         # responds (status, content-type, size, redirected URL).
-        with contextlib.suppress(Exception):
+        try:
             import httpx as _httpx
 
             svc = rp._svc  # type: ignore[attr-defined]
+            info["svc_is_none"] = svc is None
             req_key = rp._pick_req_key("pro")  # type: ignore[attr-defined]
             sub = svc.cv_sync2async_submit_task(
                 {
@@ -443,6 +444,8 @@ def create_app(
                         }
                     except Exception as e:  # noqa: BLE001
                         info[f"dl_followredir_{fr}"] = f"{type(e).__name__}: {e}"[:200]
+        except Exception as e:  # noqa: BLE001
+            info["probe_error"] = f"{type(e).__name__}: {e}"[:400]
 
         info["ok"] = True
         return info
