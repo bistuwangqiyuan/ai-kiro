@@ -78,8 +78,14 @@ live:
     #   xiaoyunque_v2     → 小云雀 Agent 2.0「有参考」单 shot（cinematic 最佳一致性）
     #   manhuaju_agent    → 火山「短剧漫剧 Agent」原生 4 步端到端集成接口
     engine: "auto"
-    primary: "volcengine_xiaoyunque"  # 小云雀 有参考接口（高质量档）
-    fallback: "volcengine_seedance"   # 字节方舟 Seedance 2.0 (备选 / 单镜重生)
+    # 渲染主引擎 = 火山方舟 Seedance（doubao-seedance-1-0-pro）。
+    # 选它的关键原因：Seedance 产物托管在 ark-content-generation-cn-beijing.
+    # tos-cn-beijing.volces.com（火山自有 TOS），VeFaaS(cn-beijing) 可直接下载；
+    # 而小云雀/即梦产物在 *.aigc-cloud.com CDN，VeFaaS 出网拉不到（实测下载
+    # <200KB 占位）导致每个 shot 静默降级 mock。实测 Seedance 产出 4.4MB 真片。
+    primary: "volcengine_seedance"
+    fallback: "volcengine_seedance"
+    seedance_model: "doubao-seedance-1-0-pro-250528"
     # NOTE: skylark_* 短剧 Agent 需要单独开通；本账号未开通会返回 50200
     #       "req_key not supported" → 每个 shot 静默降级到 mock（68KB 占位）。
     #       即梦 (Jimeng) 通用视频模型在标准视觉套餐即可用，故默认使用它。

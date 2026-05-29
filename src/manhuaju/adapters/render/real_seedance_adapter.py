@@ -84,6 +84,8 @@ class RealSeedanceAdapter:
             key_action=str(kwargs.get("key_action", "")),
             max_len=1500,
         )
+        # Ark Seedance reads generation params as trailing --flags in the text.
+        prompt = f"{prompt} {self._ark_param_suffix(kwargs)}".strip()
         body = {
             "model": self._model,
             "content": [{"type": "text", "text": prompt}],
@@ -219,17 +221,50 @@ class RealSeedanceAdapter:
             return self.mock_fallback.poll(task_id)
         return self._snapshot(t)
 
-    def _download(self, url: str, dest: Path) -> bool:
+    @staticmethod
+    def _ark_param_suffix(kwargs: dict[str, Any]) -> str:
+        """Build Ark Seedance --flags for resolution/duration/ratio.
+
+        Seedance accepts only 480p/720p/1080p and 3-12s. We clamp the per-shot
+        seconds and map the project resolution to the closest supported tier.
+        """
+        res = str(kwargs.get("resolution", "720p")).lower()
+        res_tier = "1080p" if "1080" in res else ("480p" if "480" in res else "720p")
         try:
-            with httpx.Client(timeout=120) as client:
-                r = client.get(url)
-            if r.status_code != 200:
-                return False
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(r.content)
-            return dest.stat().st_size > 0
-        except (httpx.HTTPError, OSError):
-            return False
+            dur = int(round(float(kwargs.get("duration_s", 5))))
+        except (TypeError, ValueError):
+            dur = 5
+        dur = max(3, min(dur, 12))
+        ratio = str(kwargs.get("aspect_ratio") or kwargs.get("ratio") or "16:9")
+        return f"--resolution {res_tier} --duration {dur} --ratio {ratio}"
+
+    _MIN_REAL_VIDEO_BYTES = 200_000
+
+    def _download(self, url: str, dest: Path) -> bool:
+        last_size = -1
+        for _ in range(3):
+            try:
+                with httpx.Client(
+                    timeout=300,
+                    follow_redirects=True,
+                    headers={"User-Agent": "Mozilla/5.0", "Accept": "*/*"},
+                ) as client:
+                    r = client.get(url)
+                if r.status_code != 200:
+                    continue
+                content = r.content
+                last_size = len(content)
+                ctype = r.headers.get("content-type", "")
+                if "text" in ctype or "json" in ctype:
+                    continue
+                if last_size < self._MIN_REAL_VIDEO_BYTES:
+                    continue
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(content)
+                return dest.stat().st_size >= self._MIN_REAL_VIDEO_BYTES
+            except (httpx.HTTPError, OSError):
+                continue
+        return False
 
     def _submit_via_mock(self, **kwargs: Any) -> str:
         if self.mock_fallback is None:
