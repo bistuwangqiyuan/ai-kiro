@@ -65,6 +65,17 @@
       "is_sample": false,
       "video": "samples/videos/59092566dbcd8ed6c372a6a375cf9010.mp4",
       "created_at": "2026-05-22T18:00:00+00:00"
+    },
+    {
+      "video_id": "sample_real_0a59340f82ca058d",
+      "project_id": "proj_48075cfbbec5",
+      "episode_id": "ep01",
+      "title": "荀彧劝曹操迎献帝 · 15s 720p真人写实",
+      "genre": "ancient",
+      "platform": "douyin",
+      "is_sample": true,
+      "video": "samples/videos/0a59340f82ca058da7c745241a57d55b.mp4",
+      "created_at": "2026-05-29T13:39:26.259965+00:00"
     }
   ]
 }

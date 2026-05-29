@@ -28,6 +28,33 @@ DEFAULT_BASE = os.environ.get(
 )
 
 
+def _get(url: str, *, timeout: float = 60.0, retries: int = 6):
+    """GET with retry — the FaaS apigateway drops idle conns mid-poll."""
+    last: Exception | None = None
+    for i in range(retries):
+        try:
+            return httpx.get(url, timeout=timeout, verify=False)
+        except httpx.HTTPError as e:
+            last = e
+            time.sleep(min(4 + i * 2, 15))
+    if last:
+        print(f"[warn] GET {url} failed after {retries} retries: {type(last).__name__}", flush=True)
+    return None
+
+
+def _post(url: str, *, json: dict, timeout: float = 120.0, retries: int = 4):
+    last: Exception | None = None
+    for i in range(retries):
+        try:
+            return httpx.post(url, json=json, timeout=timeout, verify=False)
+        except httpx.HTTPError as e:
+            last = e
+            time.sleep(min(4 + i * 2, 15))
+    if last:
+        print(f"[warn] POST {url} failed after {retries} retries: {type(last).__name__}", flush=True)
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--base", default=DEFAULT_BASE)
@@ -53,7 +80,10 @@ def main() -> int:
         "visual_style": "真人写实, 电影质感, 三国历史, 烛光暖色, 汉服甲胄细节",
     }
     print(f"[submit] POST {base}/v1/projects", flush=True)
-    r = httpx.post(f"{base}/v1/projects", json=payload, timeout=120, verify=False)
+    r = _post(f"{base}/v1/projects", json=payload, timeout=120)
+    if r is None:
+        print("[fail] submit failed (network)", flush=True)
+        return 1
     print(f"[submit] HTTP {r.status_code}", flush=True)
     if r.status_code != 200:
         print(r.text[:800])
@@ -65,14 +95,16 @@ def main() -> int:
 
     deadline = time.time() + args.timeout_min * 60
     last = None
+    proj: dict = {}
     while time.time() < deadline:
-        rp = httpx.get(f"{base}/v1/projects/{pid}", timeout=60, verify=False)
-        proj = rp.json() if rp.status_code == 200 else {}
+        rp = _get(f"{base}/v1/projects/{pid}", timeout=60)
+        if rp is not None and rp.status_code == 200:
+            proj = rp.json()
         state = (proj.get("status"), proj.get("stage"))
         batch_st = ""
         if jid:
-            rj = httpx.get(f"{base}/v1/batch/jobs/{jid}", timeout=60, verify=False)
-            if rj.status_code == 200:
+            rj = _get(f"{base}/v1/batch/jobs/{jid}", timeout=60)
+            if rj is not None and rj.status_code == 200:
                 batch_st = rj.json().get("status", "")
         if state != last:
             print(f"[poll] proj={state[0]}/{state[1]} batch={batch_st or 'n/a'}", flush=True)
@@ -117,8 +149,8 @@ def main() -> int:
         gal = VideoGallery(ROOT / "api_data" / "gallery.sqlite")
 
         if not mp4_path or not mp4_path.is_file():
-            gl = httpx.get(f"{base}/v1/gallery", params={"project_id": pid}, timeout=60, verify=False)
-            if gl.status_code == 200:
+            gl = _get(f"{base}/v1/gallery?project_id={pid}", timeout=60)
+            if gl is not None and gl.status_code == 200:
                 for v in gl.json().get("videos") or []:
                     vid = v.get("video_id")
                     if not vid:
