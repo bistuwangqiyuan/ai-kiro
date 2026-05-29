@@ -84,6 +84,7 @@
   <div style="display:flex;gap:12px;align-items:center">
     <a href="/console/simple.html" style="color:var(--accent2);font-size:13px;text-decoration:none">简易模式</a>
     <a href="/console/pro.html" style="color:var(--accent2);font-size:13px;text-decoration:none">专业模式</a>
+    <a href="/assets" style="color:var(--accent2);font-size:13px;text-decoration:none">资产库</a>
     <a href="/gallery" style="color:var(--accent2);font-size:13px;text-decoration:none">视频广场</a>
     <a href="/console/guide.html" style="color:var(--accent);font-size:13px;text-decoration:none">使用说明</a>
     <span id="auth-pill"></span>
@@ -118,6 +119,11 @@
 
     <label>小说原文 / 概念</label>
     <textarea id="novel-text" placeholder="贴入小说原文，或写一段构思（≥10 字）…"></textarea>
+
+    <label>角色资产 <span class="small">（可选，<a href="/assets" style="color:var(--accent2)">上传/管理</a>，点击选中作为参考图）</span></label>
+    <div id="char-asset-picker" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <span class="small">加载中…</span>
+    </div>
 
     <button onclick="createProject()">提交 →</button>
     <button class="ghost" onclick="loadDemo()">载入示例</button>
@@ -333,6 +339,32 @@ async function loadProjects() {
   window.addEventListener('manhuaju-auth', loadProjects);
 })();
 
+const selectedAssetIds = new Set();
+function renderCharPicker(assets) {
+  const box = document.getElementById('char-asset-picker');
+  if (!box) return;
+  if (!assets.length) {
+    box.innerHTML = '<span class="small">暂无角色资产，去 <a href="/assets" style="color:var(--accent2)">资产库</a> 上传。</span>';
+    return;
+  }
+  box.innerHTML = assets.map(a =>
+    `<img src="${a.media_url}" data-id="${a.asset_id}" title="${(a.name||'').replace(/"/g,'')}" `
+    + `style="width:56px;height:70px;object-fit:cover;border-radius:6px;border:2px solid transparent;cursor:pointer;background:#000" />`
+  ).join('');
+  box.querySelectorAll('img').forEach(img => {
+    img.addEventListener('click', () => {
+      const id = img.dataset.id;
+      if (selectedAssetIds.has(id)) { selectedAssetIds.delete(id); img.style.borderColor = 'transparent'; }
+      else { selectedAssetIds.add(id); img.style.borderColor = 'var(--accent2)'; }
+    });
+  });
+}
+(function loadCharAssets() {
+  const f = (typeof authedFetch === 'function') ? authedFetch : fetch;
+  f('/v1/assets?asset_type=character&limit=100').then(r => r.json())
+    .then(d => renderCharPicker(d.assets || [])).catch(() => {});
+})();
+
 async function createProject() {
   const body = {
     novel_text: document.getElementById('novel-text').value || '示例小说内容…（请粘贴 ≥10 字）',
@@ -342,6 +374,7 @@ async function createProject() {
     genre: document.getElementById('genre').value,
     episode_duration_s: +document.getElementById('episode-duration').value,
     platforms: document.getElementById('platforms').value.split(',').map(s => s.trim()).filter(Boolean),
+    character_asset_ids: Array.from(selectedAssetIds),
   };
   const r = await jpost('/v1/projects', body);
   document.getElementById('create-result').innerHTML =

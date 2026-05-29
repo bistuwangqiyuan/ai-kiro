@@ -4,13 +4,13 @@
 `mode = live`   → all `Real*Adapter` over network with cost tracking.
 `mode = hybrid` → live primary + automatic mock fallback per adapter.
 
-v4 新增（叠加在 M3 之上）:
-- ★ ``render_primary = volcengine_xiaoyunque`` (Shell 3 核心生产引擎)
+全国产化默认（``MANHUAJU_DOMESTIC_ONLY=true``，叠加在 M3 之上）:
+- ★ ``render_primary = volcengine_seedance`` / ``volcengine_xiaoyunque``（Shell 3 核心生产引擎）
 - ``image_primary = volcengine_seedream`` + ``image_variant = volcengine_jimeng`` (Shell 2)
-- ``llm_primary = anthropic`` (Shell 1 编剧大脑)
+- ``llm_primary = volcengine_ark`` (Doubao Seed 1.6，Shell 1 编剧大脑)
 - ``vlm_primary = ark_doubao_seed_1_6`` (Shell 4 多模态质检)
-- ``face_repair = fal_wan27_flf`` (Shell 4 锁脸单镜重生)
-- ``music = elevenlabs`` + ``sfx = elevenlabs`` (Shell 5 版权干净)
+- ``face_repair`` 默认关闭（境外 fal.ai 仅 DOMESTIC_ONLY=false 时启用）
+- ``music = local_library`` + ``sfx = ffmpeg``（境外 ElevenLabs 仅 DOMESTIC_ONLY=false 时启用）
 - ``storage = volcengine_tos`` (跨服务图片 URL)
 """
 

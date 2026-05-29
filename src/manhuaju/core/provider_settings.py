@@ -117,6 +117,9 @@ class ProviderSettings:
     # ---- 数据库 ----
     postgres_dsn: str = ""
 
+    # ---- 全国产化开关 ----
+    domestic_only: bool = True
+
     # ===== 能力判定 =====
     @property
     def has_any_llm(self) -> bool:
@@ -124,7 +127,7 @@ class ProviderSettings:
 
     @property
     def has_anthropic(self) -> bool:
-        return bool(self.anthropic_key)
+        return bool(self.anthropic_key) and not self.domestic_only
 
     @property
     def has_xiaoyunque(self) -> bool:
@@ -144,11 +147,11 @@ class ProviderSettings:
 
     @property
     def has_elevenlabs(self) -> bool:
-        return bool(self.elevenlabs_key)
+        return bool(self.elevenlabs_key) and not self.domestic_only
 
     @property
     def has_fal(self) -> bool:
-        return bool(self.fal_key)
+        return bool(self.fal_key) and not self.domestic_only
 
     @property
     def has_video(self) -> bool:
@@ -169,6 +172,7 @@ class ProviderSettings:
     def summary(self) -> dict[str, object]:
         """Capability map suitable for /health + smoke_keys reporting (masked)."""
         return {
+            "domestic_only": self.domestic_only,
             "anthropic": {"enabled": self.has_anthropic, "key": _redact(self.anthropic_key)},
             "volcengine_visual": {
                 "enabled": self.has_xiaoyunque,
@@ -196,12 +200,30 @@ class ProviderSettings:
         }
 
 
+def _domestic_only() -> bool:
+    """全国产化开关（默认开启）。
+
+    开启时仅装载境内厂商（火山方舟 / 通义 / DeepSeek / GLM / Kimi），并跳过
+    境外厂商（Anthropic / Groq / Mistral / OpenAI 等）。设
+    ``MANHUAJU_DOMESTIC_ONLY=false`` 可在境外信用卡环境下重新启用境外厂商。
+    """
+    return os.getenv("MANHUAJU_DOMESTIC_ONLY", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
 def _build_llm_endpoints() -> tuple[ProviderEndpoint, ...]:
     """LLM endpoints in priority order — 国产优先（火山方舟 → 阿里 → DeepSeek → GLM → 月之暗面）。
 
-    若用户配置了 ``ANTHROPIC_API_KEY``（境外信用卡用户），Anthropic 会插到队首。
+    默认 ``llm_primary`` 为火山方舟 Doubao Seed 1.6（北京机房）。境外厂商
+    （Anthropic/Groq/Mistral/OpenAI）仅在 ``MANHUAJU_DOMESTIC_ONLY=false`` 且配置了
+    对应 API key 时才追加到队尾。
     """
     eps: list[ProviderEndpoint] = []
+    domestic_only = _domestic_only()
 
     # ★ 国内首选：火山方舟 Doubao Seed 1.6（中文创作能力极强、价格低、走北京机房）
     if k := os.getenv("VOLCENGINE_API_KEY") or os.getenv("ARK_API_KEY") or os.getenv("VOLCENGINE_ARK_API_KEY"):
@@ -263,52 +285,54 @@ def _build_llm_endpoints() -> tuple[ProviderEndpoint, ...]:
             )
         )
 
-    # ★ 国际版（境外信用卡用户）：Claude Opus 4 — 编剧大脑顶配
-    if k := os.getenv("ANTHROPIC_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="anthropic",
-                api_key=k,
-                base_url="https://api.anthropic.com/v1",
-                default_model="claude-opus-4-20250514",
-                rpm=50,
-                kind="anthropic_native",
-                timeout_s=120.0,
+    # ====== 境外厂商（仅 MANHUAJU_DOMESTIC_ONLY=false 时启用）======
+    if not domestic_only:
+        # 国际版（境外信用卡用户）：Claude Opus 4 — 编剧大脑顶配
+        if k := os.getenv("ANTHROPIC_API_KEY"):
+            eps.append(
+                ProviderEndpoint(
+                    name="anthropic",
+                    api_key=k,
+                    base_url="https://api.anthropic.com/v1",
+                    default_model="claude-opus-4-20250514",
+                    rpm=50,
+                    kind="anthropic_native",
+                    timeout_s=120.0,
+                )
             )
-        )
 
-    if k := os.getenv("GROQ_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="groq",
-                api_key=k,
-                base_url="https://api.groq.com/openai/v1",
-                default_model="llama-3.3-70b-versatile",
-                rpm=30,
+        if k := os.getenv("GROQ_API_KEY"):
+            eps.append(
+                ProviderEndpoint(
+                    name="groq",
+                    api_key=k,
+                    base_url="https://api.groq.com/openai/v1",
+                    default_model="llama-3.3-70b-versatile",
+                    rpm=30,
+                )
             )
-        )
 
-    if k := os.getenv("MISTRAL_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="mistral",
-                api_key=k,
-                base_url="https://api.mistral.ai/v1",
-                default_model="mistral-large-latest",
-                rpm=30,
+        if k := os.getenv("MISTRAL_API_KEY"):
+            eps.append(
+                ProviderEndpoint(
+                    name="mistral",
+                    api_key=k,
+                    base_url="https://api.mistral.ai/v1",
+                    default_model="mistral-large-latest",
+                    rpm=30,
+                )
             )
-        )
 
-    if k := os.getenv("OPENAI_API_KEY"):
-        eps.append(
-            ProviderEndpoint(
-                name="openai",
-                api_key=k,
-                base_url="https://api.openai.com/v1",
-                default_model="gpt-4o-mini",
-                rpm=60,
+        if k := os.getenv("OPENAI_API_KEY"):
+            eps.append(
+                ProviderEndpoint(
+                    name="openai",
+                    api_key=k,
+                    base_url="https://api.openai.com/v1",
+                    default_model="gpt-4o-mini",
+                    rpm=60,
+                )
             )
-        )
 
     return tuple(eps)
 
@@ -364,6 +388,7 @@ def get_provider_settings(*, refresh: bool = False) -> ProviderSettings:
         openai_key=os.getenv("OPENAI_API_KEY", "").strip(),
         tos=_build_tos(),
         postgres_dsn=os.getenv("POSTGRES_DSN", "").strip(),
+        domestic_only=_domestic_only(),
     )
     _settings_cache = s
     return s

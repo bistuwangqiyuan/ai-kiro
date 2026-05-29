@@ -28,7 +28,15 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
 from pydantic import BaseModel, Field
 
 from manhuaju.adapters.db.sqlite_repo import SQLiteRepo
@@ -50,6 +58,12 @@ from manhuaju.core.storage import LocalFSStorage
 from manhuaju.core.workflow_config import load_distribution_config, load_workflow_config
 from manhuaju.core.workflow_stage import WorkflowStage, emit_workflow_stage
 from manhuaju.pipelines.project_flow import ProjectFlowConfig, ProjectPipeline
+from manhuaju.services.asset_library import (
+    ASSET_TYPES,
+    AssetLibrary,
+    asset_to_dict,
+    make_asset,
+)
 from manhuaju.services.batch_scheduler import BatchScheduler
 from manhuaju.services.video_gallery import (
     VideoGallery,
@@ -83,6 +97,11 @@ class ProjectCreateRequest(BaseModel):
     visual_style: str = ""
     template_id: str | None = None
     platforms: list[str] = Field(default_factory=lambda: ["douyin", "kuaishou", "weixin"])
+    # User-uploaded digital assets (character templates first). ``character_asset_ids``
+    # are merged into per-shot character references; ``asset_refs`` allows explicit
+    # per-type references (e.g. {"scene": [...], "style": [...]}).
+    character_asset_ids: list[str] = Field(default_factory=list)
+    asset_refs: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class ReviewRequest(BaseModel):
@@ -144,6 +163,7 @@ def create_app(
         executor=_project_executor,
     )
     gallery = VideoGallery(root / "gallery.sqlite")
+    assets_lib = AssetLibrary(root / "assets.sqlite")
     users = UserStore(root / "users.sqlite")
     current_user_optional = make_current_user_optional(users)
     current_user_required = make_current_user_required(users)
@@ -268,6 +288,13 @@ def create_app(
         emit_workflow_stage(ctx.bus, project_id=project_id, stage=WorkflowStage.ANALYZE)
         bundle, run_mode = _build_run_bundle(project_id)
         pipe = ProjectPipeline(ctx, redlines=[], bundle=bundle)
+        # Resolve user-uploaded digital-asset ids → consumable reference URLs.
+        char_asset_urls = assets_lib.resolve_urls(body.character_asset_ids)
+        asset_ref_urls: dict[str, list[str]] = {}
+        for ref_key, ids in (body.asset_refs or {}).items():
+            urls = assets_lib.resolve_urls(list(ids))
+            if urls:
+                asset_ref_urls[str(ref_key)] = urls
         result = pipe.run(
             ProjectFlowConfig(
                 project_id=project_id,
@@ -281,6 +308,8 @@ def create_app(
                 episode_duration_s=body.episode_duration_s,
                 visual_style=body.visual_style,
                 out_dir=root / project_id / "output",
+                character_asset_urls=char_asset_urls,
+                asset_ref_urls=asset_ref_urls,
             )
         )
         manifest = result.get("manifest")
@@ -791,6 +820,108 @@ def create_app(
             raise HTTPException(status_code=404, detail="cover file missing")
         return FileResponse(path, media_type="image/jpeg")
 
+    # ---- digital asset library (user-uploaded character templates etc.) ----
+    @app.post("/v1/assets")
+    async def upload_asset(
+        file: UploadFile = File(...),
+        name: str = Form(""),
+        asset_type: str = Form("character"),
+        ref_key: str = Form(""),
+        current_user: dict[str, Any] | None = Depends(current_user_optional),
+    ) -> dict[str, Any]:
+        atype = asset_type if asset_type in ASSET_TYPES else "character"
+        data = await file.read()
+        if not data:
+            raise HTTPException(status_code=400, detail="empty file")
+        if len(data) > 16 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="file too large (max 16MB)")
+        ctype = file.content_type or "image/png"
+        if not ctype.startswith("image/"):
+            raise HTTPException(status_code=415, detail="only image assets are supported")
+
+        asset_id = AssetLibrary.new_id()
+        ext = Path(file.filename or "").suffix or _ext_for_content_type(ctype)
+        # Local mirror (always) for /media/assets serving + offline fallback.
+        local_dir = root / "_assets"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        local_path = local_dir / f"{asset_id}{ext}"
+        local_path.write_bytes(data)
+
+        # Upload to TOS so the render pipeline can consume an http(s) URL.
+        tos_url = local_path.absolute().as_uri()
+        try:
+            res = _get_tos().upload_bytes(
+                data,
+                key=f"assets/{asset_id}{ext}",
+                content_type=ctype,
+            )
+            if str(res.public_url).startswith("http"):
+                tos_url = res.public_url
+        except Exception:  # noqa: BLE001
+            pass
+
+        owner = str((current_user or {}).get("username") or "")
+        entry = make_asset(
+            asset_type=atype,
+            name=name or (file.filename or "未命名资产"),
+            tos_url=tos_url,
+            local_path=str(local_path),
+            content_type=ctype,
+            size_bytes=len(data),
+            owner=owner,
+            ref_key=ref_key,
+        )
+        entry.asset_id = asset_id
+        assets_lib.add(entry)
+        return asset_to_dict(entry)
+
+    @app.get("/v1/assets")
+    def list_assets(
+        asset_type: str | None = None,
+        mine: bool = False,
+        current_user: dict[str, Any] | None = Depends(current_user_optional),
+    ) -> dict[str, Any]:
+        owner_filter: str | None = None
+        if mine:
+            owner_filter = str((current_user or {}).get("username") or "")
+        items = assets_lib.list_assets(owner=owner_filter, asset_type=asset_type)
+        return {"assets": [asset_to_dict(a) for a in items], "count": len(items)}
+
+    @app.delete("/v1/assets/{asset_id}")
+    def delete_asset(
+        asset_id: str,
+        current_user: dict[str, Any] | None = Depends(current_user_optional),
+    ) -> dict[str, str]:
+        a = assets_lib.get(asset_id)
+        if not a:
+            raise HTTPException(status_code=404, detail="asset not found")
+        # Owned assets may only be deleted by the owner; anonymous (owner == "")
+        # assets are deletable by anyone (shared scratch space).
+        if a.owner:
+            me = str((current_user or {}).get("username") or "")
+            if me != a.owner:
+                raise HTTPException(status_code=403, detail="not your asset")
+        with contextlib.suppress(Exception):
+            p = Path(a.local_path)
+            if p.is_file():
+                p.unlink()
+        assets_lib.delete(asset_id)
+        return {"status": "ok"}
+
+    @app.get("/media/assets/{asset_id}")
+    def stream_asset(asset_id: str) -> Any:
+        from fastapi.responses import FileResponse, RedirectResponse
+
+        a = assets_lib.get(asset_id)
+        if not a:
+            raise HTTPException(status_code=404, detail="asset not found")
+        path = Path(a.local_path)
+        if path.is_file():
+            return FileResponse(path, media_type=a.content_type)
+        if a.tos_url.startswith("http"):
+            return RedirectResponse(a.tos_url)
+        raise HTTPException(status_code=404, detail="asset file missing")
+
     @app.on_event("startup")
     def _startup_gallery() -> None:
         from manhuaju.utils.paths import project_root
@@ -840,6 +971,10 @@ def create_app(
         def login_page() -> Any:
             return FileResponse(web_dir / "login.html")
 
+        @app.get("/assets")
+        def assets_page() -> Any:
+            return FileResponse(web_dir / "assets.html")
+
     # ---- shutdown ----
     @app.on_event("shutdown")
     def _shutdown() -> None:  # noqa: D401
@@ -853,8 +988,21 @@ def create_app(
     app.state.batch_scheduler = batch_scheduler
     app.state.version_store = version_store
     app.state.gallery = gallery
+    app.state.assets = assets_lib
     app.state.users = users
     return app
+
+
+def _ext_for_content_type(content_type: str) -> str:
+    mapping = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "image/bmp": ".bmp",
+    }
+    return mapping.get((content_type or "").lower().split(";")[0].strip(), ".png")
 
 
 def _load_system_config() -> dict[str, Any]:

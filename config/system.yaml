@@ -54,8 +54,10 @@ live:
     max_tokens_episode: 32000
 
   llm:
-    # 国内可直连优先；anthropic 仅在 ANTHROPIC_API_KEY 存在时启用
-    providers: ["volcengine", "dashscope", "deepseek", "glm", "moonshot", "anthropic", "groq", "mistral"]
+    # 全国产化默认（MANHUAJU_DOMESTIC_ONLY=true）：仅境内厂商。
+    # 境外厂商（anthropic/groq/mistral/openai）仅在 MANHUAJU_DOMESTIC_ONLY=false
+    # 且配置了对应 API key 时由 provider_settings 追加，不在此列出。
+    providers: ["volcengine", "dashscope", "deepseek", "glm", "moonshot"]
     json_mode: true
     request_timeout_s: 90
     max_retries: 3

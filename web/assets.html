@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI 漫剧 Autopilot — 数字资产库</title>
+  <style>
+    :root {
+      --bg: #0e1218; --panel: #161c25; --line: #2a313d;
+      --fg: #f5f5f7; --muted: #8a93a1; --accent: #ffd47a; --accent2: #7fb3ff;
+      --danger: #ff7a7a;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg);
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.5; }
+    header {
+      padding: 16px 28px; border-bottom: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: rgba(14,18,24,.95); z-index: 10;
+    }
+    header h1 { margin: 0; font-size: 17px; }
+    header nav a { color: var(--muted); text-decoration: none; font-size: 13px; margin-left: 16px; }
+    header nav a:hover, header nav a.active { color: var(--accent2); }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 24px; }
+    .hero h2 { margin: 0 0 8px; font-size: 22px; color: var(--accent); }
+    .hero p { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+    .uploader {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 20px; margin-bottom: 28px;
+    }
+    .drop {
+      border: 2px dashed var(--line); border-radius: 10px; padding: 28px;
+      text-align: center; color: var(--muted); cursor: pointer; transition: .15s;
+    }
+    .drop.hover { border-color: var(--accent2); color: var(--accent2); background: #131a24; }
+    .drop strong { color: var(--fg); }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; align-items: end; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 12px; color: var(--muted); }
+    .field input, .field select {
+      background: #0f141b; border: 1px solid var(--line); color: var(--fg);
+      padding: 9px 12px; border-radius: 8px; font-size: 13px; min-width: 160px;
+    }
+    button.primary {
+      background: var(--accent2); color: #06101f; border: none; font-weight: 600;
+      padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    }
+    button.primary:disabled { opacity: .5; cursor: not-allowed; }
+    #preview { margin-top: 12px; }
+    #preview img { max-height: 120px; border-radius: 8px; border: 1px solid var(--line); }
+    .status { margin-top: 12px; font-size: 13px; color: var(--muted); min-height: 18px; }
+    .status.ok { color: #7ad9a0; }
+    .status.err { color: var(--danger); }
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filters button {
+      background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+      padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+    }
+    .filters button.active { border-color: var(--accent2); color: var(--accent2); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    }
+    .card img { width: 100%; height: 180px; object-fit: cover; display: block; background: #000; }
+    .card .body { padding: 10px 12px; }
+    .card h3 { margin: 0 0 6px; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .meta { font-size: 11px; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .badge { background: #1a2230; padding: 2px 7px; border-radius: 4px; font-size: 10px; }
+    .badge.character { color: var(--accent); }
+    .del {
+      margin-top: 8px; background: transparent; border: 1px solid var(--line);
+      color: var(--danger); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; width: 100%;
+    }
+    .del:hover { border-color: var(--danger); }
+    .empty { text-align: center; color: var(--muted); padding: 40px; grid-column: 1/-1; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>漫剧 Autopilot · <span style="color:var(--accent)">数字资产库</span></h1>
+    <nav>
+      <a href="/">控制台</a>
+      <a href="/console/simple.html">简易模式</a>
+      <a href="/console/pro.html">专业模式</a>
+      <a href="/assets" class="active">资产库</a>
+      <a href="/guide">使用说明</a>
+      <a href="/gallery">视频广场</a>
+      <span id="auth-pill" style="margin-left:16px"></span>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div class="hero">
+      <h2>上传角色模板等数字资产</h2>
+      <p>上传你自己的角色形象（也支持场景 / 风格 / 道具）。资产会被保存并可在「专业模式」创建短剧时作为参考图，让生成的人物保持一致。免登录即可上传体验；登录后资产归属你的账号。</p>
+    </div>
+
+    <div class="uploader">
+      <div class="drop" id="drop">
+        <p><strong>点击选择</strong> 或将图片拖拽到此处</p>
+        <p style="font-size:12px">支持 PNG / JPG / WEBP，单张 ≤ 16MB</p>
+      </div>
+      <input type="file" id="file" accept="image/*" style="display:none" />
+      <div id="preview"></div>
+      <div class="row">
+        <div class="field">
+          <label>资产名称</label>
+          <input id="name" placeholder="例如：曹操" />
+        </div>
+        <div class="field">
+          <label>资产类型</label>
+          <select id="asset_type">
+            <option value="character">角色模板</option>
+            <option value="scene">场景</option>
+            <option value="style">风格</option>
+            <option value="prop">道具</option>
+          </select>
+        </div>
+        <button class="primary" id="upload" disabled>上传资产</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="filters">
+      <button class="active" data-filter="all">全部</button>
+      <button data-filter="character">角色模板</button>
+      <button data-filter="scene">场景</button>
+      <button data-filter="style">风格</button>
+      <button data-filter="prop">道具</button>
+    </div>
+
+    <div class="grid" id="grid"><div class="empty">加载中…</div></div>
+  </div>
+
+  <script src="/console/auth.js"></script>
+  <script>
+    if (window.ManhuajuAuth) window.ManhuajuAuth.renderAuthPill('auth-pill');
+    const _fetch = (typeof authedFetch === 'function') ? authedFetch : fetch;
+    const dropEl = document.getElementById('drop');
+    const fileEl = document.getElementById('file');
+    const nameEl = document.getElementById('name');
+    const typeEl = document.getElementById('asset_type');
+    const uploadBtn = document.getElementById('upload');
+    const statusEl = document.getElementById('status');
+    const previewEl = document.getElementById('preview');
+    let chosen = null;
+    let allAssets = [];
+
+    function setStatus(msg, cls) {
+      statusEl.textContent = msg || '';
+      statusEl.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    dropEl.addEventListener('click', () => fileEl.click());
+    ['dragover','dragenter'].forEach(ev => dropEl.addEventListener(ev, e => {
+      e.preventDefault(); dropEl.classList.add('hover');
+    }));
+    ['dragleave','drop'].forEach(ev => dropEl.addEventListener(ev, e => {
+      e.preventDefault(); dropEl.classList.remove('hover');
+    }));
+    dropEl.addEventListener('drop', e => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]);
+    });
+    fileEl.addEventListener('change', () => { if (fileEl.files[0]) pickFile(fileEl.files[0]); });
+
+    function pickFile(f) {
+      if (!f.type.startsWith('image/')) { setStatus('只支持图片文件', 'err'); return; }
+      chosen = f;
+      uploadBtn.disabled = false;
+      if (!nameEl.value) nameEl.value = f.name.replace(/\.[^.]+$/, '');
+      const reader = new FileReader();
+      reader.onload = e => { previewEl.innerHTML = '<img src="' + e.target.result + '" />'; };
+      reader.readAsDataURL(f);
+      setStatus('已选择：' + f.name);
+    }
+
+    uploadBtn.addEventListener('click', async () => {
+      if (!chosen) return;
+      uploadBtn.disabled = true;
+      setStatus('上传中…');
+      const fd = new FormData();
+      fd.append('file', chosen);
+      fd.append('name', nameEl.value || chosen.name);
+      fd.append('asset_type', typeEl.value);
+      try {
+        const r = await _fetch('/v1/assets', { method: 'POST', body: fd });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const a = await r.json();
+        setStatus('上传成功：' + a.name, 'ok');
+        chosen = null; previewEl.innerHTML = ''; fileEl.value = '';
+        loadAssets();
+      } catch (err) {
+        setStatus('上传失败：' + err.message, 'err');
+        uploadBtn.disabled = false;
+      }
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    const TYPE_LABEL = { character: '角色', scene: '场景', style: '风格', prop: '道具' };
+
+    function render(filter) {
+      const grid = document.getElementById('grid');
+      let items = allAssets;
+      if (filter && filter !== 'all') items = items.filter(a => a.asset_type === filter);
+      if (!items.length) {
+        grid.innerHTML = '<div class="empty">还没有资产，上传第一张角色模板吧！</div>';
+        return;
+      }
+      grid.innerHTML = items.map(a => `
+        <article class="card">
+          <img src="${a.media_url}" alt="${escapeHtml(a.name)}" />
+          <div class="body">
+            <h3>${escapeHtml(a.name)}</h3>
+            <div class="meta">
+              <span class="badge ${a.asset_type}">${TYPE_LABEL[a.asset_type] || a.asset_type}</span>
+              <span class="badge">${a.owner ? escapeHtml(a.owner) : '匿名'}</span>
+            </div>
+            <button class="del" data-id="${a.asset_id}">删除</button>
+          </div>
+        </article>
+      `).join('');
+      grid.querySelectorAll('.del').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('确认删除该资产？')) return;
+          const r = await _fetch('/v1/assets/' + btn.dataset.id, { method: 'DELETE' });
+          if (r.ok) loadAssets();
+          else alert('删除失败（可能不是你的资产）');
+        });
+      });
+    }
+
+    document.querySelectorAll('.filters button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render(btn.dataset.filter);
+      });
+    });
+
+    function loadAssets() {
+      _fetch('/v1/assets?limit=200')
+        .then(r => r.json())
+        .then(d => { allAssets = d.assets || []; render('all');
+          document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+          document.querySelector('.filters button[data-filter="all"]').classList.add('active');
+        })
+        .catch(() => { document.getElementById('grid').innerHTML = '<div class="empty">加载失败，请刷新重试。</div>'; });
+    }
+    loadAssets();
+  </script>
+</body>
+</html>

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -69,6 +69,12 @@ class ProjectFlowConfig:
     max_shots_per_episode: int = 8
     mock_shot_duration_s: int = 1
     max_dialogue_lines: int = 2
+    # User-uploaded digital-asset reference URLs (resolved http/TOS URLs).
+    # ``character_asset_urls`` are merged into every character's reference list;
+    # ``asset_ref_urls`` lets callers attach references to explicit reference_map
+    # keys (e.g. {"scene:loc_palace": [...], "style_user": [...]}).
+    character_asset_urls: list[str] = field(default_factory=list)
+    asset_ref_urls: dict[str, list[str]] = field(default_factory=dict)
 
 
 class ProjectPipeline:
@@ -129,6 +135,34 @@ class ProjectPipeline:
         for prop_id, urls in prop_refs.items():
             ref_map[f"prop:{prop_id}"] = urls
         return ref_map
+
+    def _merge_user_assets(
+        self,
+        reference_map: dict[str, list[str]],
+        cfg: ProjectFlowConfig,
+    ) -> None:
+        """Merge user-uploaded asset URLs into the reference map (in place).
+
+        Character templates are prepended to every character's reference list so
+        the uploaded look takes priority within the render orchestrator's
+        per-shot ``reference_images`` slice. Explicit ``asset_ref_urls`` keys are
+        merged verbatim (e.g. ``scene:<loc>`` / ``style_user``).
+        """
+        char_urls = [u for u in (cfg.character_asset_urls or []) if u]
+        if char_urls:
+            char_keys = [k for k in reference_map if not k.startswith(("scene:", "prop:"))]
+            if char_keys:
+                for key in char_keys:
+                    existing = list(reference_map.get(key) or [])
+                    reference_map[key] = char_urls + [u for u in existing if u not in char_urls]
+            else:
+                reference_map["user:character"] = char_urls
+        for key, urls in (cfg.asset_ref_urls or {}).items():
+            vals = [u for u in (urls or []) if u]
+            if not vals:
+                continue
+            existing = list(reference_map.get(key) or [])
+            reference_map[key] = vals + [u for u in existing if u not in vals]
 
     def run(self, cfg: ProjectFlowConfig) -> dict[str, Any]:
         trace = TraceContext(project_id=cfg.project_id)
@@ -192,14 +226,18 @@ class ProjectPipeline:
                 )
             ).outputs["bibles"]
 
-            scene_refs = SceneAssetAgent(self.ctx).run(
+            # Wire the live image adapter (Seedream) so auto reference / scene /
+            # prop assets are produced on the real image pipeline instead of the
+            # mock Pillow placeholder whenever a real bundle is available.
+            image_adapter = getattr(self.bundle, "image", None) if self.bundle else None
+            scene_refs = SceneAssetAgent(self.ctx, image_adapter=image_adapter).run(
                 AgentRunRequest(
                     inputs={"blueprint": bp, "style_sha": bp.get("blueprint_sha", "style")},
                     context=trace,
                     seed=cfg.seed,
                 )
             ).outputs["scene_refs"]
-            prop_refs = PropAssetAgent(self.ctx).run(
+            prop_refs = PropAssetAgent(self.ctx, image_adapter=image_adapter).run(
                 AgentRunRequest(
                     inputs={"blueprint": bp, "style_sha": bp.get("blueprint_sha", "style")},
                     context=trace,
@@ -207,19 +245,25 @@ class ProjectPipeline:
                 )
             ).outputs["prop_refs"]
 
-            ref_resp = ReferenceAssetAgent(self.ctx).run(
+            ref_resp = ReferenceAssetAgent(self.ctx, image_adapter=image_adapter).run(
                 AgentRunRequest(
                     inputs={
                         "bibles": bibles,
                         "scene_refs": scene_refs,
                         "prop_refs": prop_refs,
+                        "genre": cfg.genre,
+                        "style_prompt": cfg.visual_style or "古风工笔水墨",
                     },
                     context=trace,
                     seed=cfg.seed,
                 )
             )
             char_refs = ref_resp.outputs["references"]
-            reference_map = self._build_reference_map(char_refs, scene_refs, prop_refs)
+            # Prefer public (TOS/http) URLs for the render pipeline when present,
+            # falling back to local paths (mock).
+            char_ref_urls = ref_resp.outputs.get("references_public_urls") or char_refs
+            reference_map = self._build_reference_map(char_ref_urls, scene_refs, prop_refs)
+            self._merge_user_assets(reference_map, cfg)
 
             self._emit_state(cfg.project_id, ProjectState.STYLE_LOCKED)
             style = VisualStyleAgent(self.ctx, llm=self.llm).run(

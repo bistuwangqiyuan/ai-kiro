@@ -45,6 +45,7 @@
       <a href="/">控制台</a>
       <a href="/console/simple.html">Simple</a>
       <a href="/console/pro.html" class="active">Pro</a>
+      <a href="/assets">资产库</a>
       <a href="/console/guide.html">使用说明</a>
       <a href="/gallery">视频广场</a>
       <span id="auth-pill" style="margin-left:18px"></span>
@@ -66,7 +67,17 @@
           </div>
         </div>
         <div class="panel">
-          <h2>2 · 制作参数</h2>
+          <h2>2 · 角色资产（可选）</h2>
+          <p style="font-size:12px;color:#8a93a1;margin:0 0 10px">
+            选择你在 <a href="/assets" style="color:#7fb3ff">资产库</a> 上传的角色模板，
+            生成时将作为参考图保持人物一致。未选则使用系统自动生成的参考图。
+          </p>
+          <div id="char-asset-picker" style="display:flex;gap:10px;flex-wrap:wrap">
+            <span style="font-size:12px;color:#8a93a1">加载中…</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>3 · 制作参数</h2>
           <div class="grid3">
             <div><label>集数</label><input id="episode_count" type="number" min="1" max="120" value="1" /></div>
             <div><label>单集时长 (s)</label><input id="episode_duration_s" type="number" min="30" max="180" value="30" /></div>
@@ -80,7 +91,7 @@
           </div>
         </div>
         <div class="panel">
-          <h2>3 · 高阶</h2>
+          <h2>4 · 高阶</h2>
           <div class="grid2">
             <div><label>定时表达式 (cron)</label><input id="cron_schedule" placeholder="0 8 * * *" /></div>
             <div><label>自动续写</label><select id="auto_continue"><option>off</option><option>on</option></select></div>
@@ -117,6 +128,34 @@
       document.getElementById('kpi-7d').firstChild.nodeValue = `${(d.seven_dim_pass*100).toFixed(1)}% `;
       document.getElementById('kpi-hr').firstChild.nodeValue = `${d.episodes_per_hour?.toFixed(1) ?? '—'} `;
     }).catch(() => {});
+
+    // ---- character asset picker ----
+    const selectedAssetIds = new Set();
+    function renderCharPicker(assets) {
+      const box = document.getElementById('char-asset-picker');
+      if (!assets.length) {
+        box.innerHTML = '<span style="font-size:12px;color:#8a93a1">暂无角色资产，去 <a href="/assets" style="color:#7fb3ff">资产库</a> 上传。</span>';
+        return;
+      }
+      box.innerHTML = assets.map(a => `
+        <label style="cursor:pointer;text-align:center;font-size:11px;color:#8a93a1">
+          <img src="${a.media_url}" data-id="${a.asset_id}"
+            style="width:72px;height:90px;object-fit:cover;border-radius:8px;border:2px solid transparent;display:block;background:#000" />
+          <div style="max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(a.name||'').replace(/</g,'&lt;')}</div>
+        </label>
+      `).join('');
+      box.querySelectorAll('img').forEach(img => {
+        img.addEventListener('click', () => {
+          const id = img.dataset.id;
+          if (selectedAssetIds.has(id)) { selectedAssetIds.delete(id); img.style.borderColor = 'transparent'; }
+          else { selectedAssetIds.add(id); img.style.borderColor = '#7fb3ff'; }
+        });
+      });
+    }
+    _fetch('/v1/assets?asset_type=character&limit=100')
+      .then(r => r.json()).then(d => renderCharPicker(d.assets || []))
+      .catch(() => { document.getElementById('char-asset-picker').innerHTML = '<span style="font-size:12px;color:#8a93a1">资产加载失败</span>'; });
+
     document.getElementById('form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const f = document.getElementById('form');
@@ -138,6 +177,7 @@
         watermark_position: get('watermark_position'),
         distribution_platforms: (get('distribution_platforms') || '').split(',').map(s => s.trim()).filter(Boolean),
         cover_text_template: get('cover_text_template'),
+        character_asset_ids: Array.from(selectedAssetIds),
       };
       const res = await _fetch('/v1/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const j = await res.json();

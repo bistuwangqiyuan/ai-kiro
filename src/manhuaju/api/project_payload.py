@@ -74,6 +74,23 @@ def resolve_project_create(
     aspect_ratio = str(data.get("aspect_ratio") or preset.get("aspect_ratio") or "16:9")
     visual_style = str(data.get("visual_style") or preset.get("visual_style") or "")
 
+    # User-selected digital assets (character templates etc.). The mode router
+    # drops unknown keys, so carry them through explicitly.
+    raw_char_ids = data.get("character_asset_ids") or []
+    if isinstance(raw_char_ids, str):
+        raw_char_ids = [s.strip() for s in raw_char_ids.split(",") if s.strip()]
+    character_asset_ids = [str(x) for x in raw_char_ids if str(x).strip()]
+    asset_refs_raw = data.get("asset_refs") or {}
+    asset_refs: dict[str, list[str]] = {}
+    if isinstance(asset_refs_raw, dict):
+        for k, v in asset_refs_raw.items():
+            if isinstance(v, str):
+                v = [s.strip() for s in v.split(",") if s.strip()]
+            if isinstance(v, list):
+                vals = [str(x) for x in v if str(x).strip()]
+                if vals:
+                    asset_refs[str(k)] = vals
+
     return {
         "novel_text": novel_text[:50_000],
         "seed": int(data.get("seed", 20260516)),
@@ -91,4 +108,6 @@ def resolve_project_create(
         "visual_style": visual_style,
         "template_id": str(template_id) if template_id else None,
         "platforms": list(platforms),
+        "character_asset_ids": character_asset_ids,
+        "asset_refs": asset_refs,
     }

@@ -13,6 +13,9 @@ import pytest
 
 
 def test_provider_settings_loads_and_redacts(monkeypatch):
+    # Anthropic is an overseas provider; it only loads when the全国产化 gate is
+    # explicitly disabled. Default deployments stay domestic-only.
+    monkeypatch.setenv("MANHUAJU_DOMESTIC_ONLY", "false")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test1234567890abcdef")
     monkeypatch.setenv("VOLCENGINE_VISUAL_AK", "VAK_smoke123456")
     monkeypatch.setenv("VOLCENGINE_VISUAL_SK", "VSK_smoke123456")

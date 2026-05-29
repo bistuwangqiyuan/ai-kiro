@@ -478,10 +478,19 @@ def functions_step(env: dict[str, str], full_image: str) -> dict[str, Any]:
         or env_get(env, "VOLCENGINE_API_KEY")
         or env_get(env, "ARK_API_KEY")
     )
+    # 全国产化默认开启：不向线上函数下发境外厂商 env。设
+    # MANHUAJU_DOMESTIC_ONLY=false（且提供对应 key）方可启用境外厂商。
+    domestic_only = env_get(env, "MANHUAJU_DOMESTIC_ONLY", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
     common_envs: dict[str, str] = {
         # ---- runtime ----
         "MANHUAJU_LIVE_MODE": "live",
         "MANHUAJU_API_DATA": "/data",
+        "MANHUAJU_DOMESTIC_ONLY": "true" if domestic_only else "false",
         "MANHUAJU_VIDEO_ENGINE": env_get(env, "MANHUAJU_VIDEO_ENGINE", "auto"),
         # ---- Volcengine Visual (Xiaoyunque + Manhuaju Agent + Seedream + Jimeng) ----
         "VOLCENGINE_VISUAL_AK": ak,
@@ -505,19 +514,24 @@ def functions_step(env: dict[str, str], full_image: str) -> dict[str, Any]:
         "DEEPSEEK_API_KEY": env_get(env, "DEEPSEEK_API_KEY"),
         "GLM_API_KEY": env_get(env, "GLM_API_KEY"),
         "MOONSHOT_API_KEY": env_get(env, "MOONSHOT_API_KEY"),
-        "MISTRAL_API_KEY": env_get(env, "MISTRAL_API_KEY"),
-        "GROQ_API_KEY": env_get(env, "GROQ_API_KEY"),
-        "XAI_API_KEY": env_get(env, "XAI_API_KEY"),
         "SPARK_API_KEY": env_get(env, "SPARK_API_KEY"),
-        # ---- optional international ----
-        "ANTHROPIC_API_KEY": env_get(env, "ANTHROPIC_API_KEY"),
-        "ANTHROPIC_BASE_URL": env_get(env, "ANTHROPIC_BASE_URL"),
-        "ELEVENLABS_API_KEY": env_get(env, "ELEVENLABS_API_KEY"),
-        "FAL_KEY": env_get(env, "FAL_KEY"),
         # ---- VCR pull creds (VeFaaS image source access) ----
         "VCR_USERNAME": env_get(env, "VCR_USERNAME"),
         "VCR_PASSWORD": env_get(env, "VCR_PASSWORD"),
     }
+    # ---- 境外厂商 env：仅在显式关闭全国产化时下发 ----
+    if not domestic_only:
+        common_envs.update(
+            {
+                "MISTRAL_API_KEY": env_get(env, "MISTRAL_API_KEY"),
+                "GROQ_API_KEY": env_get(env, "GROQ_API_KEY"),
+                "XAI_API_KEY": env_get(env, "XAI_API_KEY"),
+                "ANTHROPIC_API_KEY": env_get(env, "ANTHROPIC_API_KEY"),
+                "ANTHROPIC_BASE_URL": env_get(env, "ANTHROPIC_BASE_URL"),
+                "ELEVENLABS_API_KEY": env_get(env, "ELEVENLABS_API_KEY"),
+                "FAL_KEY": env_get(env, "FAL_KEY"),
+            }
+        )
 
     # VeFaaS native/v1 ignores the Dockerfile CMD/ENTRYPOINT — must pass full command.
     api_command = (
