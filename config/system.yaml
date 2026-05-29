@@ -80,13 +80,17 @@ live:
     engine: "auto"
     primary: "volcengine_xiaoyunque"  # 小云雀 有参考接口（高质量档）
     fallback: "volcengine_seedance"   # 字节方舟 Seedance 2.0 (备选 / 单镜重生)
-    xiaoyunque_req_key: "skylark_video_agent_v2_with_ref"
-    duanju_req_key: "skylark_duanju_manhuaju_seedance_2_fast_720p"
-    mode: "per_episode"               # per_episode | per_shot
+    # NOTE: skylark_* 短剧 Agent 需要单独开通；本账号未开通会返回 50200
+    #       "req_key not supported" → 每个 shot 静默降级到 mock（68KB 占位）。
+    #       即梦 (Jimeng) 通用视频模型在标准视觉套餐即可用，故默认使用它。
+    #       如已开通小云雀，把下面改回 skylark_video_agent_v2_with_ref 即可。
+    xiaoyunque_req_key: "jimeng_t2v_v30"
+    duanju_req_key: "jimeng_t2v_v30"
+    mode: "per_shot"                  # per_episode | per_shot（jimeng 走单 shot）
     reference_weight: 0.85            # tech.md 防线 3：强约束
     poll_interval_s: 10
     max_poll_s: 2400                  # 40 min 单集上限（小云雀官方 30 min）
-    max_concurrent: 8                 # tech.md 月产能假设
+    max_concurrent: 1                 # 本账号视觉 API 并发上限=1（50430 否则）
     retry_per_episode: 3
     # 火山「短剧漫剧 Agent」原生 4 步集成 API（doc 85621/2459788）
     manhuaju_agent:

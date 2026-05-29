@@ -37,6 +37,39 @@ from manhuaju.core.cost_tracker import CostEntry, CostTracker, now_s
 from manhuaju.core.provider_settings import ProviderSettings
 
 
+def _is_jimeng_req_key(req_key: str) -> bool:
+    """True for 即梦 (Jimeng) general video models, which use a minimal schema."""
+    return str(req_key or "").lower().startswith("jimeng")
+
+
+def _jimeng_video_params(
+    *,
+    req_key: str,
+    prompt: str,
+    aspect_ratio: str,
+    duration_s: int,
+    fps: int,
+    seed: int,
+) -> dict[str, Any]:
+    """Build the param set Jimeng video models accept.
+
+    Jimeng v3.0 t2v/i2v take ``frames`` (not ``duration``); commonly the API
+    supports 121 frames (~5s) or 241 frames (~10s) @ 24fps. We snap to the
+    nearest supported step and never send skylark-only reference fields.
+    """
+    eff_fps = fps if fps in (24,) else 24
+    raw_frames = max(1, int(round(float(duration_s) * eff_fps)))
+    # Snap to the two officially supported lengths (5s / 10s) to avoid 50200.
+    frames = 121 if raw_frames <= 181 else 241
+    return {
+        "req_key": req_key,
+        "prompt": prompt[:4000],
+        "aspect_ratio": aspect_ratio,
+        "frames": frames,
+        "seed": int(seed) & 0x7FFFFFFF,
+    }
+
+
 @dataclass
 class _XYQTask:
     task_id: str
@@ -159,25 +192,39 @@ class RealXiaoyunqueAdapter:
             key_action=key_action,
         )
 
-        char_refs_payload = self._build_char_refs(characters, reference_images or [])
-        scene_refs_payload = self._build_scene_refs(location_id, reference_images or [])
-        style_ref_url = self._extract_style_ref(reference_images or [])
+        if _is_jimeng_req_key(req_key):
+            # 即梦 (Jimeng) 通用视频模型只认 {req_key, prompt, aspect_ratio,
+            # seed, frames}；小云雀短剧专用的 character_references /
+            # scene_references / duration 字段会被拒（50200）或忽略，因此走
+            # 精简参数集，并把秒数换算成帧数 (frames = duration * fps)。
+            params = _jimeng_video_params(
+                req_key=req_key,
+                prompt=full_prompt,
+                aspect_ratio=self._resolution_to_aspect(resolution),
+                duration_s=duration_s,
+                fps=fps,
+                seed=seed,
+            )
+        else:
+            char_refs_payload = self._build_char_refs(characters, reference_images or [])
+            scene_refs_payload = self._build_scene_refs(location_id, reference_images or [])
+            style_ref_url = self._extract_style_ref(reference_images or [])
 
-        params: dict[str, Any] = {
-            "req_key": req_key,
-            "prompt": full_prompt[:4000],
-            "aspect_ratio": self._resolution_to_aspect(resolution),
-            "duration": min(max(int(duration_s), 3), 10),
-            "seed": int(seed) & 0x7FFFFFFF,
-        }
-        if char_refs_payload:
-            params["character_references"] = char_refs_payload
-        if scene_refs_payload:
-            params["scene_references"] = scene_refs_payload
-        if style_ref_url:
-            params["style_reference"] = style_ref_url
+            params = {
+                "req_key": req_key,
+                "prompt": full_prompt[:4000],
+                "aspect_ratio": self._resolution_to_aspect(resolution),
+                "duration": min(max(int(duration_s), 3), 10),
+                "seed": int(seed) & 0x7FFFFFFF,
+            }
+            if char_refs_payload:
+                params["character_references"] = char_refs_payload
+            if scene_refs_payload:
+                params["scene_references"] = scene_refs_payload
+            if style_ref_url:
+                params["style_reference"] = style_ref_url
 
-        params = {k: v for k, v in params.items() if v not in (None, [], "")}
+            params = {k: v for k, v in params.items() if v not in (None, [], "")}
 
         self._maybe_dump("submit", shot_id, {"params": params, "full_prompt": full_prompt})
 

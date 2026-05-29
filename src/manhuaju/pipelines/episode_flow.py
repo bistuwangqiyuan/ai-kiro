@@ -49,6 +49,9 @@ class EpisodePipeline:
         max_dialogue_lines: int = 2,
         reference_map: dict[str, list[str]] | None = None,
         review_gate: ReviewGate | None = None,
+        live_mode: bool = False,
+        episode_seconds: int = 75,
+        live_shot_seconds: int = 5,
     ) -> None:
         self.ctx = ctx
         self.llm = llm
@@ -63,6 +66,12 @@ class EpisodePipeline:
         self.mock_shot_duration_s = mock_shot_duration_s
         self.max_shots_per_episode = max_shots_per_episode
         self.max_dialogue_lines = max_dialogue_lines
+        # Live rendering uses real clip lengths (~5s/shot for Jimeng) and caps
+        # the shot count so the stitched episode ≈ ``episode_seconds``; mock
+        # mode keeps 1s synthetic shots for fast deterministic tests.
+        self.live_mode = live_mode
+        self.episode_seconds = max(1, int(episode_seconds))
+        self.live_shot_seconds = max(3, int(live_shot_seconds))
         self.reference_map = reference_map or {}
         self.review_gate = review_gate or ReviewGate(mode="autopilot")
         self.workflow = load_workflow_config(ctx.config)
@@ -112,16 +121,27 @@ class EpisodePipeline:
                 seed=seed,
             )
         ).outputs["storyboard"]
-        if len(storyboard["shots"]) > self.max_shots_per_episode:
+        if self.live_mode:
+            # Cap shots so n * live_shot_seconds ≈ episode_seconds (≥1), and
+            # render each at a real clip length. This keeps the real render
+            # affordable (the account allows ~1 concurrent video task) while
+            # still producing a genuinely ~episode_seconds-long stitched video.
+            max_live_shots = max(1, round(self.episode_seconds / self.live_shot_seconds))
+            shot_cap = min(self.max_shots_per_episode, max_live_shots)
+        else:
+            shot_cap = self.max_shots_per_episode
+        if len(storyboard["shots"]) > shot_cap:
             storyboard = {
                 **storyboard,
-                "shots": storyboard["shots"][: self.max_shots_per_episode],
+                "shots": storyboard["shots"][:shot_cap],
             }
         rendered_shots = []
         for sh in storyboard["shots"]:
             new_sh = dict(sh)
             new_sh["target_seconds_intent"] = sh["target_seconds"]
-            new_sh["target_seconds"] = self.mock_shot_duration_s
+            new_sh["target_seconds"] = (
+                self.live_shot_seconds if self.live_mode else self.mock_shot_duration_s
+            )
             rendered_shots.append(new_sh)
         storyboard = {**storyboard, "shots": rendered_shots}
 
@@ -174,13 +194,17 @@ class EpisodePipeline:
             last_tts = tts_lines
 
             md = MusicDirectorAgent(self.ctx, music=self.music)
+            # BGM must span the full stitched episode. ``mux_video_audio`` uses
+            # ``-shortest``, so if the BGM is shorter than the concatenated
+            # video the whole episode gets truncated to the BGM length. In mock
+            # mode shots are 1s so /4 was harmless; with real ~5s clips it
+            # silently cut a 15s video down to ~3.75s. Use the full sum.
+            total_video_seconds = sum(s["target_seconds"] for s in storyboard["shots"])
             md_resp = md.run(
                 AgentRunRequest(
                     inputs={
                         "episode_id": ep_id,
-                        "target_seconds": max(
-                            2.0, sum(s["target_seconds"] for s in storyboard["shots"]) / 4
-                        ),
+                        "target_seconds": max(2.0, float(total_video_seconds)),
                         "mood": "tense",
                     },
                     context=trace,

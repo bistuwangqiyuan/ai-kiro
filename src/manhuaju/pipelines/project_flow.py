@@ -290,6 +290,8 @@ class ProjectPipeline:
             max_dialogue_lines=cfg.max_dialogue_lines,
             reference_map=reference_map,
             review_gate=self.review_gate,
+            live_mode=self.bundle is not None,
+            episode_seconds=cfg.episode_duration_s,
         )
         start_idx = len(episode_results)
         for idx, ep in enumerate(plan["episodes"]):

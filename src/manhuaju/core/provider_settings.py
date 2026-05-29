@@ -92,8 +92,13 @@ class ProviderSettings:
     volcengine_visual_ak: str = ""
     volcengine_visual_sk: str = ""
     volcengine_visual_region: str = "cn-north-1"
-    xiaoyunque_req_key: str = "skylark_video_agent_v2_with_ref"
-    duanju_req_key: str = "skylark_duanju_manhuaju_seedance_2_fast_720p"
+    # NOTE: the 小云雀短剧 Agent models (skylark_*) require separate account
+    # activation; on accounts without it the Visual API returns 50200
+    # "req_key not supported" and every shot silently degraded to mock. The
+    # 即梦 (Jimeng) general video models are available on the standard Visual
+    # plan, so they are the default. Override via VOLCENGINE_XIAOYUNQUE_REQ_KEY.
+    xiaoyunque_req_key: str = "jimeng_t2v_v30"
+    duanju_req_key: str = "jimeng_t2v_v30"
     seedream_req_key: str = "seedream_5_0_t2i"
     jimeng_req_key: str = "jimeng_high_aes_general_v46"
 
@@ -342,11 +347,11 @@ def get_provider_settings(*, refresh: bool = False) -> ProviderSettings:
         volcengine_visual_sk=os.getenv("VOLCENGINE_VISUAL_SK", "").strip(),
         volcengine_visual_region=os.getenv("VOLCENGINE_VISUAL_REGION", "cn-north-1").strip(),
         xiaoyunque_req_key=os.getenv(
-            "VOLCENGINE_XIAOYUNQUE_REQ_KEY", "skylark_video_agent_v2_with_ref"
+            "VOLCENGINE_XIAOYUNQUE_REQ_KEY", "jimeng_t2v_v30"
         ).strip(),
         duanju_req_key=os.getenv(
             "VOLCENGINE_DUANJU_REQ_KEY",
-            "skylark_duanju_manhuaju_seedance_2_fast_720p",
+            "jimeng_t2v_v30",
         ).strip(),
         seedream_req_key=os.getenv("VOLCENGINE_SEEDREAM_REQ_KEY", "seedream_5_0_t2i").strip(),
         jimeng_req_key=os.getenv("VOLCENGINE_JIMENG_REQ_KEY", "jimeng_high_aes_general_v46").strip(),
