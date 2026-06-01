@@ -53,7 +53,7 @@
         "label": "单集 ≤ 5 min + ≤ 0 ¥/集",
         "pass": true,
         "values": {
-          "runtime_s": 15.721579700000197,
+          "runtime_s": 12.742142899999939,
           "credits": 0
         }
       },

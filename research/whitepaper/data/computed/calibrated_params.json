@@ -1,37 +1,37 @@
 {
-  "arcface_intra_mean": 0.946,
+  "arcface_intra_mean": 0.9463,
   "arcface_intra_mean_ci95": [
-    0.9292,
-    0.9594
+    0.945,
+    0.948
   ],
-  "calibration_status": "synthetic_preliminary",
+  "calibration_status": "calibrated_from_pilot",
   "ci_level": 0.95,
-  "cost_per_episode_cny": 44.54,
+  "cost_per_episode_cny": 35.0,
   "cost_per_episode_cny_ci95": [
-    41.34,
-    49.75
+    33.5,
+    36.5
   ],
-  "latency_episode_p95_s": 2085.9,
+  "latency_episode_p95_s": 764.5,
   "latency_episode_p95_s_ci95": [
-    1508.1,
-    2782.9
+    739.0,
+    790.0
   ],
   "moderation_fnr_and": 0.0001,
   "n_pilot_episodes": 3,
-  "p_pass_per_attempt": 0.75,
+  "p_pass_per_attempt": 0.8,
   "p_pass_per_attempt_ci95": [
-    0.62,
-    0.86
+    0.6569,
+    0.9431
   ],
-  "retry_factor": 0.18,
+  "retry_factor": 0.25,
   "retry_factor_ci95": [
-    0.1,
-    0.3
+    0.0603,
+    0.5224
   ],
-  "scene_reuse_rate": 0.0,
-  "seven_dim_pass_rate": 0.86,
+  "scene_reuse_rate": 0.4,
+  "seven_dim_pass_rate": 0.8333,
   "seven_dim_pass_rate_ci95": [
-    0.78,
-    0.93
+    0.739,
+    0.9276
   ]
 }

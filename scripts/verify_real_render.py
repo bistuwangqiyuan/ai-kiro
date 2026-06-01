@@ -30,7 +30,16 @@ DEFAULT_BASE = "https://sd8ap3btqc6mqij6t2bsg.apigateway-cn-beijing.volceapi.com
 
 
 def _get(client: httpx.Client, path: str) -> tuple[int, Any]:
-    r = client.get(path)
+    # Retry transient drops — the FaaS apigateway closes idle conns mid-poll.
+    r = None
+    for i in range(6):
+        try:
+            r = client.get(path)
+            break
+        except httpx.HTTPError:
+            time.sleep(min(4 + i * 2, 15))
+    if r is None:
+        return 0, "network error"
     try:
         return r.status_code, r.json()
     except json.JSONDecodeError:
@@ -38,7 +47,15 @@ def _get(client: httpx.Client, path: str) -> tuple[int, Any]:
 
 
 def _post(client: httpx.Client, path: str, body: dict[str, Any]) -> tuple[int, Any]:
-    r = client.post(path, json=body)
+    r = None
+    for i in range(4):
+        try:
+            r = client.post(path, json=body)
+            break
+        except httpx.HTTPError:
+            time.sleep(min(4 + i * 2, 15))
+    if r is None:
+        return 0, "network error"
     try:
         return r.status_code, r.json()
     except json.JSONDecodeError:
